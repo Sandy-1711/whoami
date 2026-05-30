@@ -1,19 +1,11 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { Redis } from '@upstash/redis';
+import { makeRedis } from '../lib/redis.js';
 
-// Connect to Vercel KV / Upstash Redis. Redis.fromEnv() reads
-// UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN. If your integration
-// injects KV_REST_API_URL / KV_REST_API_TOKEN instead, either add an alias in
-// the Vercel project env, or swap to: new Redis({ url: process.env.KV_REST_API_URL,
-// token: process.env.KV_REST_API_TOKEN }). See README.
-let redis = null;
-try {
-  redis = Redis.fromEnv();
-} catch {
-  // No store configured yet — the resume still serves; views just won't count.
-}
+// null until a KV/Upstash store is connected. The resume still serves either
+// way; views simply aren't counted until the store exists.
+const redis = makeRedis();
 
 // Load the compiled PDF once per cold start. CI compiles resume.tex and places
 // the result at assets/resume.pdf; vercel.json's includeFiles bundles it here.

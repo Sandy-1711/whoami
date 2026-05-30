@@ -1,11 +1,6 @@
-import { Redis } from '@upstash/redis';
+import { makeRedis } from '../lib/redis.js';
 
-let redis = null;
-try {
-  redis = Redis.fromEnv();
-} catch {
-  // not configured yet
-}
+const redis = makeRedis();
 
 export default async function handler(req, res) {
   let views = 0;

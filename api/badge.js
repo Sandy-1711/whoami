@@ -1,11 +1,6 @@
-import { Redis } from '@upstash/redis';
+import { makeRedis } from '../lib/redis.js';
 
-let redis = null;
-try {
-  redis = Redis.fromEnv();
-} catch {
-  // not configured yet
-}
+const redis = makeRedis();
 
 // Powers a live shields.io "endpoint" badge:
 // https://img.shields.io/endpoint?url=https://<project>.vercel.app/api/badge
