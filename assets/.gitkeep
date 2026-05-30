@@ -1,0 +1,2 @@
+# Keeps the assets/ directory in git. The compiled resume.pdf is generated here
+# by CI (and is gitignored).

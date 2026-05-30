@@ -1,0 +1,9 @@
+# Normalize line endings — keep LF in the repo and working tree.
+# Important for the CI workflow's bash run-blocks, which execute on Linux and
+# break if they contain CRLF (\r) characters.
+* text=auto eol=lf
+
+# Binary assets — never normalize.
+*.pdf binary
+*.png binary
+*.jpg binary

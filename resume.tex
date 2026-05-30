@@ -1,0 +1,190 @@
+%-------------------------
+% Resume in Latex
+% Author : Sandeep Singh (Optimized for AI Engineer Role)
+%------------------------
+
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{fontawesome5}
+\usepackage{multicol}
+\setlength{\multicolsep}{-3.0pt}
+\setlength{\columnsep}{-1pt}
+\input{glyphtounicode}
+
+%----------FONT OPTIONS----------
+% sans-serif
+% \usepackage[sfdefault]{FiraSans}
+% \usepackage[sfdefault]{roboto}
+% \usepackage[sfdefault]{noto-sans}
+% \usepackage[default]{sourcesanspro}
+
+\pagestyle{fancy}
+\fancyhf{} 
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.6in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1.19in}
+\addtolength{\topmargin}{-.7in}
+\addtolength{\textheight}{1.4in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large\bfseries
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Ensure that generate pdf is machine readable/ATS parsable
+\pdfgentounicode=1
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{1.0\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & \textbf{\small #2} \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{1.001\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & \textbf{\small #2}\\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.0in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%-------------------------------------------
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    {\Huge \scshape SANDEEP SINGH} \\ \vspace{2pt}
+    {\large AI Engineer $|$ RAG Systems Specialist $|$ Full-Stack Builder} \\ \vspace{4pt}
+    \small
+    \href{mailto:sandy1711003@gmail.com}{\underline{sandy1711003@gmail.com}} \,•\,
+    \href{https://linkedin.com/in/sandeep-singh-445058254/}{\underline{linkedin.com/in/sandeep-singh-445058254}} \,•\,
+    \href{https://github.com/Sandy-1711}{\underline{github.com/Sandy-1711}} \,•\,
+    +91 8953596712
+    \\[6pt]
+   Professional Summary: \textbf{Product-Minded AI Engineer.} Built RAG systems handling global timezone orchestration and fine-tuned LLMs achieving 75\% accuracy. Architected scalable apps for \textbf{10,000+ users} on zero-cost infrastructure. Open Source contributor to \textbf{formbricks}, \textbf{n8n} \& \textbf{cal.com}.
+    \vspace{-8pt}
+\end{center}
+
+
+
+%-----------EXPERIENCE-----------
+\section{Experience}
+  \resumeSubHeadingListStart
+
+   % --- AiRA ---
+\resumeSubheading
+  {AiRA}{Dec 2025 - March 2026}
+  {AI Engineer (Agents Orchestration, Memory, RAG \& Systems)}{Bangalore, India}
+  \resumeItemListStart
+    \resumeItem{Architected the flagship \textbf{Daily Brief} agent and \textbf{User Style Adaptation} engine using \textbf{FastAPI}, \textbf{Celery}, and \textbf{MongoDB}, asynchronously processing Gmail threads and calendar events to generate personalized LLM summaries.}
+    
+    \resumeItem{Resolved race conditions in distributed task pipelines by standardizing \textbf{UTC-based orchestration} logic for the Task Executor Engine, ensuring \textbf{100\% accuracy across all timezones}.}
+    
+    \resumeItem{Implemented Langfuse-based observability dashboards for LLM traces, latency, and cost, reducing time-to-debug agent failures and improving production reliability.}
+    
+    \resumeItem{Reduced overall \textbf{LLM token usage by 82\%} through context deduplication, memory caching, and prompt compression strategies across user workflows.}
+    
+    \resumeItem{Enforced \textbf{CASA-compliant security architecture} by implementing Redis-based token revocation lists, sanitizing email metadata (header injection defense), and applying schema normalization across MongoDB collections.}
+    
+    \resumeItem{Collaborated with frontend, ML, and DevOps teams to deploy agents using Dockerized microservices on Azure with CI/CD GitHub Actions.}
+    \
+  \resumeItemListEnd
+
+
+    % --- IIT KGP ---
+    \resumeSubheading
+      {IIT Kharagpur}{May 2025 - July 2025}
+      {Research Intern (Multimodal AI)}{Kharagpur, India}
+      \resumeItemListStart
+        \resumeItem{Developed CircuitSynth, a multimodal reasoning framework by fine-tuning \textbf{Qwen models (4B/8B)} using \textbf{LoRA/QLoRA} to generate executable Arduino circuit JSONs.}
+        \resumeItem{Achieved \textbf{75\% accuracy} on complex circuit generation tasks (vs. 0\% baseline for GPT-4) by designing a multi-stage pipeline with RAG retrievals.}
+        \resumeItem{Optimized inference for edge deployment, successfully running quantized GGUF models on Raspberry Pi devices.}
+        \resumeItem{Designed automated benchmarks with unit-style checks for executable Arduino circuit JSONs, enabling rapid iteration across datasets and model versions}
+      \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+\vspace{-12pt}
+
+%-----------PROJECTS-----------
+\section{Projects}
+    \resumeSubHeadingListStart
+      
+      % --- Indigle / Samagra ---
+      \resumeProjectHeading
+          {\textbf{Indigle (Samagra ERP)} $|$ \emph{React Native, Node.js, Socket.io, AWS, MongoDB}}{Sep 2024 - Present}
+          \resumeItemListStart
+            \resumeItem{Architected a full-stack ERP system serving \textbf{10,000+ active users}, handling \textbf{150,000+ monthly API requests} with sub-100ms latency.}
+            \resumeItem{Engineered a \textbf{zero-cost serverless architecture} (Vercel/AWS Lambda) and optimized MongoDB schemas to reduce query response times by \textbf{65\%}.}
+            \resumeItem{Implemented real-time synchronization using \textbf{Socket.io} and Firebase, maintaining \textbf{99.9\% uptime} during peak usage.}
+          \resumeItemListEnd
+
+      % --- n8n Open Source ---
+      \resumeProjectHeading
+          {\textbf{n8n (Open Source Contributor)} $|$ \emph{TypeScript, Vue.js, Node.js}}{Oct 2025 - Present}
+          \resumeItemListStart
+            \resumeItem{Merged critical infrastructure fixes into the core \textbf{n8n repo (35k+ Stars)}, resolving Webhook CSP security bugs (allow-same-origin) and Windows build path failures.}
+            \resumeItem{Diagnosed complex build pipeline issues for `pnpm` on Windows, enabling cross-platform development for contributors.}
+          \resumeItemListEnd
+
+    \resumeSubHeadingListEnd
+\vspace{-12pt}
+
+%-----------TECHNICAL SKILLS-----------
+\section{Technical Skills}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     \textbf{AI/ML \& RAG}{: Python (Expert), LangChain, LlamaIndex, Qdrant, Pinecone, Hugging Face (PEFT/LoRA), PyTorch, OpenAI/Gemini API} \\
+     \textbf{Backend \& Ops}{: FastAPI, Celery (Async Task Queues), Redis, Docker, AWS (Lambda, S3), Nginx, PostgreSQL, MongoDB, Langfuse (LLM Observability)} \\
+     \textbf{Languages}{: Python, TypeScript, JavaScript, SQL} \\
+     \textbf{Frontend \& Mobile}{: Next.js 14, React.js, React Native (Expo), Tailwind CSS, Shadcn/UI}
+    }}
+ \end{itemize}
+ \vspace{-12pt}
+
+%-----------EDUCATION-----------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Madan Mohan Malviya University of Technology}{Nov 2022 -- Nov 2026}
+      {B.Tech in Electronics \& Communication Engineering (CGPA: 7.32)}{Gorakhpur, India}
+  \resumeSubHeadingListEnd
+
+\end{document}

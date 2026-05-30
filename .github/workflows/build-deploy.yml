@@ -1,0 +1,51 @@
+name: Build & Deploy Resume
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compile LaTeX -> PDF
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: resume.tex
+          # If your template needs XeLaTeX or LuaLaTeX (e.g. custom fonts via
+          # fontspec), uncomment the matching line below:
+          # latexmk_use_xelatex: true
+          # latexmk_use_lualatex: true
+
+      - name: Stage PDF for deploy
+        run: |
+          mkdir -p assets
+          cp resume.pdf assets/resume.pdf
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resume-pdf
+          path: assets/resume.pdf
+          if-no-files-found: error
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy to Vercel (production)
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel deploy --prod --token="$VERCEL_TOKEN"

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/resume.js": {
+      "includeFiles": "assets/resume.pdf"
+    }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/api/resume" },
+    { "source": "/resume.pdf", "destination": "/api/resume" }
+  ]
+}
