@@ -1,16 +1,14 @@
 # Resume CI/CD
 
-[![Build & Deploy](https://github.com/Sandy-1711/<repo>/actions/workflows/build-deploy.yml/badge.svg)](https://github.com/Sandy-1711/<repo>/actions/workflows/build-deploy.yml)
-[![Last updated](https://img.shields.io/github/last-commit/Sandy-1711/<repo>?label=last%20updated)](https://github.com/Sandy-1711/<repo>/commits/main)
-[![Resume views](https://img.shields.io/endpoint?url=https%3A%2F%2F<project>.vercel.app%2Fapi%2Fbadge)](https://<project>.vercel.app)
+[![Build & Deploy](https://github.com/Sandy-1711/whoami/actions/workflows/build-deploy.yml/badge.svg)](https://github.com/Sandy-1711/whoami/actions/workflows/build-deploy.yml)
+[![Last updated](https://img.shields.io/github/last-commit/Sandy-1711/whoami?label=last%20updated)](https://github.com/Sandy-1711/whoami/commits/main)
+[![Resume views](https://img.shields.io/endpoint?url=https%3A%2F%2Fwhoami-swart-theta.vercel.app%2Fapi%2Fbadge)](https://whoami-swart-theta.vercel.app)
 
 My résumé, written in **LaTeX**, compiled to **PDF** by **GitHub Actions**, and served as a
 **view-counted PDF** on **Vercel**. Every edit is tracked in git; every push to `main`
 recompiles and redeploys the live link.
 
-**Live:** https://&lt;project&gt;.vercel.app
-
-> Replace `<repo>` and `<project>` above once the GitHub repo and Vercel project exist.
+**Live:** https://whoami-swart-theta.vercel.app
 
 ## How it works
 
