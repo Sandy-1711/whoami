@@ -2,13 +2,13 @@
 
 [![Build & Deploy](https://github.com/Sandy-1711/whoami/actions/workflows/build-deploy.yml/badge.svg)](https://github.com/Sandy-1711/whoami/actions/workflows/build-deploy.yml)
 [![Last updated](https://img.shields.io/github/last-commit/Sandy-1711/whoami?label=last%20updated)](https://github.com/Sandy-1711/whoami/commits/main)
-[![Resume views](https://img.shields.io/endpoint?url=https%3A%2F%2Fwhoami-swart-theta.vercel.app%2Fapi%2Fbadge)](https://whoami-swart-theta.vercel.app)
+[![Resume views](https://img.shields.io/endpoint?url=https%3A%2F%2Fiamsandeep.vercel.app%2Fapi%2Fbadge)](https://iamsandeep.vercel.app)
 
 My résumé, written in **LaTeX**, compiled to **PDF** by **GitHub Actions**, and served as a
 **view-counted PDF** on **Vercel**. Every edit is tracked in git; every push to `main`
 recompiles and redeploys the live link.
 
-**Live:** https://whoami-swart-theta.vercel.app
+**Live:** https://iamsandeep.vercel.app
 
 ## How it works
 
