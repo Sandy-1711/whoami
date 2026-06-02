@@ -64,6 +64,31 @@ To compile the LaTeX locally (optional), install TeXLive/MiKTeX, then:
 npm run build:pdf   # latexmk -pdf resume.tex  →  assets/resume.pdf
 ```
 
+## Structure check
+
+A dependency-light checker validates the résumé's structure so a broken layout
+never ships. It runs in two phases:
+
+- **Source** (`resume.tex`) — required sections present, balanced
+  environments/braces/list-macros, contact links intact, no empty bullets. Pure
+  Node, no LaTeX needed.
+- **PDF** (`assets/resume.pdf`) — exactly one page, all sections survive into the
+  rendered text, contact email present. Uses [`unpdf`](https://github.com/unjs/unpdf).
+
+```bash
+npm run check          # source + PDF (PDF auto-skipped if not built yet)
+npm run check:source   # source only
+npm run check:pdf      # PDF only (needs assets/resume.pdf)
+```
+
+It runs automatically in two places:
+
+- **Pre-commit hook** (`.githooks/pre-commit`) — runs the source check whenever a
+  commit touches `resume.tex`. Wired by the `prepare` script on `npm install`
+  (`git config core.hooksPath .githooks`); bypass once with `git commit --no-verify`.
+- **CI** — the source check gates the build before compiling, and the PDF check
+  runs on the freshly compiled PDF before deploy.
+
 ## One-time setup
 
 1. **GitHub** — create a repo and push this project to `main`.

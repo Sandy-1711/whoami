@@ -6,9 +6,16 @@
   "description": "A LaTeX resume compiled in CI and served as a git-tracked, view-counted PDF on Vercel.",
   "scripts": {
     "build:pdf": "latexmk -pdf -interaction=nonstopmode resume.tex && node -e \"require('fs').mkdirSync('assets',{recursive:true});require('fs').copyFileSync('resume.pdf','assets/resume.pdf')\"",
-    "dev": "vercel dev"
+    "check": "node scripts/check-resume.js",
+    "check:source": "node scripts/check-resume.js --source",
+    "check:pdf": "node scripts/check-resume.js --pdf",
+    "dev": "vercel dev",
+    "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks')}catch{}\""
   },
   "dependencies": {
     "@upstash/redis": "^1.34.0"
+  },
+  "devDependencies": {
+    "unpdf": "^1.6.2"
   }
 }
