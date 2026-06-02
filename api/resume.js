@@ -25,6 +25,10 @@ function loadPdf() {
 }
 const pdf = loadPdf();
 
+// The name browsers use when saving the file. Kept human-readable so a saved
+// résumé is self-describing in someone's Downloads folder.
+const DOWNLOAD_FILENAME = 'Sandeep Singh - AI Engineer.pdf';
+
 export default async function handler(req, res) {
   if (!pdf) {
     res.statusCode = 503;
@@ -44,9 +48,12 @@ export default async function handler(req, res) {
 
   const download = !!(req.query && 'download' in req.query);
   res.setHeader('Content-Type', 'application/pdf');
+  // Both forms: a quoted ASCII fallback and the RFC 5987 filename* so every
+  // browser saves the file under the same readable name.
+  const encoded = encodeURIComponent(DOWNLOAD_FILENAME);
   res.setHeader(
     'Content-Disposition',
-    `${download ? 'attachment' : 'inline'}; filename="resume.pdf"`,
+    `${download ? 'attachment' : 'inline'}; filename="${DOWNLOAD_FILENAME}"; filename*=UTF-8''${encoded}`,
   );
   // Bypass the CDN cache so every open re-invokes this function and is counted.
   res.setHeader('Cache-Control', 'no-store, max-age=0');

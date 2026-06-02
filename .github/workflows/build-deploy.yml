@@ -5,6 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# A newer run supersedes an in-progress one on the same ref: cancel the old,
+# run the latest.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
