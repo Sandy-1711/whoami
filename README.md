@@ -114,6 +114,17 @@ external storage to read on each request.
    file saves under a human-readable name (`Sandeep Singh - AI Engineer.pdf`) via both
    the quoted `filename` and the RFC 5987 `filename*` form.
 
+### Link previews (Open Graph)
+
+A raw PDF carries no HTML `<head>`, so a shared link would normally unfurl with no
+preview card. To fix that without changing what humans see, `api/resume.js` checks the
+`User-Agent`: **social link-preview crawlers** (Slack, Twitter/X, LinkedIn, WhatsApp,
+Telegram, Discord, Facebook, …) receive a tiny HTML page carrying the OG / Twitter
+tags, while every human still gets the PDF inline. The tags point `og:image` at
+`/og.jpg`, served by `api/og.js` (the image is bundled into the function via
+`includeFiles`, like the PDF). General search engines are intentionally **not** in the
+crawler list, so we never serve them different content than humans.
+
 ### The CI/CD pipeline (`.github/workflows/build-deploy.yml`)
 
 On every push to `main` (or manual `workflow_dispatch`):
@@ -142,8 +153,9 @@ simply aren't counted until a store is connected.
 
 | Path | Returns |
 | --- | --- |
-| `/` and `/resume.pdf` | the résumé PDF, shown inline in the browser |
+| `/` and `/resume.pdf` | the résumé PDF inline (or an OG preview page to social crawlers — see below) |
 | `/?download=1` | the same PDF as a download (`Sandeep Singh - AI Engineer.pdf`) |
+| `/og.jpg` | the Open Graph preview image (`api/og.js`) |
 | `/api/stats` | `{ "views": N }` |
 | `/api/badge` | shields.io endpoint JSON powering the "resume views" badge |
 

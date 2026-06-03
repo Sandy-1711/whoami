@@ -29,7 +29,74 @@ const pdf = loadPdf();
 // résumé is self-describing in someone's Downloads folder.
 const DOWNLOAD_FILENAME = 'Sandeep Singh - AI Engineer.pdf';
 
+// Open Graph metadata for link previews.
+const OG_TITLE = 'Sandeep Singh — AI Engineer';
+const OG_DESC =
+  'AI Engineer building agentic LLM systems, memory, and RAG. Shipped production ' +
+  'agents at AiRA, fine-tuned multimodal LLMs to 75% accuracy, and built a solo app ' +
+  'with 10,000+ downloads.';
+const OG_IMAGE_W = 1200;
+const OG_IMAGE_H = 630;
+
+// Social link-preview crawlers (unfurlers). General search engines are
+// intentionally excluded so we never serve them different content than humans.
+const CRAWLER_UA =
+  /facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|SkypeUriPreview|Iframely|embedly|nuzzel|Qwantify|W3C_Validator/i;
+
+function originFrom(req) {
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'iamsandeep.vercel.app';
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  return `${proto}://${host}`;
+}
+
+// A minimal HTML page carrying the OG/Twitter tags. Served only to crawlers, so
+// human visitors keep getting the PDF inline.
+function buildPreviewHtml(origin) {
+  const url = `${origin}/`;
+  const image = `${origin}/og.jpg`;
+  const esc = (s) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(OG_TITLE)}</title>
+<meta name="description" content="${esc(OG_DESC)}">
+<link rel="canonical" href="${url}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sandeep Singh">
+<meta property="og:title" content="${esc(OG_TITLE)}">
+<meta property="og:description" content="${esc(OG_DESC)}">
+<meta property="og:url" content="${url}">
+<meta property="og:image" content="${image}">
+<meta property="og:image:secure_url" content="${image}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="${OG_IMAGE_W}">
+<meta property="og:image:height" content="${OG_IMAGE_H}">
+<meta property="og:image:alt" content="${esc(OG_TITLE)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(OG_TITLE)}">
+<meta name="twitter:description" content="${esc(OG_DESC)}">
+<meta name="twitter:image" content="${image}">
+</head>
+<body>
+<p><a href="${origin}/resume.pdf">View Sandeep Singh's résumé (PDF)</a></p>
+</body>
+</html>`;
+}
+
 export default async function handler(req, res) {
+  // Link-preview crawlers get HTML with OG tags (works even before the PDF is
+  // built); everyone else gets the résumé itself.
+  if (CRAWLER_UA.test(req.headers['user-agent'] || '')) {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+    res.end(buildPreviewHtml(originFrom(req)));
+    return;
+  }
+
   if (!pdf) {
     res.statusCode = 503;
     res.setHeader('Content-Type', 'text/plain');

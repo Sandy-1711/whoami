@@ -3,10 +3,14 @@
   "functions": {
     "api/resume.js": {
       "includeFiles": "assets/resume.pdf"
+    },
+    "api/og.js": {
+      "includeFiles": "assets/og.jpg"
     }
   },
   "rewrites": [
     { "source": "/", "destination": "/api/resume" },
-    { "source": "/resume.pdf", "destination": "/api/resume" }
+    { "source": "/resume.pdf", "destination": "/api/resume" },
+    { "source": "/og.jpg", "destination": "/api/og" }
   ]
 }
