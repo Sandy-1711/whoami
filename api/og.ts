@@ -1,4 +1,4 @@
-import { loadImage } from "../lib/load-image"
+import { loadImage } from "../lib/load-image.js"
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 

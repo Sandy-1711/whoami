@@ -10,7 +10,7 @@ vi.mock("../lib/redis.js", () => ({
     makeRedis: mockMakeRedis
 }))
 
-import handler from './stats';
+import handler from './stats.js';
 
 
 describe("Stats API Test", () => {

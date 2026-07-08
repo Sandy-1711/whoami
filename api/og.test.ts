@@ -9,7 +9,7 @@ vi.mock("../lib/load-image", () => ({
     loadImage: mockLoadImage,
 }));
 
-import handler from "./og"
+import handler from "./og.js"
 describe("OG API Test", () => {
     let headers: Record<string, string> = {}
     let responseStatus: number | null = null

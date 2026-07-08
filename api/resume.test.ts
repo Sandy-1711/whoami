@@ -26,7 +26,7 @@ const getContentDispositionHeader = (download: boolean) => {
     return `${download ? 'attachment' : 'inline'}; filename="${DOWNLOAD_FILENAME}"; filename*=UTF-8''${encoded}`;
 }
 
-import handler from "./resume"
+import handler from "./resume.js"
 import { DOWNLOAD_FILENAME } from "../constants/constants.js";
 import { originFrom } from "../lib/origin-from.js";
 

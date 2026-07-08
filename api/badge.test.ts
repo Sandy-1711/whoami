@@ -11,7 +11,7 @@ vi.mock("../lib/redis.js", () => ({
     makeRedis: mockMakeRedis,
 }));;
 
-import handler from './badge';
+import handler from './badge.js';
 
 describe("Badge API Test", () => {
     let mockReq: Partial<VercelRequest> = {}
