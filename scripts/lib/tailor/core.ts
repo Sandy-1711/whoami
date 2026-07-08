@@ -52,6 +52,19 @@ export function termInText(term: string, text: string): boolean {
   return re.test(text);
 }
 
+// Strip LaTeX down to plain-ish prose so JD keyword matching sees the résumé's
+// words, not its markup: drop comment lines and \href targets, then control
+// sequences, braces, and inline math, and collapse the leftover whitespace.
+export function latexToPlainText(tex: string): string {
+  return tex
+    .split('\n').filter((l) => !/^\s*%/.test(l)).join('\n')
+    .replace(/\\href\{[^}]*\}/g, ' ')
+    .replace(/\\[a-zA-Z]+\*?/g, ' ')
+    .replace(/[{}]/g, ' ')
+    .replace(/\$[^$]*\$/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
 // The canonical skills a JD asks for (dedup, alias-folded).
 export function extractJdKeywords(jd: string): string[] {
   const found = new Set<string>();
