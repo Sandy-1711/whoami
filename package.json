@@ -6,6 +6,8 @@
   "description": "A LaTeX resume compiled in CI and served as a git-tracked, view-counted PDF on Vercel.",
   "scripts": {
     "build:pdf": "latexmk -pdf -interaction=nonstopmode resume.tex && node -e \"require('fs').mkdirSync('assets',{recursive:true});require('fs').copyFileSync('resume.pdf','assets/resume.pdf')\"",
+    "build:pdf:docker": "node scripts/build-pdf.mjs",
+    "verify": "node scripts/build-pdf.mjs && node scripts/check-resume.js",
     "check": "node scripts/check-resume.js",
     "check:source": "node scripts/check-resume.js --source",
     "check:pdf": "node scripts/check-resume.js --pdf",
