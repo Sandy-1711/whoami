@@ -1,10 +1,11 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // The Open Graph preview image, served the same way as the PDF: loaded once per
 // cold start from the file bundled by vercel.json's includeFiles.
-function loadImage() {
+function loadImage(): Buffer | null {
   const candidates = [
     fileURLToPath(new URL('../assets/og.jpg', import.meta.url)),
     join(process.cwd(), 'assets', 'og.jpg'),
@@ -20,7 +21,7 @@ function loadImage() {
 }
 const image = loadImage();
 
-export default function handler(req, res) {
+export default function handler(_req: VercelRequest, res: VercelResponse): void {
   if (!image) {
     res.statusCode = 404;
     res.setHeader('Content-Type', 'text/plain');

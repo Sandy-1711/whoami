@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { makeRedis } from '../lib/redis.js';
 
 // null until a KV/Upstash store is connected. The resume still serves either
@@ -9,7 +10,7 @@ const redis = makeRedis();
 
 // Load the compiled PDF once per cold start. CI compiles resume.tex and places
 // the result at assets/resume.pdf; vercel.json's includeFiles bundles it here.
-function loadPdf() {
+function loadPdf(): Buffer | null {
   const candidates = [
     fileURLToPath(new URL('../assets/resume.pdf', import.meta.url)),
     join(process.cwd(), 'assets', 'resume.pdf'),
@@ -43,7 +44,7 @@ const OG_IMAGE_H = 630;
 const CRAWLER_UA =
   /facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Pinterest|redditbot|Applebot|vkShare|SkypeUriPreview|Iframely|embedly|nuzzel|Qwantify|W3C_Validator/i;
 
-function originFrom(req) {
+function originFrom(req: VercelRequest): string {
   const host = req.headers['x-forwarded-host'] || req.headers.host || 'iamsandeep.vercel.app';
   const proto = req.headers['x-forwarded-proto'] || 'https';
   return `${proto}://${host}`;
@@ -51,10 +52,10 @@ function originFrom(req) {
 
 // A minimal HTML page carrying the OG/Twitter tags. Served only to crawlers, so
 // human visitors keep getting the PDF inline.
-function buildPreviewHtml(origin) {
+function buildPreviewHtml(origin: string): string {
   const url = `${origin}/`;
   const image = `${origin}/og.jpg`;
-  const esc = (s) =>
+  const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   return `<!DOCTYPE html>
 <html lang="en">
@@ -86,10 +87,10 @@ function buildPreviewHtml(origin) {
 </html>`;
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   // Link-preview crawlers get HTML with OG tags (works even before the PDF is
   // built); everyone else gets the résumé itself.
-  if (CRAWLER_UA.test(req.headers['user-agent'] || '')) {
+  if (CRAWLER_UA.test((req.headers['user-agent'] as string) || '')) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');

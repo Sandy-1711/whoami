@@ -1,10 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/resume.js": {
+    "api/resume.ts": {
       "includeFiles": "assets/resume.pdf"
     },
-    "api/og.js": {
+    "api/og.ts": {
       "includeFiles": "assets/og.jpg"
     }
   },

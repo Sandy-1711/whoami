@@ -1,10 +1,11 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { makeRedis } from '../lib/redis.js';
 
 const redis = makeRedis();
 
 // Powers a live shields.io "endpoint" badge:
 // https://img.shields.io/endpoint?url=https://<project>.vercel.app/api/badge
-export default async function handler(req, res) {
+export default async function handler(_req: VercelRequest, res: VercelResponse): Promise<void> {
   let views = 0;
   if (redis) {
     try {
