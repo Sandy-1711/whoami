@@ -15,9 +15,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/check-resume.js'
-      - 'scripts/lib/check-source.js'
-      - 'scripts/lib/check-log.js'
-      - 'scripts/lib/extract-pdf.js'
+      - 'scripts/lib/check/**'
       - '.github/workflows/build-deploy.yml'
   # Manual trigger always runs, regardless of what changed.
   workflow_dispatch:

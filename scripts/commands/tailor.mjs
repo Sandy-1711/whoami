@@ -1,80 +1,38 @@
-#!/usr/bin/env node
-// Tailor the résumé to a job description: score ATS keyword coverage, rewrite the
-// summary/subtitle from a verified fact base with Gemini, render a JD-specific
-// PDF named after the company + role, and run the same page/width guards as CI.
-//
-//   npm run tailor -- path/to/jd.txt --company "Inteligen-ai"
-//   npm run tailor -- --jd "paste jd text..." --company acme --role "AI Dev Engineer"
-//   npm run tailor -- --sync            # re-baseline the profile source hashes
-//
-// Gemini is required (needs GEMINI_API_KEY in .env). Scoring/keyword analysis is
-// deterministic; only the phrasing + role extraction come from the model.
+// `resume tailor` — score the résumé against a JD, rewrite the summary/subtitle
+// with Gemini from the verified fact base, render a company/role-named PDF, and
+// run the same page/width guards as CI. Exposed as runTailor() so both the CLI
+// and interactive menu drive it.
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join, relative } from 'node:path';
+import { join, relative } from 'node:path';
 import ora from 'ora';
+import { root } from '../lib/root.js';
+import { env } from '../lib/env.js';
 import {
   extractJdKeywords, classify, scoreResume,
   boldify, latexEscape, replaceBlock,
-} from './lib/tailor-core.js';
-import { drift, writeLock, hashSources } from './lib/sources.js';
-import { ensureFresh } from './lib/scrape/refresh.js';
-import { compileLatex } from './lib/latex.js';
-import { checkLog } from './lib/check-log.js';
-import { outputPaths, extractRoleFromJd } from './lib/naming.js';
-import * as ui from './lib/ui.js';
-import { chalk } from './lib/ui.js';
-import dotenv from 'dotenv';
-dotenv.config({ quiet: true });
+} from '../lib/tailor/core.js';
+import { drift } from '../lib/sources.js';
+import { ensureFresh } from '../lib/scrape/refresh.js';
+import { compileLatex } from '../lib/latex.js';
+import { checkLog } from '../lib/check/log.js';
+import { extractPdf } from '../lib/check/pdf.js';
+import { tailorWithGemini } from '../lib/tailor/gemini.js';
+import { outputPaths, extractRoleFromJd } from '../lib/naming.js';
+import * as ui from '../lib/ui.js';
+import { chalk } from '../lib/ui.js';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-
-// ---- args ------------------------------------------------------------------
-const argv = process.argv.slice(2);
-const flag = (name) => argv.includes(name);
-const opt = (name, d) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : d; };
-const MODEL = opt('--model', process.env.GEMINI_MODEL || 'gemini-2.5-flash');
-// The résumé is named after the company + the role in the JD. --name stays as a
-// backward-compatible alias for --company.
-const COMPANY = opt('--company', opt('--name', ''));
-const ROLE_OVERRIDE = opt('--role', '');
-const VALUE_FLAGS = ['--name', '--company', '--model', '--jd', '--role'];
-const positional = argv.filter((a, i) => !a.startsWith('--') && !VALUE_FLAGS.includes(argv[i - 1]));
-
-function die(msg) { console.error('\n' + ui.fail(msg) + '\n'); process.exit(1); }
-
-async function main() {
-  // ---- sync-only mode ------------------------------------------------------
-  if (flag('--sync')) {
-    const hashes = await hashSources(root);
-    await writeLock(root, hashes);
-    console.log('\n' + ui.ok('Profile sources re-baselined:'));
-    for (const [k, v] of Object.entries(hashes)) console.log(ui.kv(k, v ? chalk.gray(v) : chalk.red('missing')));
-    console.log();
-    return;
-  }
-
-  // ---- load JD -------------------------------------------------------------
-  let jd = opt('--jd', null);
-  if (!jd) {
-    const file = positional[0];
-    if (!file) die('No JD given. Pass a file path, or --jd "text", or --sync.');
-    if (!existsSync(file)) die(`JD file not found: ${file}`);
-    jd = await readFile(file, 'utf8');
-  }
-  if (jd.trim().length < 20) die('JD text looks too short to analyze.');
-  if (!COMPANY.trim()) die('No company given. Pass --company "Acme AI" so the résumé can be named + filed.');
-
-  // Gemini is mandatory — no offline fallback.
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) die('GEMINI_API_KEY not set. Add it to .env (see .env.example).');
+export async function runTailor({ jd, company, role: roleOverride = '', model = env.geminiModel } = {}) {
+  if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
+  if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
+  const key = env.geminiKey;
+  if (!key) throw new Error('GEMINI_API_KEY not set. Add it to .env (see .env.example).');
 
   const facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
   const resumeTex = await readFile(join(root, 'resume.tex'), 'utf8');
   const resumeText = plainText(resumeTex);
 
-  console.log(ui.banner('Résumé Tailor', `JD → ATS-optimized PDF · engine: gemini ${MODEL}`));
+  console.log(ui.banner('Résumé Tailor', `JD → ATS-optimized PDF · engine: gemini ${model}`));
 
   // ---- keep scraped sources fresh (fail-soft) ------------------------------
   const spinS = ora({ text: 'Refreshing profile sources (GitHub, LinkedIn)…', color: 'cyan' }).start();
@@ -85,9 +43,9 @@ async function main() {
   else if (changed.length) spinS.succeed(`Sources refreshed: ${changed.map((c) => c.source).join(', ')}.`);
   else spinS.succeed('Profile sources fresh.');
 
-  // ---- sync drift warning --------------------------------------------------
+  // ---- drift warning -------------------------------------------------------
   const d = await drift(root);
-  if (!d.lock) console.log('\n' + ui.info(chalk.dim('No sync baseline yet — run `npm run tailor -- --sync` after profile edits.')));
+  if (!d.lock) console.log('\n' + ui.info(chalk.dim('No sync baseline yet — run `npm run sync` after profile edits.')));
   else if (!d.synced) console.log('\n' + ui.warn(`Profile sources changed since last sync: ${d.changed.join(', ')}. Fact base may be stale.`));
 
   // ---- score ---------------------------------------------------------------
@@ -96,23 +54,21 @@ async function main() {
   const score = scoreResume(cls);
 
   // ---- tailor content (Gemini) ---------------------------------------------
-  const { tailorWithGemini } = await import('./lib/gemini.js');
-  const spin = ora({ text: `Asking Gemini (${MODEL}) to tailor from your fact base…`, color: 'cyan' }).start();
+  const spin = ora({ text: `Asking Gemini (${model}) to tailor from your fact base…`, color: 'cyan' }).start();
   let roleTitle, summaryText, subtitle, boldTerms, rationale;
   try {
     ({ roleTitle, summaryText, subtitle, boldTerms, rationale } =
-      await tailorWithGemini({ jd, facts, classification: cls, apiKey: key, model: MODEL }));
+      await tailorWithGemini({ jd, facts, classification: cls, apiKey: key, model }));
     spin.succeed('Gemini tailored the summary & subtitle.');
   } catch (err) {
     spin.fail(`Gemini failed: ${err.message}`);
-    die('Check GEMINI_API_KEY / quota / model name and retry.');
+    throw new Error('Check GEMINI_API_KEY / quota / model name and retry.');
   }
 
-  // ---- resolve the role + output paths -------------------------------------
-  // Priority: explicit --role > role the JD names (LLM, then heuristic) > fallback.
-  const role = ROLE_OVERRIDE || roleTitle || extractRoleFromJd(jd) || 'Software Engineer';
+  // ---- resolve role + output paths -----------------------------------------
+  const role = roleOverride || roleTitle || extractRoleFromJd(jd) || 'Software Engineer';
   const fullName = facts.identity?.name || 'Sandeep Singh';
-  const paths = outputPaths(root, { company: COMPANY, fullName, role });
+  const paths = outputPaths(root, { company, fullName, role });
 
   // ---- render tailored .tex ------------------------------------------------
   const summaryLatex = '   ' + boldify(summaryText, boldTerms);
@@ -123,10 +79,8 @@ async function main() {
 
   await mkdir(paths.dir, { recursive: true });
   await mkdir(join(root, 'build'), { recursive: true });
-  // Pretty, user-facing source next to the PDF …
-  await writeFile(paths.tex, out);
-  // … and a plain-jobname copy under build/ that pdflatex compiles happily.
-  await writeFile(paths.buildTex, out);
+  await writeFile(paths.tex, out);       // pretty source next to the PDF
+  await writeFile(paths.buildTex, out);  // plain-jobname copy for pdflatex
 
   // ---- compile + guards ----------------------------------------------------
   const spin2 = ora({ text: 'Rendering PDF & running guards…', color: 'cyan' }).start();
@@ -134,20 +88,19 @@ async function main() {
   const guards = { built: existsSync(paths.buildPdf), pages: null, width: [] };
   if (!guards.built) {
     spin2.fail('PDF build failed.');
-    if (res.reason === 'docker-daemon-down') die('Docker daemon is down — start Docker Desktop (or install latexmk).');
-    if (res.reason === 'no-engine') die('Need latexmk or Docker to render. Install one and retry.');
-    die('Compilation error — check ' + paths.relDir + ' and the build log.');
+    if (res.reason === 'docker-daemon-down') throw new Error('Docker daemon is down — start Docker Desktop (or install latexmk).');
+    if (res.reason === 'no-engine') throw new Error('Need latexmk or Docker to render. Install one and retry.');
+    throw new Error('Compilation error — check ' + paths.relDir + ' and the build log.');
   }
   await copyFile(paths.buildPdf, paths.pdf);
-  const { extractPdf } = await import('./lib/extract-pdf.js');
   const { totalPages } = await extractPdf(paths.pdf);
   guards.pages = totalPages;
   guards.width = await checkLog(paths.buildLog, { maxOverfullPt: 2 });
   const guardsPass = guards.pages === 1 && guards.width.length === 0;
   guardsPass ? spin2.succeed('PDF rendered — guards passed.') : spin2.warn('PDF rendered — guard warnings (see below).');
 
-  // ---- report --------------------------------------------------------------
-  await report({ jdKeywords, cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass });
+  await report({ jdKeywords, cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass, model });
+  return { paths, score, role, guardsPass };
 }
 
 // Strip LaTeX to plain-ish words for keyword matching.
@@ -161,7 +114,7 @@ function plainText(tex) {
     .replace(/\s+/g, ' ');
 }
 
-async function report({ jdKeywords, cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass }) {
+async function report({ jdKeywords, cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass, model }) {
   const pdfRel = relative(root, paths.pdf).replace(/\\/g, '/');
   const L = [];
   L.push(ui.heading('ATS coverage'));
@@ -196,12 +149,11 @@ async function report({ jdKeywords, cls, score, role, summaryText, subtitle, rat
     : ui.warn('Tailored PDF built but a guard failed — fix before sending.')));
   console.log(L.join('\n') + '\n');
 
-  // Persist a markdown report next to the PDF.
   const md = [
     `# Tailored résumé report — ${paths.base}`,
     ``, `- ATS score: **${score.before} → ${score.after}** (target 92+)`,
     `- Role: ${role}`,
-    `- Engine: gemini ${MODEL}`,
+    `- Engine: gemini ${model}`,
     `- Pages: ${guards.pages} · Width: ${guards.width.length === 0 ? 'OK' : guards.width.join('; ')}`,
     ``, `## Matched (${cls.matched.length})`, cls.matched.join(', ') || '(none)',
     ``, `## Surface — true & relevant (${cls.addable.length})`, cls.addable.join(', ') || '(none)',
@@ -212,5 +164,3 @@ async function report({ jdKeywords, cls, score, role, summaryText, subtitle, rat
   ].join('\n');
   await writeFile(paths.report, md + '\n');
 }
-
-main().catch((e) => die(e.stack || e.message));

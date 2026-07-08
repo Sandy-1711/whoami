@@ -9,10 +9,11 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { contentHash, isStale, recordScrape, lastScrape } from '../sources.js';
+import { env } from '../env.js';
 import { scrapeGithub, githubUsername } from './github.js';
 import { scrapeLinkedin } from './linkedin.js';
 
-const TTL_MS = (Number(process.env.SCRAPE_TTL_HOURS) || 12) * 3600 * 1000;
+const ttlMs = () => env.scrapeTtlHours * 3600 * 1000;
 
 async function readFacts(root) {
   return JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
@@ -24,7 +25,7 @@ async function refreshSource(root, source, { force = false, log = () => {} } = {
   const file = join(root, 'profile', `${source}.json`);
   const missing = !existsSync(file);
 
-  if (!force && !missing && !(await isStale(root, source, TTL_MS))) {
+  if (!force && !missing && !(await isStale(root, source, ttlMs()))) {
     const prev = await lastScrape(root, source);
     log({ source, status: 'fresh', at: prev?.at });
     return { source, status: 'fresh', at: prev?.at };
@@ -54,15 +55,15 @@ const SCRAPERS = {
   async github(root) {
     const facts = await readFacts(root);
     const username = githubUsername(facts.identity?.github || 'Sandy-1711');
-    return scrapeGithub({ username, token: process.env.GITHUB_TOKEN });
+    return scrapeGithub({ username, token: env.githubToken });
   },
   async linkedin(root) {
     const facts = await readFacts(root);
     return scrapeLinkedin(root, {
-      cookie: process.env.LINKEDIN_COOKIE,
+      cookie: env.linkedinCookie,
       url: facts.identity?.linkedin || '',
-      apiKey: process.env.GEMINI_API_KEY,
-      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      apiKey: env.geminiKey,
+      model: env.geminiModel,
     });
   },
 };

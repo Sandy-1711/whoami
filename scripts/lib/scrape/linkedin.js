@@ -10,8 +10,8 @@
 // profile/linkedin.json — an editable source of truth you can hand-correct.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { extractPdf } from '../extract-pdf.js';
-import { geminiJson } from '../gemini.js';
+import { extractPdf } from '../check/pdf.js';
+import { geminiJson } from '../tailor/gemini.js';
 
 const PROFILE_SCHEMA = {
   type: 'object',
