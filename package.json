@@ -5,17 +5,19 @@
   "type": "module",
   "description": "A LaTeX resume compiled in CI and served as a git-tracked, view-counted PDF on Vercel.",
   "scripts": {
-    "resume": "node scripts/cli.mjs",
-    "tailor": "node scripts/cli.mjs tailor",
-    "sync": "node scripts/cli.mjs sync",
-    "status": "node scripts/cli.mjs status",
-    "build:pdf": "node scripts/build-pdf.mjs",
-    "build:pdf:docker": "node scripts/build-pdf.mjs",
-    "verify": "node scripts/build-pdf.mjs && node scripts/check-resume.js",
-    "check": "node scripts/check-resume.js",
-    "check:source": "node scripts/check-resume.js --source",
-    "check:pdf": "node scripts/check-resume.js --pdf",
-    "check:width": "node scripts/check-resume.js --log",
+    "resume": "tsx scripts/cli.ts",
+    "tailor": "tsx scripts/cli.ts tailor",
+    "sync": "tsx scripts/cli.ts sync",
+    "status": "tsx scripts/cli.ts status",
+    "build:pdf": "tsx scripts/build-pdf.ts",
+    "build:pdf:docker": "tsx scripts/build-pdf.ts",
+    "verify": "tsx scripts/build-pdf.ts && tsx scripts/check-resume.ts",
+    "check": "tsx scripts/check-resume.ts",
+    "check:source": "tsx scripts/check-resume.ts --source",
+    "check:pdf": "tsx scripts/check-resume.ts --pdf",
+    "check:width": "tsx scripts/check-resume.ts --log",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "dev": "vercel dev",
     "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks')}catch{}\""
   },
@@ -25,14 +27,19 @@
   },
   "devDependencies": {
     "@clack/prompts": "^1.7.0",
-    "boxen": "^8.0.1",
-    "chalk": "^5.6.2",
+    "@types/node": "^26.1.1",
+    "@vercel/node": "^5.8.22",
     "cli-table3": "^0.6.5",
     "gradient-string": "^3.0.0",
-    "log-symbols": "^7.0.1",
-    "ora": "^9.4.1",
     "picocolors": "^1.1.1",
     "playwright": "^1.61.1",
-    "unpdf": "^1.6.2"
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
+    "unpdf": "^1.6.2",
+    "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "esbuild@0.27.0": true,
+    "esbuild@0.28.1": true
   }
 }
