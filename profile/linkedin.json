@@ -1,0 +1,87 @@
+{
+  "_comment": "Auto-scraped from LinkedIn (live cookie scrape or PDF export), structured by Gemini. Edit freely — the tailor treats this as an editable source. Re-scrape with `npm run sync`.",
+  "scrapedAt": "2026-07-08T12:01:39.706Z",
+  "via": "pdf",
+  "profileUrl": "https://linkedin.com/in/sandeep-singh-445058254/",
+  "profile": {
+    "name": "Sandeep Singh",
+    "headline": "Ex AI Engineer @AiRA | Built & Scaled Samagra to 10k+ Users | Ex- Research Intern @IIT Kharagpur | LLMs, Agentic Workflows & Fine- tuning",
+    "experience": [
+      {
+        "company": "AiRA",
+        "title": "AI Engineer",
+        "dates": "November 2025 - March 2026 (5 months)",
+        "description": "At AiRA, I am building the brain of a personal AI agent. I don't just connect APIs; I solve the hard engineering problems required to make agents reliable. I architected the flagship \"Daily Brief\" system, a feature that digests emails, calendar events, and user preferences to deliver proactive morning updates. My focus is on production reliability and security. I solved complex distributed system challenges (like global timezone orchestration) to ensure tasks execute precisely when intended. I also worked on the implementation of CASA security standards, building token denylists in Redis and sanitizing injection vectors to make the system enterprise-ready. On the integration front, I built a deep bi-directional sync with WhatsApp, allowing the agent to understand reply contexts, monitor groups, and interact naturally - making AiRA not just a chatbot, but a proactive assistant.",
+        "location": "Bangalore Urban"
+      },
+      {
+        "company": "Indigle",
+        "title": "Founding Software Engineer",
+        "dates": "September 2024 - September 2025 (1 year 1 month)",
+        "description": "At Indigle, I learned how to scale. As Co-founder & Founding Software Engineer, I architected and shipped Samagra (IndieRP), a full-stack campus ERP system that grew to 10,000+ active users. This wasn't a toy project. I built the entire infrastructure from scratch using React Native for mobile and FastAPI/Node.js for the backend. The biggest challenge was cost; I engineered a zero-cost architecture that handles 150k+ monthly API requests with sub-100ms latency. I also built real-time synchronization features (using Socket.io) that keep thousands of students updated instantly. This experience taught me how to handle production databases (MongoDB/Postgres), manage 99.9% uptime, and pivot based on real user feedback.",
+        "location": "India"
+      },
+      {
+        "company": "Indian Institute of Technology, Kharagpur",
+        "title": "AI Research Intern",
+        "dates": "May 2025 - August 2025 (4 months)",
+        "description": "At IIT Kharagpur, I didn't just use LLMs; I optimized them. As a Research Intern, I tackled the problem of Multimodal Reasoning for IoT. Standard models like ChatGPT fail completely when asked to generate precise Arduino circuit wiring. To solve this, I built CircuitSynth. I fine-tuned open-source models (Qwen 4B/8B) using LoRA and QLoRA, creating a specialized pipeline that could \"think\" in hardware schematics. The result? A system that achieved 75% accuracy on tasks where base models scored 0%. This experience taught me the deep internals of Transformers, the art of efficient fine-tuning (PEFT), and how to deploy heavy models on constrained edge hardware.",
+        "location": "Kharagpur, West Bengal, India"
+      },
+      {
+        "company": "Google Developer Groups (GDG MMMUT)",
+        "title": "Android Lead",
+        "dates": "August 2024 - April 2025 (9 months)",
+        "description": "• Conducted an intensive 12-hour workshop on Android development and React Native, attended by 100+ students from diverse technical backgrounds. • Maintained a high engagement rate with over 80% attendance retention until the end, reflecting strong delivery and content value. • Designed a hands-on curriculum covering mobile app fundamentals, UI/UX best practices, and deployment strategies. • Provided live coding demonstrations and one-on-one mentorship throughout the session, addressing real-time queries and project guidance. • Organized and managed a college-wide Hackathon involving 120+ teams, overseeing event logistics, technical support, judging criteria, and sponsor coordination. • Ensured a smooth and inclusive experience for all participants, from registration to final presentations, fostering innovation and collaboration. • Received positive feedback from both attendees and faculty, recognizing the initiative for its",
+        "location": "Gorakhpur, Uttar Pradesh, India"
+      },
+      {
+        "company": "Google Developer Groups (GDG MMMUT)",
+        "title": "Executive member",
+        "dates": "September 2023 - August 2024 (1 year)",
+        "location": "Gorakhpur, Uttar Pradesh, India"
+      },
+      {
+        "company": "MMMUT Resources",
+        "title": "Founding Member",
+        "dates": "January 2024 - April 2025 (1 year 4 months)",
+        "description": "• Architected the complete backend and frontend infrastructure across multiple modules, ensuring 100% uptime and high scalability. • Built and integrated secure authentication from scratch, including support for token-based flows. • Implemented robust rate limiting to defend against DDoS attacks and maintain service reliability. • Developed a granular authorization system for admins and students to ensure secure access control. • Created and launched the Samagra App, now serving over 5,000 monthly active users. • Optimized media storage by implementing object-based solutions using AWS S3, Cloudinary, and Firebase—significantly reducing storage costs. • Designed the system architecture for the entire codebase, focusing on performance, modularity, and maintainability. • Led a team of junior developers in building the frontend for the MMMUT Reso website. • Integrated Python-based scrapers to fetch real-time attendance data directly from the college's internal services. • Achieved a 5/5 user satisfaction rating from 99% of users, reflecting high user trust and engagement.",
+        "location": "Gorakhpur, Uttar Pradesh, India"
+      },
+      {
+        "company": "Web Accuracy",
+        "title": "Software Engineer Intern",
+        "dates": "August 2023 - August 2024 (1 year 1 month)",
+        "description": "Spearheaded the development of 6 commercial web applications using the MERN stack, cutting client dev costs by 30% and reducing time-to-market by 45%. Built high-performance landing pages with HTML5, Tailwind CSS, and ES6+, boosting Google PageSpeed scores (95+) and increasing user engagement by 40%. Designed scalable REST APIs and MongoDB schemas supporting 50,000+ monthly requests with 99.9% uptime and <100ms response times. Integrated CI/CD pipelines and testing workflows, slashing deployment time by 60% while maintaining 98% code coverage.",
+        "location": "Ranchi, Jharkhand, India"
+      }
+    ],
+    "education": [
+      {
+        "school": "Madan Mohan Malaviya University of Technology",
+        "dates": "(November 2022 - April 2026)",
+        "degree": "Bachelor of Technology - BTech",
+        "field": "ECE"
+      },
+      {
+        "school": "The Chintels School",
+        "dates": "(2016 - 2022)",
+        "degree": "High School, ISC"
+      }
+    ],
+    "skills": [
+      "Vector Databases",
+      "Artificial Intelligence (AI)",
+      "Retrieval-Augmented Generation (RAG)"
+    ],
+    "about": "AI Engineer & Full-Stack Developer focused on building production- grade, scalable systems. I don't just run models; I engineer the infrastructure around them to solve real-world problems. My work lies at the intersection of Agentic AI, System Architecture, and Full-Stack Engineering.",
+    "certifications": [
+      "The Complete 2024 Web Development Bootcamp",
+      "Introduction to Internet of Things",
+      "Koii Web3 and AI Leadership Accreditation",
+      "BFF Hackathon",
+      "Google Cloud Study Jams 2023"
+    ],
+    "location": "Bengaluru, Karnataka, India"
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-08T11:58:27.312Z",
+  "updatedAt": "2026-07-08T12:01:39.714Z",
   "files": {
     "resume.tex": "4650a9b016f9486a",
     "facts.json": "91e6f45e5ebab67b",
@@ -7,8 +7,12 @@
   },
   "scrape": {
     "github": {
-      "at": "2026-07-08T11:58:27.308Z",
+      "at": "2026-07-08T12:01:09.172Z",
       "hash": "49b6bb5a3bde3e91"
+    },
+    "linkedin": {
+      "at": "2026-07-08T12:01:39.709Z",
+      "hash": "3df3cab0b12acf59"
     }
   }
 }

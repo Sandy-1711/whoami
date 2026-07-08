@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { contentHash, isStale, recordScrape, lastScrape } from '../sources.js';
 import { scrapeGithub, githubUsername } from './github.js';
+import { scrapeLinkedin } from './linkedin.js';
 
 const TTL_MS = (Number(process.env.SCRAPE_TTL_HOURS) || 12) * 3600 * 1000;
 
@@ -48,12 +49,21 @@ async function refreshSource(root, source, { force = false, log = () => {} } = {
   return { source, status, data };
 }
 
-// Per-source scrape closures (add linkedin here in the next commit).
+// Per-source scrape closures.
 const SCRAPERS = {
   async github(root) {
     const facts = await readFacts(root);
     const username = githubUsername(facts.identity?.github || 'Sandy-1711');
     return scrapeGithub({ username, token: process.env.GITHUB_TOKEN });
+  },
+  async linkedin(root) {
+    const facts = await readFacts(root);
+    return scrapeLinkedin(root, {
+      cookie: process.env.LINKEDIN_COOKIE,
+      url: facts.identity?.linkedin || '',
+      apiKey: process.env.GEMINI_API_KEY,
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    });
   },
 };
 
