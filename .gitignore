@@ -1,4 +1,5 @@
-# LaTeX build artifacts
+# LaTeX build artifacts — local builds now collect these under build/
+build/
 *.aux
 *.log
 *.out
@@ -20,6 +21,11 @@ assets/resume.pdf
 
 # Tailored per-JD résumé outputs (personal, regenerated on demand)
 tailored/
+
+# Personal LinkedIn source + working drafts — never publish to this public repo.
+# The raw export stays local; the scraper distills it into profile/linkedin.json.
+Linkedin_Profile.pdf
+linkedin-updates.md
 
 # Node / Vercel
 node_modules/

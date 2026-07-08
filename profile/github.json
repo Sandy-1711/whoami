@@ -1,0 +1,933 @@
+{
+  "_comment": "Auto-scraped from GitHub. Edit freely — the tailor treats this as an editable source of truth. Re-scrape with `npm run sync`.",
+  "scrapedAt": "2026-07-08T12:22:42.744Z",
+  "username": "Sandy-1711",
+  "profileUrl": "https://github.com/Sandy-1711",
+  "totals": {
+    "publicRepos": 47,
+    "totalStars": 31,
+    "mergedPRs": 38,
+    "externalRepos": 16
+  },
+  "repos": [
+    {
+      "name": "React_Native_Starter",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/React_Native_Starter",
+      "homepage": "",
+      "stars": 8,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-02-19T17:50:51Z"
+    },
+    {
+      "name": "Portfolio",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Portfolio",
+      "homepage": "",
+      "stars": 6,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-06-04T11:43:25Z"
+    },
+    {
+      "name": "reddit-clone-backend",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/reddit-clone-backend",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-08-01T18:50:44Z"
+    },
+    {
+      "name": "social-media",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/social-media",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-03-06T21:41:07Z"
+    },
+    {
+      "name": "reddit-clone-client",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/reddit-clone-client",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-01-13T12:02:24Z"
+    },
+    {
+      "name": "Octabiz",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Octabiz",
+      "homepage": "https://octabiz.vercel.app/",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-01-10T19:04:31Z"
+    },
+    {
+      "name": "Evana",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Evana",
+      "homepage": "https://evana.vercel.app",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-01-10T06:02:56Z"
+    },
+    {
+      "name": "MMMUT-RESO-NEXT",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/MMMUT-RESO-NEXT",
+      "homepage": "https://mmmut-reso-next-vbtz.vercel.app/",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-01-06T10:40:10Z"
+    },
+    {
+      "name": "WebAccuracy",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/WebAccuracy",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-12-23T11:41:00Z"
+    },
+    {
+      "name": "Expense-Tracker",
+      "description": "Used Prisma MongoDB NextJS and Typescript to make an expense tracker that uses Server actions.",
+      "url": "https://github.com/Sandy-1711/Expense-Tracker",
+      "homepage": "https://expense-tracker-alpha-amber.vercel.app",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-12-23T11:16:28Z"
+    },
+    {
+      "name": "Construction",
+      "description": "Evana Infratech",
+      "url": "https://github.com/Sandy-1711/Construction",
+      "homepage": "https://evana-infratech.netlify.app/",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-12-11T11:47:04Z"
+    },
+    {
+      "name": "SIH",
+      "description": "SIH Frontend",
+      "url": "https://github.com/Sandy-1711/SIH",
+      "homepage": "https://sandy-1711.github.io/SIH/",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-10-31T11:24:52Z"
+    },
+    {
+      "name": "SIH-Backend",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/SIH-Backend",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-10-31T08:51:41Z"
+    },
+    {
+      "name": "AGOI",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/AGOI",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-09-06T14:36:18Z"
+    },
+    {
+      "name": "WA",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/WA",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-08-21T19:55:22Z"
+    },
+    {
+      "name": "github-upload-test",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/github-upload-test",
+      "homepage": "",
+      "stars": 1,
+      "language": "HTML",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-08-05T16:19:25Z"
+    },
+    {
+      "name": "FoodOrderClone",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/FoodOrderClone",
+      "homepage": "https://sandy-1711.github.io/FoodOrderClone/",
+      "stars": 1,
+      "language": "SCSS",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-07-09T19:38:27Z"
+    },
+    {
+      "name": "Musicfy",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Musicfy",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-06-27T16:44:30Z"
+    },
+    {
+      "name": "DTU-Hack",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/DTU-Hack",
+      "homepage": "",
+      "stars": 1,
+      "language": "HTML",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-04-04T07:51:54Z"
+    },
+    {
+      "name": "whoami",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/whoami",
+      "homepage": "https://iamsandeep.vercel.app/",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-08T12:15:50Z"
+    },
+    {
+      "name": "Sandy-1711",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Sandy-1711",
+      "homepage": "",
+      "stars": 0,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-08T07:51:34Z"
+    },
+    {
+      "name": "mastra-tools-vanish-repro",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/mastra-tools-vanish-repro",
+      "homepage": "",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-24T05:46:43Z"
+    },
+    {
+      "name": "EmailPartner",
+      "description": "Turns incoming Gmail into live AI cards — headline, summary, illustration, and voice narration per email. FastAPI + Pub/Sub push + durable worker queue + Gemini.",
+      "url": "https://github.com/Sandy-1711/EmailPartner",
+      "homepage": "",
+      "stars": 0,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-18T09:27:58Z"
+    },
+    {
+      "name": "studio-instructions-lock-repro",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/studio-instructions-lock-repro",
+      "homepage": "",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-17T07:33:37Z"
+    },
+    {
+      "name": "DualOnline",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/DualOnline",
+      "homepage": "",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-13T19:47:20Z"
+    },
+    {
+      "name": "Portfolio-Website",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Portfolio-Website",
+      "homepage": "https://devsandy.vercel.app",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-10T12:33:19Z"
+    },
+    {
+      "name": "SWAN_CIRCUIT_LLM_BACKEND",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/SWAN_CIRCUIT_LLM_BACKEND",
+      "homepage": "",
+      "stars": 0,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-02T08:48:03Z"
+    },
+    {
+      "name": "SWAN-Circuit-LLM-Frontend",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/SWAN-Circuit-LLM-Frontend",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-02T08:44:57Z"
+    },
+    {
+      "name": "ERP-Student-App",
+      "description": "An ERP application developed using React Native Expo, part of the ERP project.",
+      "url": "https://github.com/Sandy-1711/ERP-Student-App",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-02T08:43:04Z"
+    },
+    {
+      "name": "flo101-Assessment",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/flo101-Assessment",
+      "homepage": "",
+      "stars": 0,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-05-10T11:23:44Z"
+    },
+    {
+      "name": "Web-Aware-Rag-Engine",
+      "description": "Production-style RAG engine: async web ingestion, semantic search, and AI answers — load-balanced FastAPI replicas, Next.js 15 frontend.",
+      "url": "https://github.com/Sandy-1711/Web-Aware-Rag-Engine",
+      "homepage": "",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-01-19T10:59:07Z"
+    },
+    {
+      "name": "SWAN-Evalutations",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/SWAN-Evalutations",
+      "homepage": "",
+      "stars": 0,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-11-05T14:32:14Z"
+    },
+    {
+      "name": "Synchrone.ai-Assessment",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Synchrone.ai-Assessment",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-10-15T16:31:04Z"
+    },
+    {
+      "name": "IntelliCommerce",
+      "description": "An ecommerce chatbot capable of deciding intent based on the user query and redirect to different microservices.",
+      "url": "https://github.com/Sandy-1711/IntelliCommerce",
+      "homepage": "",
+      "stars": 0,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-08-27T10:03:13Z"
+    },
+    {
+      "name": "Product-Scan",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Product-Scan",
+      "homepage": "",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-04-21T19:22:59Z"
+    },
+    {
+      "name": "Motion-Gesture",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Motion-Gesture",
+      "homepage": "",
+      "stars": 0,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-04-21T19:20:25Z"
+    },
+    {
+      "name": "E2E_ML_1",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/E2E_ML_1",
+      "homepage": "",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-03-30T12:54:45Z"
+    },
+    {
+      "name": "MANGA",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/MANGA",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-01-12T11:54:39Z"
+    },
+    {
+      "name": "BULLnCode_Statement1",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/BULLnCode_Statement1",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-12-17T11:11:02Z"
+    },
+    {
+      "name": "FSCA",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/FSCA",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-08-19T18:18:39Z"
+    },
+    {
+      "name": "VC-Server",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/VC-Server",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-08-06T13:03:59Z"
+    },
+    {
+      "name": "VC-Client",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/VC-Client",
+      "homepage": "https://vc-client-nu.vercel.app",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-08-06T12:51:15Z"
+    },
+    {
+      "name": "Barcode",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Barcode",
+      "homepage": "https://barcode-one.vercel.app",
+      "stars": 0,
+      "language": "HTML",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-07-17T17:53:08Z"
+    },
+    {
+      "name": "DSA-Striver-Java",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/DSA-Striver-Java",
+      "homepage": "",
+      "stars": 0,
+      "language": "Java",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-06-23T12:39:44Z"
+    },
+    {
+      "name": "erp.frontend.xyz",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/erp.frontend.xyz",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-02-09T11:08:57Z"
+    },
+    {
+      "name": "gpt",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/gpt",
+      "homepage": "",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-01-13T20:31:33Z"
+    },
+    {
+      "name": "Ambicure",
+      "description": "Ambicure",
+      "url": "https://github.com/Sandy-1711/Ambicure",
+      "homepage": "https://ambicure.netlify.app/",
+      "stars": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-01-10T10:21:26Z"
+    }
+  ],
+  "contributions": [
+    {
+      "repo": "mastra-ai/mastra",
+      "url": "https://github.com/mastra-ai/mastra",
+      "merged": 12,
+      "open": 3,
+      "closedUnmerged": 4,
+      "samplePRs": [
+        {
+          "number": 18980,
+          "title": "fix(react): keep interleaved text and tool calls in order while streaming",
+          "state": "open",
+          "url": "https://github.com/mastra-ai/mastra/pull/18980"
+        },
+        {
+          "number": 18421,
+          "title": "fix(playground): warn and block when agents reference unpublished prompt blocks",
+          "state": "open",
+          "url": "https://github.com/mastra-ai/mastra/pull/18421"
+        },
+        {
+          "number": 18963,
+          "title": "fix(daytona): pass --only-dir to gcsfuse when GCS prefix is set",
+          "state": "merged",
+          "url": "https://github.com/mastra-ai/mastra/pull/18963"
+        },
+        {
+          "number": 18059,
+          "title": "fix(playground): respect editor config locks for code-agent instructions",
+          "state": "open",
+          "url": "https://github.com/mastra-ai/mastra/pull/18059"
+        },
+        {
+          "number": 18473,
+          "title": "fix(ai-sdk,core): deliver background-task-started chunk to the UI stream and onChunk",
+          "state": "closed",
+          "url": "https://github.com/mastra-ai/mastra/pull/18473"
+        },
+        {
+          "number": 18592,
+          "title": "fix(ai-sdk): apply editor stored overrides in chatRoute",
+          "state": "merged",
+          "url": "https://github.com/mastra-ai/mastra/pull/18592"
+        }
+      ],
+      "stars": 25947
+    },
+    {
+      "repo": "TejasMishr/ERP_Client",
+      "url": "https://github.com/TejasMishr/ERP_Client",
+      "merged": 6,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 7,
+          "title": "Attendance page for student almost done",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/7"
+        },
+        {
+          "number": 6,
+          "title": "Attendance mark page added and completed",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/6"
+        },
+        {
+          "number": 4,
+          "title": "dasdfaqw",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/4"
+        },
+        {
+          "number": 3,
+          "title": "Merge pull request #1 from TejasMishr/master",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/3"
+        },
+        {
+          "number": 2,
+          "title": "attendance faculty",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/2"
+        },
+        {
+          "number": 1,
+          "title": "Added attendance page",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/1"
+        }
+      ],
+      "stars": 0
+    },
+    {
+      "repo": "mmmut-xyz/server.mmmut.xyz",
+      "url": "https://github.com/mmmut-xyz/server.mmmut.xyz",
+      "merged": 5,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 5,
+          "title": "Master",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/5"
+        },
+        {
+          "number": 4,
+          "title": "Main",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/4"
+        },
+        {
+          "number": 3,
+          "title": "From main",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/3"
+        },
+        {
+          "number": 2,
+          "title": "Update",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/2"
+        },
+        {
+          "number": 1,
+          "title": "Fixed file structure",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/1"
+        }
+      ],
+      "stars": 1
+    },
+    {
+      "repo": "TejasMishr/erp.mmmut.xyz",
+      "url": "https://github.com/TejasMishr/erp.mmmut.xyz",
+      "merged": 4,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 4,
+          "title": " Update attendance routes and controllers.",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/4"
+        },
+        {
+          "number": 3,
+          "title": " Update model schemas and controller functions",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/3"
+        },
+        {
+          "number": 2,
+          "title": "Master",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/2"
+        },
+        {
+          "number": 1,
+          "title": "Master",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/1"
+        }
+      ],
+      "stars": 0
+    },
+    {
+      "repo": "TejasMishr/MMMUTRESO",
+      "url": "https://github.com/TejasMishr/MMMUTRESO",
+      "merged": 3,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 54,
+          "title": "team css",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/MMMUTRESO/pull/54"
+        },
+        {
+          "number": 42,
+          "title": "navbar heropage back",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/MMMUTRESO/pull/42"
+        },
+        {
+          "number": 35,
+          "title": "carousel added",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/MMMUTRESO/pull/35"
+        }
+      ],
+      "stars": 8
+    },
+    {
+      "repo": "TejasMishr/MMMUT_Erp",
+      "url": "https://github.com/TejasMishr/MMMUT_Erp",
+      "merged": 2,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 4,
+          "title": "ujas",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/MMMUT_Erp/pull/4"
+        },
+        {
+          "number": 1,
+          "title": "Changed file structure",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/MMMUT_Erp/pull/1"
+        }
+      ],
+      "stars": 1
+    },
+    {
+      "repo": "A-P-Singh-27/GDG-MMMUT-Website",
+      "url": "https://github.com/A-P-Singh-27/GDG-MMMUT-Website",
+      "merged": 1,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 3,
+          "title": "Fixes Deployment Issue",
+          "state": "merged",
+          "url": "https://github.com/A-P-Singh-27/GDG-MMMUT-Website/pull/3"
+        }
+      ],
+      "stars": 0
+    },
+    {
+      "repo": "Taransh121/Travel-Startup",
+      "url": "https://github.com/Taransh121/Travel-Startup",
+      "merged": 1,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 48,
+          "title": "Fix:possible  metadata fix  to layout.tsx",
+          "state": "merged",
+          "url": "https://github.com/Taransh121/Travel-Startup/pull/48"
+        }
+      ],
+      "stars": 0
+    },
+    {
+      "repo": "TejasMishr/ERP_FRONT",
+      "url": "https://github.com/TejasMishr/ERP_FRONT",
+      "merged": 1,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 1,
+          "title": "Merge pull request #1 from TejasMishr/main",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_FRONT/pull/1"
+        }
+      ],
+      "stars": 1
+    },
+    {
+      "repo": "Vatsalmadhur/gdsc23",
+      "url": "https://github.com/Vatsalmadhur/gdsc23",
+      "merged": 1,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 1,
+          "title": "[Feature]-Navbar",
+          "state": "merged",
+          "url": "https://github.com/Vatsalmadhur/gdsc23/pull/1"
+        }
+      ],
+      "stars": 0
+    },
+    {
+      "repo": "madhurgaur/abhyudayafest",
+      "url": "https://github.com/madhurgaur/abhyudayafest",
+      "merged": 1,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 1,
+          "title": "Help given",
+          "state": "merged",
+          "url": "https://github.com/madhurgaur/abhyudayafest/pull/1"
+        }
+      ],
+      "stars": 2
+    },
+    {
+      "repo": "formbricks/formbricks",
+      "url": "https://github.com/formbricks/formbricks",
+      "merged": 1,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 1467,
+          "title": "fix: [BUG] In Dark Mode Navbar is not Properly Visible #1463",
+          "state": "merged",
+          "url": "https://github.com/formbricks/formbricks/pull/1467"
+        }
+      ],
+      "stars": 12501
+    },
+    {
+      "repo": "calcom/cal.diy",
+      "url": "https://github.com/calcom/cal.diy",
+      "merged": 0,
+      "open": 2,
+      "closedUnmerged": 1,
+      "samplePRs": [
+        {
+          "number": 29402,
+          "title": "fix(booker): allow returning to current month after auto-advance",
+          "state": "open",
+          "url": "https://github.com/calcom/cal.diy/pull/29402"
+        },
+        {
+          "number": 29415,
+          "title": "fix(caldav): respect attendee PARTSTAT when computing availability",
+          "state": "open",
+          "url": "https://github.com/calcom/cal.diy/pull/29415"
+        },
+        {
+          "number": 29355,
+          "title": "feat(app-store): BigBlueButton Integration ",
+          "state": "closed",
+          "url": "https://github.com/calcom/cal.diy/pull/29355"
+        }
+      ],
+      "stars": 46216
+    },
+    {
+      "repo": "therealanshuman/hwce-sandeep",
+      "url": "https://github.com/therealanshuman/hwce-sandeep",
+      "merged": 0,
+      "open": 1,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 1,
+          "title": "Assessment",
+          "state": "open",
+          "url": "https://github.com/therealanshuman/hwce-sandeep/pull/1"
+        }
+      ],
+      "stars": 0
+    },
+    {
+      "repo": "AdityaGaur7/erp.frontend.xyz",
+      "url": "https://github.com/AdityaGaur7/erp.frontend.xyz",
+      "merged": 0,
+      "open": 1,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 1,
+          "title": "a lot",
+          "state": "open",
+          "url": "https://github.com/AdityaGaur7/erp.frontend.xyz/pull/1"
+        }
+      ],
+      "stars": 0
+    },
+    {
+      "repo": "n8n-io/n8n",
+      "url": "https://github.com/n8n-io/n8n",
+      "merged": 0,
+      "open": 0,
+      "closedUnmerged": 3,
+      "samplePRs": [
+        {
+          "number": 20254,
+          "title": "fix(build):handle spaces in directory paths during OpenAPI bundling",
+          "state": "closed",
+          "url": "https://github.com/n8n-io/n8n/pull/20254"
+        },
+        {
+          "number": 20370,
+          "title": "fix(form): Form Completion Page Redirect Not Working",
+          "state": "closed",
+          "url": "https://github.com/n8n-io/n8n/pull/20370"
+        },
+        {
+          "number": 20329,
+          "title": "fix(form):fixes the form end node not redirecting properly",
+          "state": "closed",
+          "url": "https://github.com/n8n-io/n8n/pull/20329"
+        }
+      ],
+      "stars": 195645
+    }
+  ]
+}

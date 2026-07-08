@@ -1,8 +1,18 @@
 {
-  "updatedAt": "2026-07-08T08:46:41.328Z",
-  "hashes": {
-    "resume.tex": "4650a9b016f9486a",
+  "updatedAt": "2026-07-08T12:23:48.786Z",
+  "files": {
+    "resume.tex": "c58db9b55ac297f1",
     "facts.json": "91e6f45e5ebab67b",
     "linkedin.pdf": "6120c7ca2f0d7f89"
+  },
+  "scrape": {
+    "github": {
+      "at": "2026-07-08T12:22:42.749Z",
+      "hash": "c0ffb0462d60ceea"
+    },
+    "linkedin": {
+      "at": "2026-07-08T12:23:48.782Z",
+      "hash": "316b2fd3ae772a5a"
+    }
   }
 }

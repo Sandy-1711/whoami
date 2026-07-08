@@ -5,15 +5,42 @@
 const ENDPOINT = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
+// Core call: prompt + JSON schema -> parsed object. Shared by every Gemini use
+// in this repo (tailoring, LinkedIn structuring) so the fetch/error handling
+// lives in exactly one place.
+export async function geminiJson({ prompt, schema, apiKey, model, temperature = 0.3 }) {
+  const res = await fetch(`${ENDPOINT(model)}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature, responseMimeType: 'application/json', responseSchema: schema },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Gemini API ${res.status}: ${body.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Gemini returned no content (check quota/safety blocks).');
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Gemini did not return valid JSON.');
+  }
+}
+
 const SCHEMA = {
   type: 'object',
   properties: {
+    role_title: { type: 'string' },
     tailored_summary_text: { type: 'string' },
     tailored_subtitle: { type: 'string' },
     bold_terms: { type: 'array', items: { type: 'string' } },
     rationale: { type: 'string' },
   },
-  required: ['tailored_summary_text', 'tailored_subtitle', 'bold_terms', 'rationale'],
+  required: ['role_title', 'tailored_summary_text', 'tailored_subtitle', 'bold_terms', 'rationale'],
 };
 
 function prompt({ jd, facts, classification }) {
@@ -25,6 +52,7 @@ STRICT RULES:
 - Keep the summary to ONE sentence, ~<=320 characters, punchy, metric-led. Plain text only (no markdown, no LaTeX).
 - The subtitle is a short " | "-separated tagline of 3 role/skill phrases matched to the JD.
 - bold_terms: 3-6 exact substrings from your summary to bold (metrics and top keywords).
+- role_title: the exact job title this JD is hiring for (e.g. "AI Dev Engineer", "Senior Backend Engineer"), copied/normalized from the JD. If the JD states no clear title, use "Software Engineer". Keep it under 50 characters, no company name, no location.
 
 JOB DESCRIPTION:
 """${jd.slice(0, 6000)}"""
@@ -41,33 +69,9 @@ Return JSON only.`;
 }
 
 export async function tailorWithGemini({ jd, facts, classification, apiKey, model }) {
-  const res = await fetch(`${ENDPOINT(model)}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt({ jd, facts, classification }) }] }],
-      generationConfig: {
-        temperature: 0.3,
-        responseMimeType: 'application/json',
-        responseSchema: SCHEMA,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`Gemini API ${res.status}: ${body.slice(0, 300)}`);
-  }
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Gemini returned no content (check quota/safety blocks).');
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error('Gemini did not return valid JSON.');
-  }
+  const parsed = await geminiJson({ prompt: prompt({ jd, facts, classification }), schema: SCHEMA, apiKey, model });
   return {
+    roleTitle: parsed.role_title || '',
     summaryText: parsed.tailored_summary_text,
     subtitle: parsed.tailored_subtitle,
     boldTerms: parsed.bold_terms || [],

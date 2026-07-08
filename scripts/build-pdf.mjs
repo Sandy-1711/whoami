@@ -14,7 +14,11 @@ import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const IMAGE = process.env.RESUME_TEX_IMAGE || 'texlive/texlive:latest';
-const LATEXMK = ['-pdf', '-interaction=nonstopmode', '-halt-on-error', 'resume.tex'];
+// Keep every LaTeX byproduct (.aux/.log/.out/.fls/.pdf …) inside build/ so the
+// repo root stays clean. latexmk creates the directory if it's missing.
+const OUT = 'build';
+const LATEXMK = ['-pdf', '-interaction=nonstopmode', '-halt-on-error', `-outdir=${OUT}`, 'resume.tex'];
+const BUILT_PDF = join(root, OUT, 'resume.pdf');
 
 function runs(cmd, args) {
   return spawnSync(cmd, args, { encoding: 'utf8' }).status === 0;
@@ -57,10 +61,10 @@ if (runs('latexmk', ['--version'])) {
 }
 
 // latexmk can exit non-zero on benign warnings; trust the artifact instead.
-if (!existsSync(join(root, 'resume.pdf'))) {
-  console.error('\nBuild failed: resume.pdf was not produced (see log above).');
+if (!existsSync(BUILT_PDF)) {
+  console.error(`\nBuild failed: ${OUT}/resume.pdf was not produced (see log above).`);
   process.exit(result.status || 1);
 }
 mkdirSync(join(root, 'assets'), { recursive: true });
-copyFileSync(join(root, 'resume.pdf'), join(root, 'assets', 'resume.pdf'));
-console.log('✓ Built resume.pdf → assets/resume.pdf');
+copyFileSync(BUILT_PDF, join(root, 'assets', 'resume.pdf'));
+console.log(`✓ Built ${OUT}/resume.pdf → assets/resume.pdf`);

@@ -10,6 +10,9 @@ export { chalk };
 
 const brand = gradient(['#8b5cf6', '#06b6d4']); // violet → cyan
 
+// Brand-gradient a short string (used for the CLI intro line).
+export const gradientText = (s) => brand(s);
+
 // Big gradient title inside a rounded box.
 export function banner(title, subtitle = '') {
   const inner = brand.multiline(figletish(title)) + (subtitle ? '\n' + chalk.dim(subtitle) : '');

@@ -3,6 +3,21 @@ name: Build & Deploy Resume
 on:
   push:
     branches: [main]
+    # Only rebuild + redeploy when something that affects the published PDF or
+    # the way it's served actually changed. Pushes that only touch the tooling
+    # (scripts/, profile/, skills, docs, tailored outputs) skip the whole job.
+    paths:
+      - 'resume.tex'
+      - 'assets/**'
+      - 'api/**'
+      - 'lib/**'
+      - 'vercel.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/check-resume.js'
+      - 'scripts/lib/check/**'
+      - '.github/workflows/build-deploy.yml'
+  # Manual trigger always runs, regardless of what changed.
   workflow_dispatch:
 
 # A newer run supersedes an in-progress one on the same ref: cancel the old,
