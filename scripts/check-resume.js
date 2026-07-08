@@ -15,7 +15,10 @@ import { checkSource, REQUIRED_SECTIONS } from './lib/check-source.js';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = join(root, 'resume.tex');
 const PDF = join(root, 'assets', 'resume.pdf');
-const LOG = join(root, 'resume.log');
+// Local builds write the log to build/ (see build-pdf.mjs); CI's latex-action
+// leaves it at the repo root. Prefer build/, fall back to root.
+const LOG = [join(root, 'build', 'resume.log'), join(root, 'resume.log')].find(existsSync)
+  || join(root, 'build', 'resume.log');
 
 // What the compiled PDF must look like.
 const EXPECTED_PAGES = 1;
