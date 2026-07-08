@@ -15,17 +15,22 @@ import { checkSource, REQUIRED_SECTIONS } from './lib/check-source.js';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = join(root, 'resume.tex');
 const PDF = join(root, 'assets', 'resume.pdf');
+const LOG = join(root, 'resume.log');
 
 // What the compiled PDF must look like.
 const EXPECTED_PAGES = 1;
 const MIN_TEXT_LENGTH = 200; // guards against an empty / image-only render
 const CONTACT_EMAIL = 'sandy1711003@gmail.com';
+const MAX_OVERFULL_PT = 2; // flag lines wider than this many points past the margin
 
 const args = new Set(process.argv.slice(2));
-const onlyFlags = args.has('--source') || args.has('--pdf');
+const onlyFlags = args.has('--source') || args.has('--pdf') || args.has('--log');
 const wantSource = args.has('--source') || !onlyFlags;
 const wantPdf = args.has('--pdf') || !onlyFlags;
+// Width is a property of the compiled output, so it rides along with --pdf.
+const wantLog = args.has('--log') || args.has('--pdf') || !onlyFlags;
 const pdfExplicit = args.has('--pdf');
+const logExplicit = args.has('--log') || args.has('--pdf');
 
 function report(title, problems) {
   if (problems.length === 0) {
@@ -88,6 +93,23 @@ if (wantPdf) {
       problems.push(`Failed to parse PDF: ${err.message}`);
     }
     ok = report('PDF structure (assets/resume.pdf)', problems) && ok;
+  }
+}
+
+if (wantLog) {
+  if (!existsSync(LOG)) {
+    if (logExplicit) {
+      ok =
+        report('Width (resume.log)', [
+          `LaTeX log not found at ${LOG} — build the PDF first (npm run build:pdf).`,
+        ]) && ok;
+    } else {
+      console.log('• Width: skipped (resume.log not present yet)');
+    }
+  } else {
+    const { checkLog } = await import('./lib/check-log.js');
+    const problems = await checkLog(LOG, { maxOverfullPt: MAX_OVERFULL_PT });
+    ok = report('Width (resume.log)', problems) && ok;
   }
 }
 

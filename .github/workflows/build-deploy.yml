@@ -43,7 +43,7 @@ jobs:
           mkdir -p assets
           cp resume.pdf assets/resume.pdf
 
-      - name: Check résumé PDF structure
+      - name: Check résumé PDF structure (pages, width, sections)
         run: node scripts/check-resume.js --pdf
 
       - name: Upload PDF artifact

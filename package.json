@@ -9,6 +9,7 @@
     "check": "node scripts/check-resume.js",
     "check:source": "node scripts/check-resume.js --source",
     "check:pdf": "node scripts/check-resume.js --pdf",
+    "check:width": "node scripts/check-resume.js --log",
     "dev": "vercel dev",
     "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks')}catch{}\""
   },
