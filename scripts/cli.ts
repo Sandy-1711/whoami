@@ -14,16 +14,9 @@ import * as p from '@clack/prompts';
 import { env } from './lib/env.js';
 import * as ui from './lib/ui.js';
 import { pc } from './lib/ui.js';
+import { parseArgs } from './lib/args.js';
 
-const argv = process.argv.slice(2);
-const cmd = argv[0] && !argv[0].startsWith('--') ? argv[0] : '';
-const has = (n: string): boolean => argv.includes(n);
-const opt = (n: string, d = ''): string => { const i = argv.indexOf(n); return i >= 0 ? (argv[i + 1] ?? d) : d; };
-
-const VALUE_FLAGS = ['--jd', '--company', '--role', '--model', '--name'];
-function positionals(): string[] {
-  return argv.slice(1).filter((a, i, arr) => !a.startsWith('--') && !VALUE_FLAGS.includes(arr[i - 1]!));
-}
+const { cmd, has, opt, positionals } = parseArgs(process.argv.slice(2));
 
 function fail(err: unknown): never {
   console.error('\n' + ui.fail((err as Error)?.message || String(err)) + '\n');
