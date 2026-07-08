@@ -1,8 +1,14 @@
 {
-  "updatedAt": "2026-07-08T08:46:41.328Z",
-  "hashes": {
+  "updatedAt": "2026-07-08T11:58:27.312Z",
+  "files": {
     "resume.tex": "4650a9b016f9486a",
     "facts.json": "91e6f45e5ebab67b",
     "linkedin.pdf": "6120c7ca2f0d7f89"
+  },
+  "scrape": {
+    "github": {
+      "at": "2026-07-08T11:58:27.308Z",
+      "hash": "49b6bb5a3bde3e91"
+    }
   }
 }

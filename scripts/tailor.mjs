@@ -19,6 +19,7 @@ import {
   boldify, latexEscape, replaceBlock,
 } from './lib/tailor-core.js';
 import { drift, writeLock, hashSources } from './lib/sources.js';
+import { ensureFresh } from './lib/scrape/refresh.js';
 import { compileLatex } from './lib/latex.js';
 import { checkLog } from './lib/check-log.js';
 import { outputPaths, extractRoleFromJd } from './lib/naming.js';
@@ -74,6 +75,15 @@ async function main() {
   const resumeText = plainText(resumeTex);
 
   console.log(ui.banner('Résumé Tailor', `JD → ATS-optimized PDF · engine: gemini ${MODEL}`));
+
+  // ---- keep scraped sources fresh (fail-soft) ------------------------------
+  const spinS = ora({ text: 'Refreshing profile sources (GitHub, LinkedIn)…', color: 'cyan' }).start();
+  const fresh = await ensureFresh(root, { log: (r) => { spinS.text = `Sources: ${r.source} ${r.status}…`; } });
+  const changed = fresh.filter((r) => r.status === 'updated' || r.status === 'created');
+  const errs = fresh.filter((r) => r.status === 'error');
+  if (errs.length) spinS.warn(`Sources: ${errs.map((e) => `${e.source} (${e.error})`).join('; ')} — using cached data.`);
+  else if (changed.length) spinS.succeed(`Sources refreshed: ${changed.map((c) => c.source).join(', ')}.`);
+  else spinS.succeed('Profile sources fresh.');
 
   // ---- sync drift warning --------------------------------------------------
   const d = await drift(root);
