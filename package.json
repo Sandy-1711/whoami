@@ -18,6 +18,7 @@
     "check:width": "tsx scripts/check-resume.ts --log",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "dev": "vercel dev",
     "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks')}catch{}\""
   },
@@ -29,6 +30,7 @@
     "@clack/prompts": "^1.7.0",
     "@types/node": "^26.1.1",
     "@vercel/node": "^5.8.22",
+    "@vitest/coverage-v8": "^4.1.10",
     "cli-table3": "^0.6.5",
     "gradient-string": "^3.0.0",
     "picocolors": "^1.1.1",

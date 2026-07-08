@@ -16,5 +16,5 @@
     "noEmit": true,
     "verbatimModuleSyntax": false
   },
-  "include": ["scripts/**/*.ts", "api/**/*.ts", "lib/**/*.ts"]
+  "include": ["scripts/**/*.ts", "api/**/*.ts", "lib/**/*.ts", "vitest.config.ts"]
 }
