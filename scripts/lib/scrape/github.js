@@ -78,9 +78,10 @@ async function fetchContributions(user, token) {
 
   const groups = [...byRepo.values()].sort((a, b) => b.merged - a.merged || b.open - a.open);
 
-  // Enrich the busiest external repos with their star counts (nice for the
-  // report). Capped + fail-soft so a hiccup never sinks the whole scrape.
-  for (const g of groups.slice(0, 8)) {
+  // Enrich every external repo with its star count. Fail-soft per repo so a
+  // hiccup never sinks the whole scrape. (A GITHUB_TOKEN keeps this well within
+  // rate limits; the cap only guards a pathological number of repos.)
+  for (const g of groups.slice(0, 50)) {
     try {
       const r = await gh(`/repos/${g.repo}`, token);
       g.stars = r.stargazers_count;

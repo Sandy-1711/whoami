@@ -71,12 +71,25 @@ async function liveText({ cookie, url }) {
     });
     await ctx.addCookies([{ name: 'li_at', value: cookie, domain: '.linkedin.com', path: '/' }]);
     const page = await ctx.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    const base = url.replace(/\/+$/, '');
+    const grab = () => page.evaluate(() => document.querySelector('main')?.innerText || document.body.innerText);
+
+    // The overview page lazy-loads only a few roles; the /details/* pages list
+    // the full history. Collect the overview first, then append each detail page.
+    await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(2500);
     if (/\/(login|checkpoint|authwall)/.test(page.url())) {
       throw new Error('LinkedIn redirected to a login/checkpoint wall — the li_at cookie is expired or invalid.');
     }
-    const text = await page.evaluate(() => document.querySelector('main')?.innerText || document.body.innerText);
+    let text = await grab();
+    for (const section of ['experience', 'education', 'skills', 'certifications']) {
+      try {
+        await page.goto(`${base}/details/${section}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForTimeout(1500);
+        if (/\/(login|checkpoint|authwall)/.test(page.url())) continue;
+        text += `\n\n=== ${section.toUpperCase()} ===\n` + (await grab());
+      } catch { /* a missing detail page is fine — keep what we have */ }
+    }
     if (!text || text.length < 200) throw new Error('Live page returned too little text (likely blocked).');
     return text;
   } finally {

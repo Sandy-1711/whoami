@@ -1,13 +1,13 @@
 {
   "_comment": "Auto-scraped from GitHub. Edit freely — the tailor treats this as an editable source of truth. Re-scrape with `npm run sync`.",
-  "scrapedAt": "2026-07-08T11:58:27.302Z",
+  "scrapedAt": "2026-07-08T12:22:42.744Z",
   "username": "Sandy-1711",
   "profileUrl": "https://github.com/Sandy-1711",
   "totals": {
     "publicRepos": 47,
     "totalStars": 31,
-    "mergedPRs": 20,
-    "externalRepos": 10
+    "mergedPRs": 38,
+    "externalRepos": 16
   },
   "repos": [
     {
@@ -228,7 +228,7 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-08T08:47:23Z"
+      "pushedAt": "2026-07-08T12:15:50Z"
     },
     {
       "name": "Sandy-1711",
@@ -576,6 +576,126 @@
       "stars": 25947
     },
     {
+      "repo": "TejasMishr/ERP_Client",
+      "url": "https://github.com/TejasMishr/ERP_Client",
+      "merged": 6,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 7,
+          "title": "Attendance page for student almost done",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/7"
+        },
+        {
+          "number": 6,
+          "title": "Attendance mark page added and completed",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/6"
+        },
+        {
+          "number": 4,
+          "title": "dasdfaqw",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/4"
+        },
+        {
+          "number": 3,
+          "title": "Merge pull request #1 from TejasMishr/master",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/3"
+        },
+        {
+          "number": 2,
+          "title": "attendance faculty",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/2"
+        },
+        {
+          "number": 1,
+          "title": "Added attendance page",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_Client/pull/1"
+        }
+      ],
+      "stars": 0
+    },
+    {
+      "repo": "mmmut-xyz/server.mmmut.xyz",
+      "url": "https://github.com/mmmut-xyz/server.mmmut.xyz",
+      "merged": 5,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 5,
+          "title": "Master",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/5"
+        },
+        {
+          "number": 4,
+          "title": "Main",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/4"
+        },
+        {
+          "number": 3,
+          "title": "From main",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/3"
+        },
+        {
+          "number": 2,
+          "title": "Update",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/2"
+        },
+        {
+          "number": 1,
+          "title": "Fixed file structure",
+          "state": "merged",
+          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/1"
+        }
+      ],
+      "stars": 1
+    },
+    {
+      "repo": "TejasMishr/erp.mmmut.xyz",
+      "url": "https://github.com/TejasMishr/erp.mmmut.xyz",
+      "merged": 4,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 4,
+          "title": " Update attendance routes and controllers.",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/4"
+        },
+        {
+          "number": 3,
+          "title": " Update model schemas and controller functions",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/3"
+        },
+        {
+          "number": 2,
+          "title": "Master",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/2"
+        },
+        {
+          "number": 1,
+          "title": "Master",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/1"
+        }
+      ],
+      "stars": 0
+    },
+    {
       "repo": "TejasMishr/MMMUTRESO",
       "url": "https://github.com/TejasMishr/MMMUTRESO",
       "merged": 3,
@@ -602,6 +722,28 @@
         }
       ],
       "stars": 8
+    },
+    {
+      "repo": "TejasMishr/MMMUT_Erp",
+      "url": "https://github.com/TejasMishr/MMMUT_Erp",
+      "merged": 2,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 4,
+          "title": "ujas",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/MMMUT_Erp/pull/4"
+        },
+        {
+          "number": 1,
+          "title": "Changed file structure",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/MMMUT_Erp/pull/1"
+        }
+      ],
+      "stars": 1
     },
     {
       "repo": "A-P-Singh-27/GDG-MMMUT-Website",
@@ -634,6 +776,22 @@
         }
       ],
       "stars": 0
+    },
+    {
+      "repo": "TejasMishr/ERP_FRONT",
+      "url": "https://github.com/TejasMishr/ERP_FRONT",
+      "merged": 1,
+      "open": 0,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 1,
+          "title": "Merge pull request #1 from TejasMishr/main",
+          "state": "merged",
+          "url": "https://github.com/TejasMishr/ERP_FRONT/pull/1"
+        }
+      ],
+      "stars": 1
     },
     {
       "repo": "Vatsalmadhur/gdsc23",
@@ -712,6 +870,22 @@
       "stars": 46216
     },
     {
+      "repo": "therealanshuman/hwce-sandeep",
+      "url": "https://github.com/therealanshuman/hwce-sandeep",
+      "merged": 0,
+      "open": 1,
+      "closedUnmerged": 0,
+      "samplePRs": [
+        {
+          "number": 1,
+          "title": "Assessment",
+          "state": "open",
+          "url": "https://github.com/therealanshuman/hwce-sandeep/pull/1"
+        }
+      ],
+      "stars": 0
+    },
+    {
       "repo": "AdityaGaur7/erp.frontend.xyz",
       "url": "https://github.com/AdityaGaur7/erp.frontend.xyz",
       "merged": 0,
@@ -724,7 +898,8 @@
           "state": "open",
           "url": "https://github.com/AdityaGaur7/erp.frontend.xyz/pull/1"
         }
-      ]
+      ],
+      "stars": 0
     },
     {
       "repo": "n8n-io/n8n",
@@ -751,7 +926,8 @@
           "state": "closed",
           "url": "https://github.com/n8n-io/n8n/pull/20329"
         }
-      ]
+      ],
+      "stars": 195645
     }
   ]
 }
