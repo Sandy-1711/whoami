@@ -1,13 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import { getDocumentProxy, extractText } from 'unpdf';
 
+export interface PdfExtract {
+  text: string;
+  totalPages: number;
+}
+
 // Single seam for turning a PDF on disk into text + a page count. The structure
 // checker uses it today; a future ATS scorer can reuse the same extraction so
 // both see exactly the same text.
-//
-// @param {string} path  absolute path to a PDF file
-// @returns {Promise<{ text: string, totalPages: number }>}
-export async function extractPdf(path) {
+export async function extractPdf(path: string): Promise<PdfExtract> {
   const buf = await readFile(path);
   const pdf = await getDocumentProxy(new Uint8Array(buf));
   const { totalPages, text } = await extractText(pdf, { mergePages: true });

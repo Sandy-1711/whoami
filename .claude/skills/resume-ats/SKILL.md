@@ -9,7 +9,7 @@ This repo scores the résumé against a JD deterministically and rewrites the
 summary/subtitle with Gemini. Scoring is transparent, not a black box.
 
 ## How scoring works
-- `scripts/lib/tailor/core.js` extracts JD keywords from a fixed lexicon
+- `scripts/lib/tailor/core.ts` extracts JD keywords from a fixed lexicon
   (`TECH_LEXICON` + `ALIASES`), then classifies each against the résumé text and
   the **fact base** (`profile/facts.json`):
   - **matched** — already in `resume.tex`.
@@ -35,7 +35,7 @@ report next to the PDF. The full report is also saved as
 3. **Keep it one page.** Adding keywords must not overflow — re-run the guards
    (see the `resume-latex` skill) after any edit.
 4. To broaden what the scorer recognizes, extend `TECH_LEXICON`/`ALIASES` in
-   `scripts/lib/tailor/core.js` — but only with real synonyms.
+   `scripts/lib/tailor/core.ts` — but only with real synonyms.
 
 ## Where the truth lives
 - `profile/facts.json` — hand-verified fact base (the only source the tailor may claim from).

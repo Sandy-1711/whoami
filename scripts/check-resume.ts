@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Resume structure checker.
 //
-//   node scripts/check-resume.js            # source + PDF (PDF skipped if absent)
-//   node scripts/check-resume.js --source   # source only (no deps, used by the git hook)
-//   node scripts/check-resume.js --pdf       # PDF only (fails if the PDF is missing)
+//   tsx scripts/check-resume.ts            # source + PDF (PDF skipped if absent)
+//   tsx scripts/check-resume.ts --source   # source only (no deps, used by the git hook)
+//   tsx scripts/check-resume.ts --pdf       # PDF only (fails if the PDF is missing)
 //
 // Exits non-zero if any requested check fails, so it works as a CI gate and a
 // pre-commit hook.
@@ -15,7 +15,7 @@ import { checkSource, REQUIRED_SECTIONS } from './lib/check/source.js';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = join(root, 'resume.tex');
 const PDF = join(root, 'assets', 'resume.pdf');
-// Local builds write the log to build/ (see build-pdf.mjs); CI's latex-action
+// Local builds write the log to build/ (see build-pdf.ts); CI's latex-action
 // leaves it at the repo root. Prefer build/, fall back to root.
 const LOG = [join(root, 'build', 'resume.log'), join(root, 'resume.log')].find(existsSync)
   || join(root, 'build', 'resume.log');
@@ -35,7 +35,7 @@ const wantLog = args.has('--log') || args.has('--pdf') || !onlyFlags;
 const pdfExplicit = args.has('--pdf');
 const logExplicit = args.has('--log') || args.has('--pdf');
 
-function report(title, problems) {
+function report(title: string, problems: string[]): boolean {
   if (problems.length === 0) {
     console.log(`✓ ${title}: passed`);
     return true;
@@ -63,7 +63,7 @@ if (wantPdf) {
       console.log('• PDF structure: skipped (assets/resume.pdf not built yet)');
     }
   } else {
-    const problems = [];
+    const problems: string[] = [];
     try {
       // Imported lazily so the source-only path needs no node_modules.
       const { extractPdf } = await import('./lib/check/pdf.js');
@@ -93,7 +93,7 @@ if (wantPdf) {
         problems.push(`Contact email ${CONTACT_EMAIL} not found in rendered PDF text.`);
       }
     } catch (err) {
-      problems.push(`Failed to parse PDF: ${err.message}`);
+      problems.push(`Failed to parse PDF: ${(err as Error).message}`);
     }
     ok = report('PDF structure (assets/resume.pdf)', problems) && ok;
   }

@@ -11,53 +11,15 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { extractPdf } from '../check/pdf.js';
-import { geminiJson } from '../tailor/gemini.js';
-
-const PROFILE_SCHEMA = {
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    headline: { type: 'string' },
-    location: { type: 'string' },
-    about: { type: 'string' },
-    experience: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          company: { type: 'string' },
-          title: { type: 'string' },
-          dates: { type: 'string' },
-          location: { type: 'string' },
-          description: { type: 'string' },
-        },
-        required: ['company', 'title'],
-      },
-    },
-    education: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          school: { type: 'string' },
-          degree: { type: 'string' },
-          field: { type: 'string' },
-          dates: { type: 'string' },
-        },
-        required: ['school'],
-      },
-    },
-    skills: { type: 'array', items: { type: 'string' } },
-    certifications: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['name', 'headline', 'experience', 'education', 'skills'],
-};
+import { geminiJson } from '../gemini.js';
+import { linkedinPrompt, LINKEDIN_SCHEMA, type LinkedinResponse } from '../prompts.js';
+import type { LinkedinData } from '../types.js';
 
 // Try to render the live profile with Playwright + the session cookie. Throws a
 // descriptive error (Playwright missing, login wall, timeout) so the caller can
 // fall back to the PDF.
-async function liveText({ cookie, url }) {
-  let chromium;
+async function liveText({ cookie, url }: { cookie: string; url: string }): Promise<string> {
+  let chromium: typeof import('playwright').chromium;
   try {
     ({ chromium } = await import('playwright'));
   } catch {
@@ -72,7 +34,13 @@ async function liveText({ cookie, url }) {
     await ctx.addCookies([{ name: 'li_at', value: cookie, domain: '.linkedin.com', path: '/' }]);
     const page = await ctx.newPage();
     const base = url.replace(/\/+$/, '');
-    const grab = () => page.evaluate(() => document.querySelector('main')?.innerText || document.body.innerText);
+    const grab = (): Promise<string> =>
+      // Runs in the browser context; `document` is a browser global, so reach it
+      // through globalThis to avoid pulling the DOM lib into this Node project.
+      page.evaluate(() => {
+        const d = (globalThis as any).document;
+        return d.querySelector('main')?.innerText || d.body.innerText;
+      });
 
     // The overview page lazy-loads only a few roles; the /details/* pages list
     // the full history. Collect the overview first, then append each detail page.
@@ -97,7 +65,7 @@ async function liveText({ cookie, url }) {
   }
 }
 
-async function pdfText(root) {
+async function pdfText(root: string): Promise<string> {
   const pdf = join(root, 'Linkedin_Profile.pdf');
   if (!existsSync(pdf)) {
     throw new Error('No live scrape and no Linkedin_Profile.pdf in the repo root — export your profile ("Save to PDF") and drop it there.');
@@ -106,31 +74,46 @@ async function pdfText(root) {
   return text;
 }
 
+interface RawProfile {
+  via: 'live' | 'pdf';
+  text: string;
+  liveError?: string;
+}
+
 // Get raw profile text via live scrape (if configured) or the PDF export.
-async function rawProfileText(root, { cookie, url }) {
+async function rawProfileText(root: string, { cookie, url }: { cookie: string; url: string }): Promise<RawProfile> {
   if (cookie && url) {
     try {
       return { via: 'live', text: await liveText({ cookie, url }) };
     } catch (err) {
-      return { via: 'pdf', text: await pdfText(root), liveError: err.message };
+      return { via: 'pdf', text: await pdfText(root), liveError: (err as Error).message };
     }
   }
   return { via: 'pdf', text: await pdfText(root) };
 }
 
-export async function scrapeLinkedin(root, { cookie, url, apiKey, model } = {}) {
+export interface ScrapeLinkedinOptions {
+  cookie?: string;
+  url?: string;
+  apiKey?: string;
+  model?: string;
+}
+
+export async function scrapeLinkedin(
+  root: string,
+  { cookie = '', url = '', apiKey, model }: ScrapeLinkedinOptions = {},
+): Promise<LinkedinData> {
   if (!apiKey) throw new Error('GEMINI_API_KEY required to structure the LinkedIn profile.');
 
   const { via, text, liveError } = await rawProfileText(root, { cookie, url });
 
-  const prompt = `Extract this LinkedIn profile into clean structured JSON. Use ONLY what appears in the text — do not invent roles, dates, or skills. Preserve exact company names, titles, and date ranges. Keep "about" concise.
-
-PROFILE TEXT:
-"""${String(text).slice(0, 18000)}"""
-
-Return JSON matching the schema.`;
-
-  const profile = await geminiJson({ prompt, schema: PROFILE_SCHEMA, apiKey, model, temperature: 0.1 });
+  const profile = await geminiJson<LinkedinResponse>({
+    prompt: linkedinPrompt(text),
+    schema: LINKEDIN_SCHEMA,
+    apiKey,
+    model: model || '',
+    temperature: 0.1,
+  });
 
   return {
     _comment: 'Auto-scraped from LinkedIn (live cookie scrape or PDF export), structured by Gemini. Edit freely — the tailor treats this as an editable source. Re-scrape with `npm run sync`.',
