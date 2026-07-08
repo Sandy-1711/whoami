@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1783521520450" clover="3.2.0">
-  <project timestamp="1783521520450" name="All files">
-    <metrics statements="17" coveredstatements="17" conditionals="6" coveredconditionals="6" methods="2" coveredmethods="2" elements="25" coveredelements="25" complexity="0" loc="17" ncloc="17" packages="1" files="2" classes="2"/>
+<coverage generated="1783522872558" clover="3.2.0">
+  <project timestamp="1783522872558" name="All files">
+    <metrics statements="24" coveredstatements="24" conditionals="10" coveredconditionals="10" methods="3" coveredmethods="3" elements="37" coveredelements="37" complexity="0" loc="24" ncloc="24" packages="1" files="3" classes="3"/>
     <file name="badge.ts" path="D:\ResumeGit\api\badge.ts">
       <metrics statements="7" coveredstatements="7" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
       <line num="8" count="5" type="stmt"/>
@@ -24,6 +24,16 @@
       <line num="16" count="1" type="stmt"/>
       <line num="17" count="1" type="stmt"/>
       <line num="18" count="1" type="stmt"/>
+    </file>
+    <file name="stats.ts" path="D:\ResumeGit\api\stats.ts">
+      <metrics statements="7" coveredstatements="7" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+      <line num="6" count="4" type="stmt"/>
+      <line num="7" count="4" type="stmt"/>
+      <line num="8" count="4" type="cond" truecount="2" falsecount="0"/>
+      <line num="9" count="3" type="stmt"/>
+      <line num="10" count="3" type="cond" truecount="2" falsecount="0"/>
+      <line num="15" count="4" type="stmt"/>
+      <line num="16" count="4" type="stmt"/>
     </file>
   </project>
 </coverage>
