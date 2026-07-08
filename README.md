@@ -172,11 +172,16 @@ ships. It runs in two phases:
 - **PDF** (`assets/resume.pdf`) — exactly one page, all sections survive into the
   rendered text, contact email present. Uses [`unpdf`](https://github.com/unjs/unpdf)
   (a Node-friendly build of pdf.js).
+- **Width** (`resume.log`) — parses the LaTeX log for `Overfull \hbox` warnings and
+  fails if any line runs more than 2pt past the page width. The page check catches
+  *vertical* overflow (a spilled page); this catches the *horizontal* kind, which
+  doesn't add a page and would otherwise slip through.
 
 ```bash
-npm run check          # source + PDF (PDF auto-skipped if not built yet)
+npm run check          # source + PDF + width (compiled checks skipped if not built)
 npm run check:source   # source only
-npm run check:pdf      # PDF only (needs assets/resume.pdf)
+npm run check:pdf      # PDF pages/sections + width (needs assets/resume.pdf + resume.log)
+npm run check:width    # width only (needs resume.log)
 ```
 
 It runs automatically in two places:
@@ -216,12 +221,50 @@ npm install                       # installs deps and wires the pre-commit hook
 npm run dev                       # vercel dev → http://localhost:3000
 ```
 
-To compile the LaTeX locally (optional), install TeXLive/MiKTeX, then:
+To compile and validate the LaTeX locally — **no LaTeX install needed if you have
+Docker** (it uses the same full TeXLive image as CI):
 
 ```bash
-npm run build:pdf                 # latexmk -pdf resume.tex → assets/resume.pdf
-npm run check                     # validate source + the compiled PDF
+npm run verify                    # build the PDF (Docker or local latexmk) + run all guards
+npm run build:pdf:docker          # just build via Docker → resume.pdf + assets/resume.pdf
 ```
+
+`npm run verify` prefers a local `latexmk` if you have one, otherwise falls back to
+Docker (`texlive/texlive`, cached after first pull). This gives the exact page/width
+gate CI runs, without pushing — the fast local loop for iterating on layout.
+
+If you do have TeXLive/MiKTeX installed, `npm run build:pdf` uses it directly.
+
+---
+
+## Tailor to a job description
+
+`scripts/tailor.mjs` turns a JD into an ATS-optimized, JD-specific PDF — **without**
+touching your canonical `resume.tex`. It scores keyword coverage, rewrites the summary
+and subtitle from a **verified fact base** (`profile/facts.json`, so it never fabricates
+experience), renders `tailored/<name>.pdf`, and runs the same page/width guards.
+
+```bash
+export GEMINI_API_KEY=...                         # for the Gemini engine (default)
+npm run tailor -- path/to/jd.txt --name acme      # → tailored/acme.{tex,pdf,report.md}
+npm run tailor -- --jd "paste JD text" --name acme
+npm run tailor -- path/to/jd.txt --name acme --offline   # deterministic, no API key
+npm run tailor -- --sync                          # re-baseline profile source hashes
+```
+
+- **Engine** — Gemini (`--model`, default `gemini-2.5-flash`) writes the tailored
+  phrasing; the ATS score and keyword classification are computed deterministically in
+  `scripts/lib/tailor-core.js` so numbers are reproducible. `--offline` skips the API
+  entirely and uses a rule-based summary.
+- **Score** — 20 pts structure + 80 pts weighted JD-keyword coverage. The report splits
+  keywords into **matched** (already in the résumé), **surface** (true & JD-relevant —
+  add these to lift the score), and **gaps** (the JD wants them but they're not in your
+  fact base — flagged so you never fake them).
+- **Sync** — `profile/sources.lock.json` hashes `resume.tex`, `facts.json`, and the
+  LinkedIn PDF; the tailor warns when they drift so the fact base stays honest.
+- **Anchors** — the tailor only rewrites the `%% >>>TAILOR:…` comment blocks in
+  `resume.tex` (summary, subtitle, skills), so the rest of the layout is identical to
+  your master. `tailored/` is gitignored (personal, regenerated on demand).
 
 ---
 

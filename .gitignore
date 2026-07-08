@@ -18,6 +18,9 @@
 resume.pdf
 assets/resume.pdf
 
+# Tailored per-JD résumé outputs (personal, regenerated on demand)
+tailored/
+
 # Node / Vercel
 node_modules/
 .vercel
