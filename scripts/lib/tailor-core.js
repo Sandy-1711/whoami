@@ -129,37 +129,3 @@ export function replaceBlock(tex, key, newContent) {
   if (!re.test(tex)) throw new Error(`TAILOR anchor "${key}" not found in resume.tex`);
   return tex.replace(re, `$1${newContent}$2`);
 }
-
-// Higher-signal-first ranking so the offline engine surfaces AI/agent terms
-// ahead of generic backend/frontend ones (matches the candidate's positioning).
-export const PRIORITY = [
-  'agent infrastructure', 'AI agents', 'agentic workflows', 'agent orchestration',
-  'RAG', 'retrieval-augmented generation', 'LLM', 'LLMs', 'memory systems', 'semantic recall',
-  'streaming', 'tool calling', 'LLM evaluation', 'fine-tuning', 'vector databases', 'observability',
-  'FastAPI', 'Node.js', 'REST APIs', 'WebSockets', 'microservices', 'PostgreSQL', 'MongoDB', 'Redis',
-  'Docker', 'CI/CD', 'authentication', 'RBAC', 'Next.js', 'React', 'React Native', 'TypeScript', 'Python',
-];
-const rank = (k) => { const i = PRIORITY.indexOf(k); return i === -1 ? 999 : i; };
-export const rankByPriority = (terms) => [...terms].sort((a, b) => rank(a) - rank(b));
-
-const AI_SIGNAL = ['llm', 'llms', 'rag', 'retrieval-augmented generation', 'ai agents', 'agent infrastructure',
-  'agentic workflows', 'agent orchestration', 'memory systems', 'semantic recall', 'fine-tuning',
-  'vector databases', 'tool calling', 'prompt engineering', 'llm evaluation'];
-const FS_SIGNAL = ['react', 'react native', 'next.js', 'frontend', 'tailwind css', 'vue.js', 'responsive design', 'angular', 'svelte'];
-
-// Lead framing: AI Engineer unless the JD is clearly more full-stack than AI.
-export function leadTitle(jdKeywords) {
-  const jl = jdKeywords.map((k) => k.toLowerCase());
-  const ai = jl.filter((k) => AI_SIGNAL.includes(k)).length;
-  const fs = jl.filter((k) => FS_SIGNAL.includes(k)).length;
-  return fs > ai ? 'Full-Stack Engineer' : 'AI Engineer';
-}
-
-// Deterministic (offline) summary: lead framing + the true metric snippets whose
-// keywords best match the JD.
-export function offlineSummary(facts, jdKeywords) {
-  const jl = jdKeywords.map((k) => k.toLowerCase());
-  const scoreMetric = (m) => jl.filter((k) => m.toLowerCase().includes(k)).length;
-  const ranked = [...facts.headline_metrics].sort((a, b) => scoreMetric(b) - scoreMetric(a));
-  return `${leadTitle(jdKeywords)} building agentic LLM systems, memory, and RAG --- ${ranked.slice(0, 3).join(', ')}.`;
-}
