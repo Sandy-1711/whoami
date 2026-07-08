@@ -23,7 +23,7 @@ npm run status                 # env, sources, toolchain, outputs at a glance
 - Company → folder slug (lowercase, non-alnum → `_`).
 - Role comes from Gemini reading the JD; falls back to a regex, then
   "Software Engineer". Override with `--role`.
-- Logic lives in `scripts/lib/naming.js`. The PDF compiles under a safe
+- Logic lives in `scripts/lib/naming.ts`. The PDF compiles under a safe
   `build/` jobname, then is copied to the pretty spaced path.
 
 ## Sources of truth (order of authority)

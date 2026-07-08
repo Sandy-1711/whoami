@@ -82,18 +82,19 @@ external storage to read on each request.
 │   ├── linkedin.json           # scraped LinkedIn profile (editable, committed)
 │   └── sources.lock.json       # file-drift hashes + scrape freshness/content hashes
 ├── api/                        # Vercel serverless functions (serve + count the PDF)
-│   ├── resume.js  stats.js  badge.js  og.js
-├── lib/redis.js                # KV/Upstash client factory (null-safe if unconfigured)
+│   ├── resume.ts  stats.ts  badge.ts  og.ts
+├── lib/redis.ts                # KV/Upstash client factory (null-safe if unconfigured)
 ├── scripts/
-│   ├── cli.mjs                 # `resume` — one entrypoint (interactive menu + commands)
+│   ├── cli.ts                  # `resume` — one entrypoint (interactive menu + commands)
 │   ├── commands/               # tailor · sync · status · build · check
-│   ├── check-resume.js         # structure-check CLI (source + PDF + width)
-│   ├── build-pdf.mjs           # compile resume.tex → build/ → assets/resume.pdf
+│   ├── check-resume.ts         # structure-check CLI (source + PDF + width)
+│   ├── build-pdf.ts            # compile resume.tex → build/ → assets/resume.pdf
 │   └── lib/
-│       ├── tailor/             # core.js (scoring/injection) · gemini.js
-│       ├── scrape/             # github.js · linkedin.js · refresh.js (freshness)
-│       ├── check/              # source.js · log.js (width) · pdf.js (unpdf seam)
-│       └── env.js root.js naming.js sources.js latex.js ui.js format.js
+│       ├── tailor/             # core.ts (scoring/injection)
+│       ├── scrape/             # github.ts · linkedin.ts · refresh.ts (freshness)
+│       ├── check/              # source.ts · log.ts (width) · pdf.ts (unpdf seam)
+│       ├── gemini.ts prompts.ts   # Gemini transport + centralized prompt templates/schemas
+│       └── env.ts root.ts naming.ts sources.ts latex.ts ui.ts format.ts types.ts
 ├── .claude/skills/             # resume-ats · resume-latex · resume-tailor
 ├── build/                      # LaTeX artifacts (.aux/.log/.pdf …) — gitignored
 ├── tailored/                   # per-JD outputs, tailored/<company>/… — gitignored
@@ -136,11 +137,11 @@ crawler list, so we never serve them different content than humans.
 On every push to `main` (or manual `workflow_dispatch`):
 
 1. **Setup + install** Node and dependencies.
-2. **Source check** — `node scripts/check-resume.js --source` (fails fast on broken
+2. **Source check** — `npx tsx scripts/check-resume.ts --source` (fails fast on broken
    LaTeX before spending time compiling).
 3. **Compile** `resume.tex` → `resume.pdf` with full TeXLive.
 4. **Stage** the PDF at `assets/resume.pdf` and upload it as a build artifact.
-5. **PDF check** — `node scripts/check-resume.js --pdf` (verifies the rendered output).
+5. **PDF check** — `npx tsx scripts/check-resume.ts --pdf` (verifies the rendered output).
 6. **Deploy** to Vercel production with the CLI + token secrets.
 
 A `concurrency` group cancels any in-progress run when a newer push arrives, so only
@@ -198,7 +199,7 @@ It runs automatically in two places:
 - **CI** — the source check gates the build before compiling, and the PDF check runs
   on the freshly compiled PDF before deploy.
 
-The PDF text extraction lives in `scripts/lib/check/pdf.js` as a reusable seam, so
+The PDF text extraction lives in `scripts/lib/check/pdf.ts` as a reusable seam, so
 the same extraction feeds the tailoring pipeline's ATS scoring.
 
 ---
@@ -265,7 +266,7 @@ npm run status                   # env, sources, toolchain, and outputs at a gla
   Engineer.pdf` (with matching `.tex` and `.report.md`). Gemini reads the role from the
   JD; a regex is the fallback, then `Software Engineer`. Override with `--role`.
 - **Score** — 20 pts structure + 80 pts weighted JD-keyword coverage (deterministic, in
-  `scripts/lib/tailor/core.js`). The report splits keywords into **matched** (already in
+  `scripts/lib/tailor/core.ts`). The report splits keywords into **matched** (already in
   the résumé), **surface** (true & JD-relevant — add these to lift the score), and
   **gaps** (the JD wants them but they're not in your fact base — flagged so you never
   fake them).

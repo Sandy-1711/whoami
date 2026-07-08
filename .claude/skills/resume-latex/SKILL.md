@@ -10,12 +10,12 @@ is served on Vercel. Every change is gated by structure/page/width guards — ne
 ship a change that fails them.
 
 ## Hard constraints (the guards enforce these)
-- **Exactly one page.** More than one page fails `check-resume.js --pdf`.
+- **Exactly one page.** More than one page fails `check-resume.ts --pdf`.
 - **No horizontal overflow.** Any `Overfull \hbox` > 2pt fails the width check
-  (`scripts/lib/check/log.js`, reads `build/resume.log`). This is invisible on
+  (`scripts/lib/check/log.ts`, reads `build/resume.log`). This is invisible on
   screen but real — shorten the offending line.
 - **Required sections must exist:** `Experience`, `Projects`, `Technical Skills`,
-  `Education` (see `REQUIRED_SECTIONS` in `scripts/lib/check/source.js`).
+  `Education` (see `REQUIRED_SECTIONS` in `scripts/lib/check/source.ts`).
 - **Contact header** must keep the mailto, LinkedIn, and GitHub links.
 - Custom list macros must be balanced: `\resumeSubHeadingListStart/End`,
   `\resumeItemListStart/End`. No empty `\resumeItem{}`.
@@ -28,7 +28,7 @@ ship a change that fails them.
 %% >>>TAILOR:skills   ... %% <<<TAILOR:skills
 ```
 The content between markers is safe to edit by hand, but keep the marker lines
-intact — `scripts/lib/tailor/core.js` (`replaceBlock`) depends on them.
+intact — `scripts/lib/tailor/core.ts` (`replaceBlock`) depends on them.
 
 ## Build + verify workflow
 LaTeX artifacts go into `build/` (never the repo root). Build needs a local
