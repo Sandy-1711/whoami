@@ -76,25 +76,31 @@ external storage to read on each request.
 ```
 .
 ├── resume.tex                  # the résumé — LaTeX source, the single source of truth
-├── api/
-│   ├── resume.js               # serves the PDF and counts the view
-│   ├── stats.js                # GET → { "views": N }
-│   └── badge.js                # GET → shields.io endpoint JSON
-├── lib/
-│   └── redis.js                # KV/Upstash client factory (null-safe if unconfigured)
+├── profile/                    # inputs to the tailoring pipeline
+│   ├── facts.json              # hand-verified fact base — the only truth the tailor may claim
+│   ├── github.json             # scraped repos + PR contributions (editable, committed)
+│   ├── linkedin.json           # scraped LinkedIn profile (editable, committed)
+│   └── sources.lock.json       # file-drift hashes + scrape freshness/content hashes
+├── api/                        # Vercel serverless functions (serve + count the PDF)
+│   ├── resume.js  stats.js  badge.js  og.js
+├── lib/redis.js                # KV/Upstash client factory (null-safe if unconfigured)
 ├── scripts/
-│   ├── check-resume.js         # structure-check CLI (source + PDF)
+│   ├── cli.mjs                 # `resume` — one entrypoint (interactive menu + commands)
+│   ├── commands/               # tailor · sync · status · build · check
+│   ├── check-resume.js         # structure-check CLI (source + PDF + width)
+│   ├── build-pdf.mjs           # compile resume.tex → build/ → assets/resume.pdf
 │   └── lib/
-│       ├── check-source.js     # validates resume.tex without compiling
-│       └── extract-pdf.js      # PDF → { text, totalPages } via unpdf (reusable seam)
-├── assets/
-│   └── resume.pdf              # compiled by CI — gitignored, never committed
-├── .githooks/
-│   └── pre-commit              # runs the source check when resume.tex is committed
-├── .github/workflows/
-│   └── build-deploy.yml        # CI/CD: check → compile → check → deploy
-├── vercel.json                 # URL rewrites + bundles the PDF into the function
-└── package.json
+│       ├── tailor/             # core.js (scoring/injection) · gemini.js
+│       ├── scrape/             # github.js · linkedin.js · refresh.js (freshness)
+│       ├── check/              # source.js · log.js (width) · pdf.js (unpdf seam)
+│       └── env.js root.js naming.js sources.js latex.js ui.js format.js
+├── .claude/skills/             # resume-ats · resume-latex · resume-tailor
+├── build/                      # LaTeX artifacts (.aux/.log/.pdf …) — gitignored
+├── tailored/                   # per-JD outputs, tailored/<company>/… — gitignored
+├── assets/resume.pdf           # compiled by CI — gitignored, never committed
+├── .githooks/pre-commit        # runs the source check when resume.tex is committed
+├── .github/workflows/build-deploy.yml   # CI/CD: check → compile → check → deploy
+└── vercel.json  package.json  .env.example
 ```
 
 ---
@@ -172,7 +178,7 @@ ships. It runs in two phases:
 - **PDF** (`assets/resume.pdf`) — exactly one page, all sections survive into the
   rendered text, contact email present. Uses [`unpdf`](https://github.com/unjs/unpdf)
   (a Node-friendly build of pdf.js).
-- **Width** (`resume.log`) — parses the LaTeX log for `Overfull \hbox` warnings and
+- **Width** (`build/resume.log`) — parses the LaTeX log for `Overfull \hbox` warnings and
   fails if any line runs more than 2pt past the page width. The page check catches
   *vertical* overflow (a spilled page); this catches the *horizontal* kind, which
   doesn't add a page and would otherwise slip through.
@@ -180,8 +186,8 @@ ships. It runs in two phases:
 ```bash
 npm run check          # source + PDF + width (compiled checks skipped if not built)
 npm run check:source   # source only
-npm run check:pdf      # PDF pages/sections + width (needs assets/resume.pdf + resume.log)
-npm run check:width    # width only (needs resume.log)
+npm run check:pdf      # PDF pages/sections + width (needs assets/resume.pdf + build/resume.log)
+npm run check:width    # width only (needs build/resume.log)
 ```
 
 It runs automatically in two places:
@@ -192,8 +198,8 @@ It runs automatically in two places:
 - **CI** — the source check gates the build before compiling, and the PDF check runs
   on the freshly compiled PDF before deploy.
 
-The PDF text extraction lives in `scripts/lib/extract-pdf.js` as a reusable seam, so
-the same extraction can feed future tooling (e.g. ATS scoring).
+The PDF text extraction lives in `scripts/lib/check/pdf.js` as a reusable seam, so
+the same extraction feeds the tailoring pipeline's ATS scoring.
 
 ---
 
@@ -237,34 +243,53 @@ If you do have TeXLive/MiKTeX installed, `npm run build:pdf` uses it directly.
 
 ---
 
-## Tailor to a job description
+## Tailoring toolkit — the `resume` CLI
 
-`scripts/tailor.mjs` turns a JD into an ATS-optimized, JD-specific PDF — **without**
-touching your canonical `resume.tex`. It scores keyword coverage, rewrites the summary
-and subtitle from a **verified fact base** (`profile/facts.json`, so it never fabricates
-experience), renders `tailored/<name>.pdf`, and runs the same page/width guards.
+One CLI turns a JD into an ATS-optimized, company-named PDF — **without** touching your
+canonical `resume.tex`. It keeps your scraped profile sources fresh, scores keyword
+coverage, rewrites the summary/subtitle with **Gemini** from a **verified fact base**
+(`profile/facts.json`, so it never fabricates experience), and runs the same page/width
+guards. Requires `GEMINI_API_KEY` in `.env` — there is no offline mode.
 
 ```bash
-export GEMINI_API_KEY=...                         # for the Gemini engine (default)
-npm run tailor -- path/to/jd.txt --name acme      # → tailored/acme.{tex,pdf,report.md}
-npm run tailor -- --jd "paste JD text" --name acme
-npm run tailor -- path/to/jd.txt --name acme --offline   # deterministic, no API key
-npm run tailor -- --sync                          # re-baseline profile source hashes
+cp .env.example .env             # set GEMINI_API_KEY (see the file for optional keys)
+
+npm run resume                   # interactive menu (clack) — everything's in here
+npm run tailor -- jd.txt --company "Inteligen-ai" [--role "AI Dev Engineer"]
+npm run sync -- --force          # re-scrape GitHub + LinkedIn now
+npm run status                   # env, sources, toolchain, and outputs at a glance
 ```
 
-- **Engine** — Gemini (`--model`, default `gemini-2.5-flash`) writes the tailored
-  phrasing; the ATS score and keyword classification are computed deterministically in
-  `scripts/lib/tailor-core.js` so numbers are reproducible. `--offline` skips the API
-  entirely and uses a rule-based summary.
-- **Score** — 20 pts structure + 80 pts weighted JD-keyword coverage. The report splits
-  keywords into **matched** (already in the résumé), **surface** (true & JD-relevant —
-  add these to lift the score), and **gaps** (the JD wants them but they're not in your
-  fact base — flagged so you never fake them).
-- **Sync** — `profile/sources.lock.json` hashes `resume.tex`, `facts.json`, and the
-  LinkedIn PDF; the tailor warns when they drift so the fact base stays honest.
-- **Anchors** — the tailor only rewrites the `%% >>>TAILOR:…` comment blocks in
-  `resume.tex` (summary, subtitle, skills), so the rest of the layout is identical to
-  your master. `tailored/` is gitignored (personal, regenerated on demand).
+- **Output naming** — the résumé is filed and named by company + the role read from the
+  JD: `--company "Inteligen-ai"` → `tailored/inteligen_ai/Sandeep Singh - AI Dev
+  Engineer.pdf` (with matching `.tex` and `.report.md`). Gemini reads the role from the
+  JD; a regex is the fallback, then `Software Engineer`. Override with `--role`.
+- **Score** — 20 pts structure + 80 pts weighted JD-keyword coverage (deterministic, in
+  `scripts/lib/tailor/core.js`). The report splits keywords into **matched** (already in
+  the résumé), **surface** (true & JD-relevant — add these to lift the score), and
+  **gaps** (the JD wants them but they're not in your fact base — flagged so you never
+  fake them).
+- **Anchors** — the tailor only rewrites the `%% >>>TAILOR:…` blocks in `resume.tex`
+  (summary, subtitle, skills). `tailored/` is gitignored (personal, regenerated).
+
+### Profile sources (scraped, tracked, editable)
+
+`npm run sync` refreshes two committed, hand-editable sources of truth; the tailor also
+refreshes them automatically before each run (fail-soft — a scrape error falls back to
+cached data):
+
+- **`profile/github.json`** — your public repos + PR contributions (merged/open/closed
+  tallies, stars) from the GitHub REST API. Set `GITHUB_TOKEN` for a higher rate limit.
+- **`profile/linkedin.json`** — your LinkedIn profile. Prefers a **live** scrape
+  (Playwright + your `LINKEDIN_COOKIE`); falls back to parsing `Linkedin_Profile.pdf` in
+  the repo root. Either way Gemini structures it into clean JSON (extract-only).
+
+`profile/sources.lock.json` records each source's last-scrape time and a **content
+hash**: a source re-scrapes only when older than `SCRAPE_TTL_HOURS` (default 12) or
+`--force`, and the JSON is rewritten only when its content actually changes — the hash
+prevents needless churn. Edit the JSON by hand to correct anything; your edits persist
+until a scrape changes that field. `npm run sync` also re-baselines the file-drift
+hashes so the tailor stops warning after you edit `facts.json`.
 
 ---
 
