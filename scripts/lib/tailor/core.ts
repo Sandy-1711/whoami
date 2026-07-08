@@ -2,10 +2,11 @@
 // score how well the resume covers them, and safely inject tailored content
 // into the resume's TAILOR anchor blocks. The Gemini engine reuses the scoring
 // and injection helpers; only the phrasing of summary/subtitle differs.
+import type { Facts, Classification, Score } from '../types.js';
 
 // Broad lexicon so JD keyword extraction works across SWE/AI/full-stack roles.
 // (Canonical spellings; ALIASES below fold common variants onto these.)
-export const TECH_LEXICON = [
+export const TECH_LEXICON: string[] = [
   'AI agents', 'agent infrastructure', 'agentic workflows', 'agent orchestration', 'LLM', 'LLMs',
   'large language models', 'RAG', 'retrieval-augmented generation', 'semantic search', 'vector databases',
   'embeddings', 'memory systems', 'semantic recall', 'streaming', 'tool calling', 'prompt engineering',
@@ -28,7 +29,7 @@ export const TECH_LEXICON = [
   'real-time', 'Agile', 'Scrum', 'system design',
 ];
 
-const ALIASES = {
+const ALIASES: Record<string, string> = {
   'postgres': 'PostgreSQL', 'postgresql': 'PostgreSQL', 'psql': 'PostgreSQL',
   'js': 'JavaScript', 'ts': 'TypeScript', 'nodejs': 'Node.js', 'node': 'Node.js',
   'reactjs': 'React', 'react.js': 'React', 'react native': 'React Native', 'rn': 'React Native',
@@ -45,15 +46,15 @@ const ALIASES = {
 
 // Does `term` occur in `text`, not glued inside a larger token? Handles the
 // dotted/plus/slash terms (Node.js, CI/CD, C++) that \b would mishandle.
-export function termInText(term, text) {
+export function termInText(term: string, text: string): boolean {
   const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp(`(?<![A-Za-z0-9+#.])${esc}(?![A-Za-z0-9+#.])`, 'i');
   return re.test(text);
 }
 
 // The canonical skills a JD asks for (dedup, alias-folded).
-export function extractJdKeywords(jd) {
-  const found = new Set();
+export function extractJdKeywords(jd: string): string[] {
+  const found = new Set<string>();
   const lower = ' ' + jd.toLowerCase() + ' ';
   for (const [alias, canon] of Object.entries(ALIASES)) {
     if (termInText(alias, lower)) found.add(canon);
@@ -65,9 +66,9 @@ export function extractJdKeywords(jd) {
 }
 
 // Flatten the fact base into the set of things the user can truthfully claim.
-export function factIndex(facts) {
-  const set = new Set();
-  const add = (s) => s && set.add(String(s).toLowerCase());
+export function factIndex(facts: Facts): Set<string> {
+  const set = new Set<string>();
+  const add = (s: unknown): void => { if (s) set.add(String(s).toLowerCase()); };
   (facts.allowed_keywords || []).forEach(add);
   Object.values(facts.skills || {}).flat().forEach(add);
   for (const grp of [...(facts.experience || []), ...(facts.projects || [])]) {
@@ -80,9 +81,9 @@ export function factIndex(facts) {
   return set;
 }
 
-export function classify(jdKeywords, resumeText, facts) {
+export function classify(jdKeywords: string[], resumeText: string, facts: Facts): Classification {
   const idx = factIndex(facts);
-  const matched = [], addable = [], missing = [];
+  const matched: string[] = [], addable: string[] = [], missing: string[] = [];
   for (const k of jdKeywords) {
     if (termInText(k, resumeText)) matched.push(k);
     else if (idx.has(k.toLowerCase())) addable.push(k);
@@ -92,9 +93,12 @@ export function classify(jdKeywords, resumeText, facts) {
 }
 
 // Transparent ATS-style score: 20 pts structure + 80 pts keyword coverage.
-export function scoreResume({ matched, addable, missing }, structurePoints = 20) {
+export function scoreResume(
+  { matched, addable, missing }: Classification,
+  structurePoints = 20,
+): Score {
   const total = matched.length + addable.length + missing.length;
-  const cov = (n) => (total === 0 ? 1 : n / total);
+  const cov = (n: number): number => (total === 0 ? 1 : n / total);
   const before = Math.round(structurePoints + 80 * cov(matched.length));
   const after = Math.round(structurePoints + 80 * cov(matched.length + addable.length));
   return { before: Math.min(100, before), after: Math.min(100, after), total };
@@ -102,7 +106,7 @@ export function scoreResume({ matched, addable, missing }, structurePoints = 20)
 
 // ---- LaTeX injection --------------------------------------------------------
 
-export function latexEscape(s) {
+export function latexEscape(s: string): string {
   return String(s)
     .replace(/\\/g, '\\textbackslash{}')
     .replace(/([&%$#_{}])/g, '\\$1')
@@ -111,7 +115,7 @@ export function latexEscape(s) {
 }
 
 // Escape text, then bold the first occurrence of each term (case-insensitive).
-export function boldify(text, terms = []) {
+export function boldify(text: string, terms: string[] = []): string {
   let out = latexEscape(text);
   for (const t of terms) {
     const esc = latexEscape(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -122,7 +126,7 @@ export function boldify(text, terms = []) {
 }
 
 // Replace the content between `%% >>>TAILOR:key` and `%% <<<TAILOR:key`.
-export function replaceBlock(tex, key, newContent) {
+export function replaceBlock(tex: string, key: string, newContent: string): string {
   const re = new RegExp(
     `(%%\\s*>>>TAILOR:${key}[^\\n]*\\n)[\\s\\S]*?(\\n\\s*%%\\s*<<<TAILOR:${key})`,
   );

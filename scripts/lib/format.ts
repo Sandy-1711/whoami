@@ -1,7 +1,7 @@
 // Small formatting helpers shared across commands.
 
 // Human "3m ago" / "5h ago" / "2d ago" for an ISO timestamp.
-export function timeAgo(iso) {
+export function timeAgo(iso?: string | null): string {
   if (!iso) return 'never';
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   if (mins < 1) return 'just now';

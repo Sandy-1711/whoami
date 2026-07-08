@@ -4,7 +4,7 @@
 # time (CI does that). Bypass with `git commit --no-verify` if ever needed.
 if git diff --cached --name-only | grep -q '^resume\.tex$'; then
   echo "Running résumé structure check (source)…"
-  if ! node scripts/check-resume.js --source; then
+  if ! npx tsx scripts/check-resume.ts --source; then
     echo "✗ Commit blocked: resume.tex failed its structure check (see above)."
     exit 1
   fi

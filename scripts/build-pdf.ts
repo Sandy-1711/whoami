@@ -7,7 +7,7 @@
 //
 //   npm run build:pdf:docker   # just build
 //   npm run verify             # build, then run all guards
-import { spawnSync } from 'node:child_process';
+import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -20,18 +20,18 @@ const OUT = 'build';
 const LATEXMK = ['-pdf', '-interaction=nonstopmode', '-halt-on-error', `-outdir=${OUT}`, 'resume.tex'];
 const BUILT_PDF = join(root, OUT, 'resume.pdf');
 
-function runs(cmd, args) {
+function runs(cmd: string, args: string[]): boolean {
   return spawnSync(cmd, args, { encoding: 'utf8' }).status === 0;
 }
 
-function daemonUp() {
+function daemonUp(): boolean {
   // `docker version` includes the Server line only when the daemon is reachable.
   return spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], {
     encoding: 'utf8',
   }).status === 0;
 }
 
-let result;
+let result: SpawnSyncReturns<Buffer>;
 if (runs('latexmk', ['--version'])) {
   console.log('Compiling with local latexmk …');
   result = spawnSync('latexmk', LATEXMK, { cwd: root, stdio: 'inherit' });

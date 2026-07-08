@@ -12,16 +12,24 @@ import { contentHash, isStale, recordScrape, lastScrape } from '../sources.js';
 import { env } from '../env.js';
 import { scrapeGithub, githubUsername } from './github.js';
 import { scrapeLinkedin } from './linkedin.js';
+import type { Facts, GithubData, LinkedinData, RefreshResult } from '../types.js';
 
-const ttlMs = () => env.scrapeTtlHours * 3600 * 1000;
+type Logger = (r: RefreshResult) => void;
+type Scraper = (root: string) => Promise<GithubData | LinkedinData>;
 
-async function readFacts(root) {
+const ttlMs = (): number => env.scrapeTtlHours * 3600 * 1000;
+
+async function readFacts(root: string): Promise<Facts> {
   return JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
 }
 
 // Refresh one scraped source. `scrape()` returns the fresh data object; the
 // result is written to profile/<source>.json only when its content changed.
-async function refreshSource(root, source, { force = false, log = () => {} } = {}) {
+async function refreshSource(
+  root: string,
+  source: string,
+  { force = false, log = () => {} }: { force?: boolean; log?: Logger } = {},
+): Promise<RefreshResult> {
   const file = join(root, 'profile', `${source}.json`);
   const missing = !existsSync(file);
 
@@ -31,15 +39,15 @@ async function refreshSource(root, source, { force = false, log = () => {} } = {
     return { source, status: 'fresh', at: prev?.at };
   }
 
-  let data;
+  let data: GithubData | LinkedinData;
   try {
-    data = await SCRAPERS[source](root);
+    data = await SCRAPERS[source]!(root);
   } catch (err) {
-    log({ source, status: 'error', error: err.message });
-    return { source, status: 'error', error: err.message };
+    log({ source, status: 'error', error: (err as Error).message });
+    return { source, status: 'error', error: (err as Error).message };
   }
 
-  const hash = contentHash(data);
+  const hash = contentHash(data as unknown as Record<string, unknown>);
   const prev = await lastScrape(root, source);
   const changed = missing || prev?.hash !== hash;
   if (changed) await writeFile(file, JSON.stringify(data, null, 2) + '\n');
@@ -51,7 +59,7 @@ async function refreshSource(root, source, { force = false, log = () => {} } = {
 }
 
 // Per-source scrape closures.
-const SCRAPERS = {
+const SCRAPERS: Record<string, Scraper> = {
   async github(root) {
     const facts = await readFacts(root);
     const username = githubUsername(facts.identity?.github || 'Sandy-1711');
@@ -68,13 +76,16 @@ const SCRAPERS = {
   },
 };
 
-export const SOURCES = Object.keys(SCRAPERS);
+export const SOURCES: string[] = Object.keys(SCRAPERS);
 
 // Refresh every scraped source. Scraping is independent of the file-drift
 // baseline (the sync command re-baselines that separately) so the tailor's
 // "sources changed" warning keeps working across auto-refreshes.
-export async function refreshAll(root, { force = false, log = () => {} } = {}) {
-  const results = [];
+export async function refreshAll(
+  root: string,
+  { force = false, log = () => {} }: { force?: boolean; log?: Logger } = {},
+): Promise<RefreshResult[]> {
+  const results: RefreshResult[] = [];
   for (const source of SOURCES) {
     results.push(await refreshSource(root, source, { force, log }));
   }
@@ -84,7 +95,7 @@ export async function refreshAll(root, { force = false, log = () => {} } = {}) {
 // Fail-soft freshness hook the tailor calls before every run: refresh what's
 // stale, but never let a scrape failure block tailoring — warn and continue on
 // the cached JSON.
-export async function ensureFresh(root, { log = () => {} } = {}) {
+export async function ensureFresh(root: string, { log = () => {} }: { log?: Logger } = {}): Promise<RefreshResult[]> {
   return refreshAll(root, { force: false, log });
 }
 

@@ -2,37 +2,34 @@ import { readFile } from 'node:fs/promises';
 
 // Sections every version of the résumé must keep. Edit here if the résumé's
 // shape changes intentionally.
-export const REQUIRED_SECTIONS = ['Experience', 'Projects', 'Technical Skills', 'Education'];
+export const REQUIRED_SECTIONS: string[] = ['Experience', 'Projects', 'Technical Skills', 'Education'];
 
 // Custom list macros (defined via \newcommand in resume.tex) that must open and
 // close in matching pairs.
-const MACRO_PAIRS = [
+const MACRO_PAIRS: [string, string][] = [
   ['resumeSubHeadingListStart', 'resumeSubHeadingListEnd'],
   ['resumeItemListStart', 'resumeItemListEnd'],
 ];
 
 // Drop LaTeX line comments (an unescaped %), keeping escaped \% intact, so we
 // never validate commented-out code.
-function stripComments(tex) {
+function stripComments(tex: string): string {
   return tex.replace(/(^|[^\\])%.*$/gm, '$1');
 }
 
-function countOccurrences(haystack, needle) {
+function countOccurrences(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
 }
 
-function escapeRegExp(s) {
+function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // Validate the LaTeX source's structure without compiling it. Returns a list of
 // human-readable problems; an empty list means the structure looks sound.
-//
-// @param {string} path  absolute path to resume.tex
-// @returns {Promise<string[]>}
-export async function checkSource(path) {
-  const problems = [];
-  let raw;
+export async function checkSource(path: string): Promise<string[]> {
+  const problems: string[] = [];
+  let raw: string;
   try {
     raw = await readFile(path, 'utf8');
   } catch {
@@ -53,8 +50,8 @@ export async function checkSource(path) {
 
   // Every \begin{env} needs a matching \end{env}. Macro definitions contribute
   // equally to both counts, so they cancel out and don't cause false positives.
-  const begins = [...tex.matchAll(/\\begin\{([^}]+)\}/g)].map((m) => m[1]);
-  const ends = [...tex.matchAll(/\\end\{([^}]+)\}/g)].map((m) => m[1]);
+  const begins = [...tex.matchAll(/\\begin\{([^}]+)\}/g)].map((m) => m[1]!);
+  const ends = [...tex.matchAll(/\\end\{([^}]+)\}/g)].map((m) => m[1]!);
   for (const name of new Set([...begins, ...ends])) {
     const b = begins.filter((n) => n === name).length;
     const e = ends.filter((n) => n === name).length;

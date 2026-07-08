@@ -10,10 +10,11 @@
 // happier with a plain jobname, so the compile uses a separate safe name (see
 // safeStem) and we copy the artifact to the pretty path afterwards.
 import { join } from 'node:path';
+import type { OutputPaths } from './types.js';
 
 // Company → folder slug: lowercase, runs of non-alphanumerics collapse to a
 // single underscore, trimmed.  "Inteligen-ai" → "inteligen_ai".
-export function slugCompany(name) {
+export function slugCompany(name: string): string {
   const s = String(name || '')
     .trim()
     .toLowerCase()
@@ -24,7 +25,7 @@ export function slugCompany(name) {
 
 // A role fit for a filename: strip characters illegal on Windows/macOS paths,
 // collapse whitespace. Falls back to "Software Engineer" per the spec.
-export function sanitizeRole(role) {
+export function sanitizeRole(role: string): string {
   const cleaned = String(role || '')
     .replace(/[\\/:*?"<>|]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -33,13 +34,16 @@ export function sanitizeRole(role) {
 }
 
 // Safe stem for the LaTeX jobname (no spaces/specials): "inteligen_ai__ai_dev_engineer".
-export function safeStem(slug, role) {
+export function safeStem(slug: string, role: string): string {
   const r = sanitizeRole(role).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   return `${slug}__${r}`.slice(0, 80);
 }
 
 // Resolve every path the tailor writes for one run.
-export function outputPaths(root, { company, fullName, role }) {
+export function outputPaths(
+  root: string,
+  { company, fullName, role }: { company: string; fullName: string; role: string },
+): OutputPaths {
   const slug = slugCompany(company);
   const roleClean = sanitizeRole(role);
   const base = `${fullName} - ${roleClean}`;
@@ -68,12 +72,12 @@ export function outputPaths(root, { company, fullName, role }) {
 // Returns null when nothing convincing is found (caller supplies the fallback).
 const JOB_NOUNS = 'Engineer|Developer|Scientist|Architect|Manager|Designer|Analyst|Lead|Intern|Consultant|Specialist';
 
-export function extractRoleFromJd(jd) {
+export function extractRoleFromJd(jd: string): string | null {
   const text = String(jd || '');
 
   const labeled = text.match(/^\s*(?:role|position|title|job\s*title)\s*[:\-–]\s*(.+)$/im);
   if (labeled) {
-    const r = cleanRoleLine(labeled[1]);
+    const r = cleanRoleLine(labeled[1]!);
     if (r) return r;
   }
 
@@ -81,7 +85,7 @@ export function extractRoleFromJd(jd) {
     new RegExp(`(?:hiring|seeking|looking for|for)\\s+(?:an?\\s+)?([A-Z][\\w/&+.-]*(?:\\s+[\\w/&+.-]+){0,4}?\\s+(?:${JOB_NOUNS}))`, 'm'),
   );
   if (hiring) {
-    const r = cleanRoleLine(hiring[1]);
+    const r = cleanRoleLine(hiring[1]!);
     if (r) return r;
   }
 
@@ -96,7 +100,7 @@ export function extractRoleFromJd(jd) {
   return null;
 }
 
-function cleanRoleLine(s) {
+function cleanRoleLine(s: string): string | null {
   const r = String(s)
     .replace(/\(.*?\)/g, ' ')                 // drop parentheticals like "(Remote)"
     .replace(/[.,;|].*$/, ' ')                // cut at first hard punctuation

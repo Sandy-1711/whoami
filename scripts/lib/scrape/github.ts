@@ -2,10 +2,12 @@
 // contributions to other repos, straight from the REST API. No auth needed for
 // public data, but a GITHUB_TOKEN in .env lifts the rate limit and is used when
 // present. The result is written to profile/github.json (an editable source).
+import type { GithubData, GithubRepo, GithubContribution } from '../types.js';
+
 const API = 'https://api.github.com';
 
-function headers(token) {
-  const h = {
+function headers(token?: string): Record<string, string> {
+  const h: Record<string, string> = {
     Accept: 'application/vnd.github+json',
     'User-Agent': 'whoami-resume-scraper',
     'X-GitHub-Api-Version': '2022-11-28',
@@ -14,7 +16,7 @@ function headers(token) {
   return h;
 }
 
-async function gh(path, token) {
+async function gh<T = any>(path: string, token?: string): Promise<T> {
   const res = await fetch(`${API}${path}`, { headers: headers(token) });
   if (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0') {
     const reset = Number(res.headers.get('x-ratelimit-reset') || 0) * 1000;
@@ -22,22 +24,22 @@ async function gh(path, token) {
     throw new Error(`GitHub rate limit hit — resets in ~${mins} min. Add GITHUB_TOKEN to .env to raise it.`);
   }
   if (!res.ok) throw new Error(`GitHub ${res.status} on ${path}: ${(await res.text()).slice(0, 160)}`);
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 // Extract "Sandy-1711" from a username, a URL, or a plain handle.
-export function githubUsername(idOrUrl) {
+export function githubUsername(idOrUrl?: string): string {
   const s = String(idOrUrl || '').trim();
   const m = s.match(/github\.com\/([^/?#]+)/i);
-  return (m ? m[1] : s).replace(/^@/, '');
+  return (m ? m[1]! : s).replace(/^@/, '');
 }
 
 // The user's own public, non-fork repositories, richest first.
-async function fetchRepos(user, token) {
-  const raw = await gh(`/users/${user}/repos?per_page=100&type=owner&sort=pushed`, token);
+async function fetchRepos(user: string, token?: string): Promise<GithubRepo[]> {
+  const raw = await gh<any[]>(`/users/${user}/repos?per_page=100&type=owner&sort=pushed`, token);
   return raw
     .filter((r) => !r.fork)
-    .map((r) => ({
+    .map((r): GithubRepo => ({
       name: r.name,
       description: r.description || '',
       url: r.html_url,
@@ -48,23 +50,23 @@ async function fetchRepos(user, token) {
       archived: !!r.archived,
       pushedAt: r.pushed_at,
     }))
-    .sort((a, b) => b.stars - a.stars || new Date(b.pushedAt) - new Date(a.pushedAt));
+    .sort((a, b) => b.stars - a.stars || new Date(b.pushedAt).getTime() - new Date(a.pushedAt).getTime());
 }
 
 // Pull requests the user has authored anywhere, grouped by target repo with
 // merged/open/closed tallies. Search results already carry pull_request.merged_at,
 // so no per-PR fetch is needed to know what merged.
-async function fetchContributions(user, token) {
-  const byRepo = new Map();
+async function fetchContributions(user: string, token?: string): Promise<GithubContribution[]> {
+  const byRepo = new Map<string, GithubContribution>();
   for (let page = 1; page <= 3; page++) {
     const q = encodeURIComponent(`type:pr author:${user}`);
-    const data = await gh(`/search/issues?q=${q}&per_page=100&page=${page}&sort=updated`, token);
+    const data = await gh<{ items?: any[] }>(`/search/issues?q=${q}&per_page=100&page=${page}&sort=updated`, token);
     const items = data.items || [];
     for (const it of items) {
       const repo = it.repository_url.replace(`${API}/repos/`, '');
       if (repo.toLowerCase().startsWith(`${user.toLowerCase()}/`)) continue; // own repos already covered
       const merged = !!it.pull_request?.merged_at;
-      const g = byRepo.get(repo) || { repo, url: `https://github.com/${repo}`, merged: 0, open: 0, closedUnmerged: 0, samplePRs: [] };
+      const g: GithubContribution = byRepo.get(repo) || { repo, url: `https://github.com/${repo}`, merged: 0, open: 0, closedUnmerged: 0, samplePRs: [] };
       if (merged) g.merged++;
       else if (it.state === 'open') g.open++;
       else g.closedUnmerged++;
@@ -83,14 +85,14 @@ async function fetchContributions(user, token) {
   // rate limits; the cap only guards a pathological number of repos.)
   for (const g of groups.slice(0, 50)) {
     try {
-      const r = await gh(`/repos/${g.repo}`, token);
+      const r = await gh<any>(`/repos/${g.repo}`, token);
       g.stars = r.stargazers_count;
     } catch { /* leave stars undefined */ }
   }
   return groups;
 }
 
-export async function scrapeGithub({ username, token } = {}) {
+export async function scrapeGithub({ username, token }: { username?: string; token?: string } = {}): Promise<GithubData> {
   const user = githubUsername(username);
   if (!user) throw new Error('No GitHub username to scrape.');
 

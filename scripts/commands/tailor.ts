@@ -5,7 +5,6 @@
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import ora from 'ora';
 import { root } from '../lib/root.js';
 import { env } from '../lib/env.js';
 import {
@@ -17,25 +16,49 @@ import { ensureFresh } from '../lib/scrape/refresh.js';
 import { compileLatex } from '../lib/latex.js';
 import { checkLog } from '../lib/check/log.js';
 import { extractPdf } from '../lib/check/pdf.js';
-import { tailorWithGemini } from '../lib/tailor/gemini.js';
+import { geminiJson } from '../lib/gemini.js';
+import { tailorPrompt, TAILOR_SCHEMA, mapTailorResponse, type TailorResponse } from '../lib/prompts.js';
 import { outputPaths, extractRoleFromJd } from '../lib/naming.js';
 import * as ui from '../lib/ui.js';
-import { chalk } from '../lib/ui.js';
+import { pc } from '../lib/ui.js';
+import type { Facts, Classification, Score, OutputPaths } from '../lib/types.js';
 
-export async function runTailor({ jd, company, role: roleOverride = '', model = env.geminiModel } = {}) {
+export interface RunTailorArgs {
+  jd: string;
+  company: string;
+  role?: string;
+  model?: string;
+}
+
+export interface RunTailorResult {
+  paths: OutputPaths;
+  score: Score;
+  role: string;
+  guardsPass: boolean;
+}
+
+interface Guards {
+  built: boolean;
+  pages: number | null;
+  width: string[];
+}
+
+export async function runTailor(
+  { jd, company, role: roleOverride = '', model = env.geminiModel }: RunTailorArgs,
+): Promise<RunTailorResult> {
   if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
   if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
   const key = env.geminiKey;
   if (!key) throw new Error('GEMINI_API_KEY not set. Add it to .env (see .env.example).');
 
-  const facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
+  const facts: Facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
   const resumeTex = await readFile(join(root, 'resume.tex'), 'utf8');
   const resumeText = plainText(resumeTex);
 
   console.log(ui.banner('Résumé Tailor', `JD → ATS-optimized PDF · engine: gemini ${model}`));
 
   // ---- keep scraped sources fresh (fail-soft) ------------------------------
-  const spinS = ora({ text: 'Refreshing profile sources (GitHub, LinkedIn)…', color: 'cyan' }).start();
+  const spinS = ui.spinner('Refreshing profile sources (GitHub, LinkedIn)…');
   const fresh = await ensureFresh(root, { log: (r) => { spinS.text = `Sources: ${r.source} ${r.status}…`; } });
   const changed = fresh.filter((r) => r.status === 'updated' || r.status === 'created');
   const errs = fresh.filter((r) => r.status === 'error');
@@ -45,7 +68,7 @@ export async function runTailor({ jd, company, role: roleOverride = '', model = 
 
   // ---- drift warning -------------------------------------------------------
   const d = await drift(root);
-  if (!d.lock) console.log('\n' + ui.info(chalk.dim('No sync baseline yet — run `npm run sync` after profile edits.')));
+  if (!d.lock) console.log('\n' + ui.info(pc.dim('No sync baseline yet — run `npm run sync` after profile edits.')));
   else if (!d.synced) console.log('\n' + ui.warn(`Profile sources changed since last sync: ${d.changed.join(', ')}. Fact base may be stale.`));
 
   // ---- score ---------------------------------------------------------------
@@ -54,14 +77,19 @@ export async function runTailor({ jd, company, role: roleOverride = '', model = 
   const score = scoreResume(cls);
 
   // ---- tailor content (Gemini) ---------------------------------------------
-  const spin = ora({ text: `Asking Gemini (${model}) to tailor from your fact base…`, color: 'cyan' }).start();
-  let roleTitle, summaryText, subtitle, boldTerms, rationale;
+  const spin = ui.spinner(`Asking Gemini (${model}) to tailor from your fact base…`);
+  let roleTitle: string, summaryText: string, subtitle: string, boldTerms: string[], rationale: string;
   try {
-    ({ roleTitle, summaryText, subtitle, boldTerms, rationale } =
-      await tailorWithGemini({ jd, facts, classification: cls, apiKey: key, model }));
+    const parsed = await geminiJson<TailorResponse>({
+      prompt: tailorPrompt({ jd, facts, classification: cls }),
+      schema: TAILOR_SCHEMA,
+      apiKey: key,
+      model,
+    });
+    ({ roleTitle, summaryText, subtitle, boldTerms, rationale } = mapTailorResponse(parsed));
     spin.succeed('Gemini tailored the summary & subtitle.');
   } catch (err) {
-    spin.fail(`Gemini failed: ${err.message}`);
+    spin.fail(`Gemini failed: ${(err as Error).message}`);
     throw new Error('Check GEMINI_API_KEY / quota / model name and retry.');
   }
 
@@ -83,9 +111,9 @@ export async function runTailor({ jd, company, role: roleOverride = '', model = 
   await writeFile(paths.buildTex, out);  // plain-jobname copy for pdflatex
 
   // ---- compile + guards ----------------------------------------------------
-  const spin2 = ora({ text: 'Rendering PDF & running guards…', color: 'cyan' }).start();
+  const spin2 = ui.spinner('Rendering PDF & running guards…');
   const res = compileLatex(root, paths.buildTexRel, { outDir: 'build', capture: true });
-  const guards = { built: existsSync(paths.buildPdf), pages: null, width: [] };
+  const guards: Guards = { built: existsSync(paths.buildPdf), pages: null, width: [] };
   if (!guards.built) {
     spin2.fail('PDF build failed.');
     if (res.reason === 'docker-daemon-down') throw new Error('Docker daemon is down — start Docker Desktop (or install latexmk).');
@@ -97,14 +125,15 @@ export async function runTailor({ jd, company, role: roleOverride = '', model = 
   guards.pages = totalPages;
   guards.width = await checkLog(paths.buildLog, { maxOverfullPt: 2 });
   const guardsPass = guards.pages === 1 && guards.width.length === 0;
-  guardsPass ? spin2.succeed('PDF rendered — guards passed.') : spin2.warn('PDF rendered — guard warnings (see below).');
+  if (guardsPass) spin2.succeed('PDF rendered — guards passed.');
+  else spin2.warn('PDF rendered — guard warnings (see below).');
 
   await report({ jdKeywords, cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass, model });
   return { paths, score, role, guardsPass };
 }
 
 // Strip LaTeX to plain-ish words for keyword matching.
-function plainText(tex) {
+function plainText(tex: string): string {
   return tex
     .split('\n').filter((l) => !/^\s*%/.test(l)).join('\n')
     .replace(/\\href\{[^}]*\}/g, ' ')
@@ -114,9 +143,25 @@ function plainText(tex) {
     .replace(/\s+/g, ' ');
 }
 
-async function report({ jdKeywords, cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass, model }) {
+interface ReportArgs {
+  jdKeywords: string[];
+  cls: Classification;
+  score: Score;
+  role: string;
+  summaryText: string;
+  subtitle: string;
+  rationale: string;
+  guards: Guards;
+  paths: OutputPaths;
+  guardsPass: boolean;
+  model: string;
+}
+
+async function report(
+  { jdKeywords, cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass, model }: ReportArgs,
+): Promise<void> {
   const pdfRel = relative(root, paths.pdf).replace(/\\/g, '/');
-  const L = [];
+  const L: string[] = [];
   L.push(ui.heading('ATS coverage'));
   L.push('\n' + ui.scoreTable(score.before, score.after));
   L.push('');
@@ -131,21 +176,21 @@ async function report({ jdKeywords, cls, score, role, summaryText, subtitle, rat
   L.push(ui.chips(cls.missing, 'bad'));
 
   L.push(ui.heading('Detected role'));
-  L.push('  ' + chalk.cyan(role));
+  L.push('  ' + pc.cyan(role));
   L.push(ui.heading('Tailored summary'));
-  L.push('  ' + chalk.italic(summaryText));
+  L.push('  ' + pc.italic(summaryText));
   L.push(ui.heading('Tailored subtitle'));
-  L.push('  ' + chalk.italic(subtitle));
-  if (rationale) { L.push(ui.heading('Why (Gemini)')); L.push('  ' + chalk.dim(rationale)); }
+  L.push('  ' + pc.italic(subtitle));
+  if (rationale) { L.push(ui.heading('Why (Gemini)')); L.push('  ' + pc.dim(rationale)); }
 
   L.push(ui.heading('Output'));
-  L.push(ui.kv('company', chalk.cyan(paths.slug)));
-  L.push(ui.kv('pdf', chalk.cyan(pdfRel)));
+  L.push(ui.kv('company', pc.cyan(paths.slug)));
+  L.push(ui.kv('pdf', pc.cyan(pdfRel)));
   L.push(ui.kv('pages', guards.pages === 1 ? ui.ok('1') : ui.fail(`${guards.pages} (must be 1)`)));
   L.push(ui.kv('width', guards.width.length === 0 ? ui.ok('no overflow') : ui.fail(guards.width.join('; '))));
 
   L.push('\n' + (guardsPass
-    ? ui.ok(chalk.green(`Done. Open "${pdfRel}" — ATS ${score.before} → ${score.after}.`))
+    ? ui.ok(pc.green(`Done. Open "${pdfRel}" — ATS ${score.before} → ${score.after}.`))
     : ui.warn('Tailored PDF built but a guard failed — fix before sending.')));
   console.log(L.join('\n') + '\n');
 
