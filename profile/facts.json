@@ -27,7 +27,7 @@
     "background execution", "prompt engineering", "context engineering", "LLM evaluation", "evals",
     "fine-tuning", "LoRA", "QLoRA", "PEFT", "quantization", "GGUF", "multimodal", "transformers",
     "model selection", "observability", "Langfuse", "promptfoo", "LlamaIndex", "LangChain", "Hugging Face",
-    "OpenAI API", "Gemini API", "Anthropic", "Pinecone", "Qdrant", "PyTorch",
+    "OpenAI API", "Gemini API", "Anthropic", "Claude", "Claude Code", "Pinecone", "Qdrant", "PyTorch",
     "Python", "TypeScript", "JavaScript", "SQL",
     "FastAPI", "Node.js", "Express", "asyncio", "REST APIs", "API design", "WebSockets", "Socket.io",
     "microservices", "distributed systems", "concurrency", "race conditions",
@@ -41,7 +41,7 @@
     "real-time", "uptime", "scalability", "production reliability", "high ownership", "end-to-end ownership"
   ],
   "skills": {
-    "AI/ML & LLM": ["Hugging Face (PEFT/LoRA)", "LangChain", "Langfuse", "LlamaIndex", "Mastra", "OpenAI/Gemini API", "Pinecone", "promptfoo", "Python (Expert)", "PyTorch", "Qdrant"],
+    "AI/ML & LLM": ["Claude Code", "Hugging Face (PEFT/LoRA)", "LangChain", "Langfuse", "LlamaIndex", "Mastra", "OpenAI/Anthropic/Gemini API", "Pinecone", "promptfoo", "PyTorch", "Qdrant"],
     "Backend & Ops": ["asyncio", "AWS (Lambda, S3)", "CI/CD (GitHub Actions)", "Docker", "FastAPI", "MongoDB", "PostgreSQL", "Redis", "REST APIs", "WebSockets"],
     "Frontend & Mobile": ["Next.js", "React Native (Expo)", "React.js", "Shadcn/UI", "Tailwind CSS"],
     "Languages": ["JavaScript", "Python", "SQL", "TypeScript"]
@@ -50,11 +50,11 @@
     {
       "org": "AiRA", "role": "AI Engineer (Agent Orchestration, Memory, RAG & Systems)",
       "dates": "Nov 2025 - Mar 2026",
-      "keywords": ["agent orchestration", "agentic workflows", "FastAPI", "asyncio", "RAG", "memory systems", "Redis", "MongoDB", "LLM evaluation", "promptfoo", "Langfuse", "observability", "CASA", "authentication", "token denylist", "prompt engineering"],
+      "keywords": ["agent orchestration", "agentic workflows", "FastAPI", "asyncio", "RAG", "memory systems", "Redis", "MongoDB", "LLM evaluation", "promptfoo", "Langfuse", "observability", "CASA", "authentication", "token denylist", "prompt engineering", "Anthropic", "Claude", "model selection"],
       "highlights": [
         "Built the flagship Daily Brief agent (Python/FastAPI) — an agentic orchestration loop over Email, Calendar, and Exa AI web-search tools via asyncio.",
         "Architected a multi-tier memory system (working/medium/long-term) on MongoDB and Redis.",
-        "Built an LLM evaluation pipeline with promptfoo benchmarking 8+ models on tool-calling, memory, and latency.",
+        "Built an LLM evaluation pipeline with promptfoo benchmarking 8+ models (Anthropic Claude, OpenAI, Grok) on tool-calling, memory, and latency.",
         "Cut routing-LLM token usage by 82% via artifact-based prompting and context deduplication.",
         "Implemented Langfuse observability for LLM traces, latency, and cost.",
         "Worked on CASA security standards: Redis token denylists and injection sanitization."
