@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "mkdir -p public",
+  "buildCommand": "mkdir -p public && printf 'User-agent: *\\nAllow: /\\n' > public/robots.txt",
   "outputDirectory": "public",
   "functions": {
     "api/resume.ts": {
