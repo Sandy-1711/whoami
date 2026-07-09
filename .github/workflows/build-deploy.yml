@@ -64,16 +64,14 @@ jobs:
           path: apps/web/assets/resume.pdf
           if-no-files-found: error
 
-      - name: Install Vercel CLI
-        run: pnpm add -g vercel@latest
-
       # The Vercel project's Root Directory is set to apps/web in the dashboard,
-      # so the CLI deploys the self-contained web app from there.
+      # so the CLI deploys the self-contained web app from there. Run the CLI with
+      # `pnpm dlx` (no global install — that fails on the runner's PATH).
       - name: Deploy to Vercel (production)
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-          vercel deploy --prod --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@latest deploy --prod --token="$VERCEL_TOKEN"
