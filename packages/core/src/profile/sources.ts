@@ -11,7 +11,7 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Lock, ScrapeState } from './types.js';
+import type { Lock, ScrapeState } from '../types.js';
 
 export const sha = (buf: string | Uint8Array): string =>
   createHash('sha256').update(buf).digest('hex').slice(0, 16);

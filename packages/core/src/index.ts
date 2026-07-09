@@ -1,0 +1,35 @@
+// @resume/core public surface. The CLI and any other consumer import from here.
+
+// Ports (the interfaces consumers implement or depend on).
+export * from './ports/http.js';
+export * from './ports/llm.js';
+export * from './ports/config.js';
+export * from './ports/latex.js';
+export * from './ports/logger.js';
+
+// LLM registry + provider factories.
+export * from './llm/registry.js';
+export { geminiFactory } from './llm/providers/gemini.js';
+export { deepseekFactory } from './llm/providers/deepseek.js';
+
+// Domain types + pure helpers.
+export * from './types.js';
+export * from './format.js';
+export * from './naming.js';
+export * from './prompts.js';
+
+// Tailoring.
+export * from './tailor/core.js';
+export * from './tailor/report.js';
+export * from './tailor/service.js';
+
+// Profile sources + scraping.
+export * from './profile/sources.js';
+export * from './scrape/github.js';
+export * from './scrape/linkedin.js';
+export * from './scrape/refresh.js';
+
+// Guards.
+export * from './check/log.js';
+export * from './check/pdf.js';
+export * from './check/source.js';

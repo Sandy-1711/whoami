@@ -1,20 +1,9 @@
-// Every Gemini prompt template and response schema in the repo lives here, so
-// the wording and the expected JSON shape can be reviewed and tuned in one file.
+// Every LLM prompt template and response schema in the repo lives here, so the
+// wording and the expected JSON shape can be reviewed and tuned in one file.
 // This module is pure (no network, no I/O): it builds strings/objects and maps
-// raw responses into typed results. The transport is ./gemini.ts.
+// raw responses into typed results. The transport is any LlmProvider.
+import type { JsonSchema } from './ports/llm.js';
 import type { Facts, Classification, TailorContent, LinkedinProfile } from './types.js';
-
-// A minimal subset of JSON Schema — the shape Gemini's responseSchema accepts,
-// and (embedded in the prompt) the shape we ask DeepSeek to match.
-export interface JsonSchema {
-  type: string;
-  properties?: Record<string, JsonSchema>;
-  items?: JsonSchema;
-  required?: string[];
-}
-
-/** @deprecated use JsonSchema — kept so existing imports don't break. */
-export type GeminiSchema = JsonSchema;
 
 // ---- résumé tailoring -------------------------------------------------------
 

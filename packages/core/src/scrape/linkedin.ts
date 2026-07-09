@@ -11,7 +11,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { extractPdf } from '../check/pdf.js';
-import { llmJson, type LlmConfig } from '../llm.js';
+import type { LlmProvider } from '../ports/llm.js';
 import { linkedinPrompt, LINKEDIN_SCHEMA, type LinkedinResponse } from '../prompts.js';
 import type { LinkedinData } from '../types.js';
 
@@ -95,7 +95,7 @@ async function rawProfileText(root: string, { cookie, url }: { cookie: string; u
 export interface ScrapeLinkedinOptions {
   cookie?: string;
   url?: string;
-  llm?: LlmConfig;
+  llm?: LlmProvider;
 }
 
 export async function scrapeLinkedin(
@@ -106,10 +106,9 @@ export async function scrapeLinkedin(
 
   const { via, text, liveError } = await rawProfileText(root, { cookie, url });
 
-  const profile = await llmJson<LinkedinResponse>({
+  const profile = await llm.generateJson<LinkedinResponse>({
     prompt: linkedinPrompt(text),
     schema: LINKEDIN_SCHEMA,
-    llm,
     temperature: 0.1,
   });
 
