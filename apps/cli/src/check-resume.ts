@@ -10,11 +10,12 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { checkSource, REQUIRED_SECTIONS } from './lib/check/source.js';
+import { checkSource, REQUIRED_SECTIONS } from '@resume/core';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+// apps/cli/src/ -> ../../../ is the monorepo root (where resume.tex lives).
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const SOURCE = join(root, 'resume.tex');
-const PDF = join(root, 'assets', 'resume.pdf');
+const PDF = join(root, 'apps', 'web', 'assets', 'resume.pdf');
 // Local builds write the log to build/ (see build-pdf.ts); CI's latex-action
 // leaves it at the repo root. Prefer build/, fall back to root.
 const LOG = [join(root, 'build', 'resume.log'), join(root, 'resume.log')].find(existsSync)
@@ -66,7 +67,7 @@ if (wantPdf) {
     const problems: string[] = [];
     try {
       // Imported lazily so the source-only path needs no node_modules.
-      const { extractPdf } = await import('./lib/check/pdf.js');
+      const { extractPdf } = await import('@resume/core');
       const { text, totalPages } = await extractPdf(PDF);
 
       if (totalPages !== EXPECTED_PAGES) {
@@ -110,7 +111,7 @@ if (wantLog) {
       console.log('• Width: skipped (resume.log not present yet)');
     }
   } else {
-    const { checkLog } = await import('./lib/check/log.js');
+    const { checkLog } = await import('@resume/core');
     const problems = await checkLog(LOG, { maxOverfullPt: MAX_OVERFULL_PT });
     ok = report('Width (resume.log)', problems) && ok;
   }

@@ -1,7 +1,10 @@
-// Compile a .tex to PDF via local latexmk if present, else Docker (same image as
-// CI). Shared by the tailor pipeline; build-pdf.ts keeps its own inline copy for
-// the simple `npm run build:pdf:docker` path.
+// LaTeX rendering adapter — implements the LatexCompiler port. Compiles a .tex
+// to PDF via local latexmk if present, else Docker (same image as CI). The
+// module-level helpers (haveCmd, dockerDaemonUp, compileLatex) are kept for the
+// status/build commands and unit tests; DockerLatexCompiler is the injectable
+// port implementation the tailor pipeline uses.
 import { spawnSync } from 'node:child_process';
+import type { LatexCompiler, CompileResult, CompileOptions, EngineReason } from '@resume/core';
 
 export const IMAGE: string = process.env.RESUME_TEX_IMAGE || 'texlive/texlive:latest';
 
@@ -17,18 +20,8 @@ export function dockerDaemonUp(): boolean {
   );
 }
 
-export interface CompileResult {
-  engine: 'latexmk' | 'docker' | null;
-  status: number | null;
-  output: string;
-  reason?: 'docker-daemon-down' | 'no-engine';
-}
-
-export type EngineReason = 'docker-daemon-down' | 'no-engine';
-
 // Cheap up-front probe mirroring compileLatex's engine selection, so callers can
 // bail before doing expensive work (e.g. an LLM call) when nothing can render.
-// Returns null when a render is possible.
 export function renderEngineReason(): EngineReason | null {
   if (haveCmd('latexmk')) return null;
   if (haveCmd('docker')) return dockerDaemonUp() ? null : 'docker-daemon-down';
@@ -40,7 +33,7 @@ export function renderEngineReason(): EngineReason | null {
 export function compileLatex(
   root: string,
   texRel: string,
-  { outDir = '.', capture = true }: { outDir?: string; capture?: boolean } = {},
+  { outDir = '.', capture = true }: CompileOptions = {},
 ): CompileResult {
   const args = ['-pdf', '-interaction=nonstopmode', '-halt-on-error', `-outdir=${outDir}`, texRel];
   const io = capture
@@ -62,4 +55,14 @@ export function compileLatex(
     return { engine: 'docker', status: r.status, output: String(r.stdout || '') + String(r.stderr || '') };
   }
   return { engine: null, status: 1, output: '', reason: 'no-engine' };
+}
+
+// The injectable LatexCompiler the pipeline depends on.
+export class DockerLatexCompiler implements LatexCompiler {
+  availability(): EngineReason | null {
+    return renderEngineReason();
+  }
+  compile(root: string, texRel: string, opts?: CompileOptions): CompileResult {
+    return compileLatex(root, texRel, opts);
+  }
 }

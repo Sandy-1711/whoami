@@ -4,14 +4,11 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { root } from '../lib/root.js';
-import { env } from '../lib/env.js';
-import { readLock, drift } from '../lib/sources.js';
-import { haveCmd, dockerDaemonUp } from '../lib/latex.js';
-import * as ui from '../lib/ui.js';
-import { pc } from '../lib/ui.js';
-import { timeAgo } from '../lib/format.js';
-import type { GithubData, LinkedinData } from '../lib/types.js';
+import { readLock, drift, timeAgo, type GithubData, type LinkedinData } from '@resume/core';
+import { haveCmd, dockerDaemonUp } from '../adapters/latex.js';
+import * as ui from '../ui.js';
+import { pc } from '../ui.js';
+import type { Cli } from '../container.js';
 
 const yes = pc.green('●');
 const no = pc.red('○');
@@ -21,20 +18,29 @@ async function readJson<T = any>(p: string): Promise<T | null> {
   try { return JSON.parse(await readFile(p, 'utf8')) as T; } catch { return null; }
 }
 
-export async function runStatus(): Promise<void> {
+function havePlaywright(root: string): boolean {
+  return existsSync(join(root, 'node_modules', 'playwright'))
+    || existsSync(join(root, 'packages', 'core', 'node_modules', 'playwright'));
+}
+
+export async function runStatus(cli: Cli): Promise<void> {
+  const { root, config, registry } = cli;
   console.log(ui.banner('Résumé Studio', 'status · sources · outputs'));
 
   // ---- environment ---------------------------------------------------------
-  const playwright = existsSync(join(root, 'node_modules', 'playwright'));
-  const active = env.llmProvider;
-  const activeTag = (p: 'gemini' | 'deepseek'): string => (active === p ? ` ${pc.cyan('← active')}` : '');
-  const noLlmKey = !env.geminiKey && !env.deepseekKey;
+  const playwright = havePlaywright(root);
+  const active = registry.defaultProviderId(config);
+  const anyKey = registry.list().some((f) => config.llm.keys[f.id]);
   console.log(ui.heading('Environment'));
-  console.log(ui.kv('LLM provider', noLlmKey ? `${no} ${pc.red('no API key — tailoring will fail')}` : `${yes} ${pc.dim(active)}`));
-  console.log(ui.kv('Gemini key', env.geminiKey ? `${yes} set ${pc.dim(`(${env.geminiModel})`)}${activeTag('gemini')}` : `${optional} ${pc.dim('unset')}`));
-  console.log(ui.kv('DeepSeek key', env.deepseekKey ? `${yes} set ${pc.dim(`(${env.deepseekModel})`)}${activeTag('deepseek')}` : `${optional} ${pc.dim('unset')}`));
-  console.log(ui.kv('GitHub token', env.githubToken ? `${yes} set` : `${optional} ${pc.dim('unset — public scrape, lower rate limit')}`));
-  console.log(ui.kv('LinkedIn live', env.linkedinCookie && playwright ? `${yes} cookie + Playwright` : `${optional} ${pc.dim(`${env.linkedinCookie ? 'cookie set' : 'no cookie'}, ${playwright ? 'Playwright ready' : 'Playwright not installed'} — PDF fallback`)}`));
+  console.log(ui.kv('LLM provider', anyKey ? `${yes} ${pc.dim(active)}` : `${no} ${pc.red('no API key — tailoring will fail')}`));
+  for (const f of registry.list()) {
+    const key = config.llm.keys[f.id];
+    const model = config.llm.models[f.id] || f.defaultModel;
+    const tag = active === f.id && key ? ` ${pc.cyan('← active')}` : '';
+    console.log(ui.kv(`${f.label} key`, key ? `${yes} set ${pc.dim(`(${model})`)}${tag}` : `${optional} ${pc.dim('unset')}`));
+  }
+  console.log(ui.kv('GitHub token', config.githubToken ? `${yes} set` : `${optional} ${pc.dim('unset — public scrape, lower rate limit')}`));
+  console.log(ui.kv('LinkedIn live', config.linkedinCookie && playwright ? `${yes} cookie + Playwright` : `${optional} ${pc.dim(`${config.linkedinCookie ? 'cookie set' : 'no cookie'}, ${playwright ? 'Playwright ready' : 'Playwright not installed'} — PDF fallback`)}`));
 
   // ---- toolchain -----------------------------------------------------------
   const latexmk = haveCmd('latexmk');
@@ -64,12 +70,12 @@ export async function runStatus(): Promise<void> {
 
   // ---- built résumé --------------------------------------------------------
   console.log(ui.heading('Canonical résumé'));
-  const pdf = join(root, 'assets', 'resume.pdf');
+  const pdf = join(root, 'apps', 'web', 'assets', 'resume.pdf');
   if (existsSync(pdf)) {
     const s = await stat(pdf);
-    console.log(ui.kv('assets/resume.pdf', `${yes} ${pc.dim(`${(s.size / 1024).toFixed(0)} KB · built ${timeAgo(s.mtime.toISOString())}`)}`));
+    console.log(ui.kv('apps/web/assets/resume.pdf', `${yes} ${pc.dim(`${(s.size / 1024).toFixed(0)} KB · built ${timeAgo(s.mtime.toISOString())}`)}`));
   } else {
-    console.log(ui.kv('assets/resume.pdf', `${optional} ${pc.dim('not built — run `npm run build:pdf`')}`));
+    console.log(ui.kv('apps/web/assets/resume.pdf', `${optional} ${pc.dim('not built — run `pnpm build:pdf`')}`));
   }
 
   // ---- tailored outputs ----------------------------------------------------

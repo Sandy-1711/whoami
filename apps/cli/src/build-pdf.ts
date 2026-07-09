@@ -12,7 +12,9 @@ import { existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+// apps/cli/src/ -> ../../../ is the monorepo root (where resume.tex lives).
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const ASSETS = join(root, 'apps', 'web', 'assets');
 const IMAGE = process.env.RESUME_TEX_IMAGE || 'texlive/texlive:latest';
 // Keep every LaTeX byproduct (.aux/.log/.out/.fls/.pdf …) inside build/ so the
 // repo root stays clean. latexmk creates the directory if it's missing.
@@ -65,6 +67,6 @@ if (!existsSync(BUILT_PDF)) {
   console.error(`\nBuild failed: ${OUT}/resume.pdf was not produced (see log above).`);
   process.exit(result.status || 1);
 }
-mkdirSync(join(root, 'assets'), { recursive: true });
-copyFileSync(BUILT_PDF, join(root, 'assets', 'resume.pdf'));
-console.log(`✓ Built ${OUT}/resume.pdf → assets/resume.pdf`);
+mkdirSync(ASSETS, { recursive: true });
+copyFileSync(BUILT_PDF, join(ASSETS, 'resume.pdf'));
+console.log(`✓ Built ${OUT}/resume.pdf → apps/web/assets/resume.pdf`);

@@ -2,20 +2,20 @@
 // resume — one entrypoint for the whole résumé toolkit.
 //
 //   resume                         interactive menu
-//   resume tailor <jd> --company X [--role X] [--model X]
+//   resume tailor <jd> --company X [--role X] [--provider gemini|deepseek] [--model X]
 //   resume tailor --jd "text..." --company X
 //   resume sync [--force]          refresh scraped GitHub + LinkedIn sources
 //   resume status                  show env, sources, outputs
-//   resume build                   compile resume.tex → assets/resume.pdf
+//   resume build                   compile resume.tex → apps/web/assets/resume.pdf
 //   resume check [--source|--pdf|--width]
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import * as p from '@clack/prompts';
-import { env } from './lib/env.js';
-import * as ui from './lib/ui.js';
-import { pc } from './lib/ui.js';
-import { parseArgs } from './lib/args.js';
+import * as ui from './ui.js';
+import { pc } from './ui.js';
+import { parseArgs } from './args.js';
+import { buildCli, type Cli } from './container.js';
 
 const { cmd, has, opt, positionals } = parseArgs(process.argv.slice(2));
 
@@ -24,11 +24,17 @@ function fail(err: unknown): never {
   process.exit(1);
 }
 
+async function fileJd(file?: string): Promise<string> {
+  if (!file) return '';
+  if (!existsSync(file)) throw new Error(`JD file not found: ${file}`);
+  return readFile(file, 'utf8');
+}
+
 // ---- direct commands -------------------------------------------------------
-async function directTailor(): Promise<void> {
+async function directTailor(cli: Cli): Promise<void> {
   const { runTailor } = await import('./commands/tailor.js');
   const jd = opt('--jd') || (await fileJd(positionals()[0]));
-  await runTailor({
+  await runTailor(cli, {
     jd,
     company: opt('--company') || opt('--name'),
     role: opt('--role'),
@@ -37,23 +43,19 @@ async function directTailor(): Promise<void> {
   });
 }
 
-async function fileJd(file?: string): Promise<string> {
-  if (!file) return '';
-  if (!existsSync(file)) throw new Error(`JD file not found: ${file}`);
-  return readFile(file, 'utf8');
+function commands(cli: Cli): Record<string, () => Promise<unknown>> {
+  return {
+    tailor: () => directTailor(cli),
+    sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force') }),
+    status: async () => (await import('./commands/status.js')).runStatus(cli),
+    build: async () => (await import('./commands/build.js')).runBuild(cli),
+    check: async () => {
+      const scope = has('--pdf') ? '--pdf' : has('--width') ? '--log' : has('--source') ? '--source' : '';
+      return (await import('./commands/check.js')).runCheck(cli, { scope });
+    },
+    help: async () => printHelp(),
+  };
 }
-
-const COMMANDS: Record<string, () => Promise<unknown>> = {
-  tailor: directTailor,
-  sync: async () => (await import('./commands/sync.js')).runSync({ force: has('--force') }),
-  status: async () => (await import('./commands/status.js')).runStatus(),
-  build: async () => (await import('./commands/build.js')).runBuild(),
-  check: async () => {
-    const scope = has('--pdf') ? '--pdf' : has('--width') ? '--log' : has('--source') ? '--source' : '';
-    return (await import('./commands/check.js')).runCheck({ scope });
-  },
-  help: async () => printHelp(),
-};
 
 function printHelp(): void {
   console.log(ui.banner('resume', 'JD-tailored résumés from a verified profile'));
@@ -71,7 +73,7 @@ function printHelp(): void {
 }
 
 // ---- interactive menu ------------------------------------------------------
-async function interactive(): Promise<void> {
+async function interactive(cli: Cli): Promise<void> {
   console.clear();
   p.intro(ui.gradientText(' résumé studio '));
 
@@ -91,14 +93,14 @@ async function interactive(): Promise<void> {
     if (p.isCancel(action) || action === 'exit') { p.outro('Bye 👋'); return; }
 
     try {
-      if (action === 'tailor') await interactiveTailor();
+      if (action === 'tailor') await interactiveTailor(cli);
       else if (action === 'sync') {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
         if (p.isCancel(force)) continue;
-        await (await import('./commands/sync.js')).runSync({ force });
-      } else if (action === 'status') await (await import('./commands/status.js')).runStatus();
-      else if (action === 'build') await (await import('./commands/build.js')).runBuild();
-      else if (action === 'check') await (await import('./commands/check.js')).runCheck({});
+        await (await import('./commands/sync.js')).runSync(cli, { force });
+      } else if (action === 'status') await (await import('./commands/status.js')).runStatus(cli);
+      else if (action === 'build') await (await import('./commands/build.js')).runBuild(cli);
+      else if (action === 'check') await (await import('./commands/check.js')).runCheck(cli, {});
     } catch (err) {
       console.log('\n' + ui.fail((err as Error).message) + '\n');
     }
@@ -108,7 +110,7 @@ async function interactive(): Promise<void> {
   }
 }
 
-async function interactiveTailor(): Promise<void> {
+async function interactiveTailor(cli: Cli): Promise<void> {
   const company = await p.text({
     message: 'Company name',
     placeholder: 'Inteligen-ai',
@@ -142,23 +144,21 @@ async function interactiveTailor(): Promise<void> {
   const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
   if (p.isCancel(role)) return;
 
-  // Only ask which model when both keys are configured; otherwise use whatever's set.
+  // Ask which model only when more than one provider has a key configured.
   let provider = '';
-  if (env.geminiKey && env.deepseekKey) {
+  const withKeys = cli.registry.list().filter((f) => cli.config.llm.keys[f.id]);
+  if (withKeys.length > 1) {
     const pick = await p.select({
       message: 'Which model should tailor the résumé?',
-      initialValue: env.llmProvider,
-      options: [
-        { value: 'gemini', label: 'Gemini', hint: env.geminiModel },
-        { value: 'deepseek', label: 'DeepSeek', hint: env.deepseekModel },
-      ],
+      initialValue: cli.registry.defaultProviderId(cli.config),
+      options: withKeys.map((f) => ({ value: f.id, label: f.label, hint: cli.config.llm.models[f.id] || f.defaultModel })),
     });
     if (p.isCancel(pick)) return;
-    provider = pick;
+    provider = pick as string;
   }
 
   const { runTailor } = await import('./commands/tailor.js');
-  await runTailor({ jd, company: company.trim(), role: (role || '').trim(), provider });
+  await runTailor(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
 }
 
 // Clack has no built-in multiline text prompt, so pasted JDs are read directly
@@ -189,8 +189,9 @@ async function pasteJd(): Promise<string> {
 
 // ---- dispatch --------------------------------------------------------------
 async function main(): Promise<unknown> {
-  if (!cmd) return interactive();
-  const run = COMMANDS[cmd];
+  const cli = buildCli();
+  if (!cmd) return interactive(cli);
+  const run = commands(cli)[cmd];
   if (!run) { printHelp(); throw new Error(`Unknown command: ${cmd}`); }
   return run();
 }

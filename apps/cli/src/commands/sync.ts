@@ -1,25 +1,37 @@
 // `resume sync` — refresh the scraped profile sources into profile/*.json.
-import { root } from '../lib/root.js';
-import { refreshAll } from '../lib/scrape/refresh.js';
-import { hashSources, writeLock } from '../lib/sources.js';
-import * as ui from '../lib/ui.js';
-import { pc } from '../lib/ui.js';
-import { timeAgo } from '../lib/format.js';
-import type { GithubData, LinkedinData, RefreshResult } from '../lib/types.js';
+import {
+  SourceRefresher, hashSources, writeLock, timeAgo,
+  type GithubData, type LinkedinData, type LlmProvider, type RefreshResult,
+} from '@resume/core';
+import * as ui from '../ui.js';
+import { pc } from '../ui.js';
+import type { Cli } from '../container.js';
 
 const LABEL: Record<string, string> = { github: 'GitHub', linkedin: 'LinkedIn' };
 
-export async function runSync({ force = false }: { force?: boolean } = {}): Promise<RefreshResult[]> {
+export async function runSync(cli: Cli, { force = false }: { force?: boolean } = {}): Promise<RefreshResult[]> {
   console.log(ui.banner('Sync Sources', force ? 'force re-scrape · GitHub + LinkedIn' : 'refresh what is stale · GitHub + LinkedIn'));
   console.log();
 
+  // A provider is only needed to structure LinkedIn; resolve it soft so a
+  // missing key doesn't block the GitHub scrape.
+  let llm: LlmProvider | undefined;
+  try { llm = cli.registry.resolve(cli.config); } catch { llm = undefined; }
+
+  const refresher = new SourceRefresher({
+    githubToken: cli.config.githubToken,
+    linkedinCookie: cli.config.linkedinCookie,
+    ttlHours: cli.config.scrapeTtlHours,
+    llm,
+  });
+
   const spin = ui.spinner();
-  const results = await refreshAll(root, { force, log: (r) => { spin.text = `${LABEL[r.source] || r.source}: ${r.status}…`; } });
+  const results = await refresher.refreshAll(cli.root, { force, log: (r) => { spin.text = `${LABEL[r.source] || r.source}: ${r.status}…`; } });
   spin.stop();
 
   // An explicit sync re-baselines the file-drift hashes: your curated facts are
   // "as of now", so the tailor won't nag afterwards.
-  await writeLock(root, await hashSources(root));
+  await writeLock(cli.root, await hashSources(cli.root));
 
   for (const r of results) {
     const name = LABEL[r.source] || r.source;
