@@ -10,6 +10,7 @@
 //   resume check [--source|--pdf|--width]
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { createInterface } from 'node:readline';
 import * as p from '@clack/prompts';
 import { env } from './lib/env.js';
 import * as ui from './lib/ui.js';
@@ -113,18 +114,60 @@ async function interactiveTailor(): Promise<void> {
   });
   if (p.isCancel(company)) return;
 
-  const file = await p.text({
-    message: 'Path to the JD file',
-    placeholder: './jd.txt',
-    validate: (v) => (v && existsSync(v.trim()) ? undefined : 'File not found — save the JD to a file and give its path.'),
+  const source = await p.select({
+    message: 'How do you want to provide the JD?',
+    options: [
+      { value: 'file', label: 'Path to a JD file', hint: './jd.txt' },
+      { value: 'paste', label: 'Paste the JD text', hint: 'multi-line paste' },
+    ],
   });
-  if (p.isCancel(file)) return;
+  if (p.isCancel(source)) return;
+
+  let jd: string;
+  if (source === 'file') {
+    const file = await p.text({
+      message: 'Path to the JD file',
+      placeholder: './jd.txt',
+      validate: (v) => (v && existsSync(v.trim()) ? undefined : 'File not found — save the JD to a file and give its path.'),
+    });
+    if (p.isCancel(file)) return;
+    jd = await readFile(file.trim(), 'utf8');
+  } else {
+    jd = await pasteJd();
+    if (!jd.trim()) { console.log('\n' + ui.fail('No JD text received.') + '\n'); return; }
+  }
 
   const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
   if (p.isCancel(role)) return;
 
   const { runTailor } = await import('./commands/tailor.js');
-  await runTailor({ jd: await readFile(file.trim(), 'utf8'), company: company.trim(), role: (role || '').trim() });
+  await runTailor({ jd, company: company.trim(), role: (role || '').trim() });
+}
+
+// Clack has no built-in multiline text prompt, so pasted JDs are read directly
+// off stdin. A blank-line terminator won't do — JDs routinely contain blank
+// lines between sections — so we end on a lone `.` sentinel. Clack leaves stdin
+// in raw mode, where Ctrl+D/Ctrl+Z is never turned into EOF, so we drop raw mode
+// for the read and restore it afterwards for the prompts that follow.
+async function pasteJd(): Promise<string> {
+  console.log(
+    '\n' + ui.info(`Paste the JD below. When done, type ${pc.bold('.')} on a line by itself and press Enter.`) + '\n',
+  );
+  const stdin = process.stdin;
+  const wasRaw = Boolean(stdin.isTTY && stdin.isRaw);
+  if (stdin.isTTY) stdin.setRawMode(false);
+  const rl = createInterface({ input: stdin });
+  const lines: string[] = [];
+  try {
+    for await (const line of rl) {
+      if (line.trim() === '.') break;
+      lines.push(line);
+    }
+  } finally {
+    rl.close();
+    if (stdin.isTTY) stdin.setRawMode(wasRaw);
+  }
+  return lines.join('\n').trim();
 }
 
 // ---- dispatch --------------------------------------------------------------
