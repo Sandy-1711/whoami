@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { makeRedis } from '../lib/redis.js';
+import { makeViewCounter } from '../lib/view-counter.js';
 import { DOWNLOAD_FILENAME } from '../constants/constants.js';
 import { originFrom } from '../lib/origin-from.js';
 
@@ -84,7 +84,6 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  const redis = makeRedis();
   const pdf = loadPdf();
 
   if (CRAWLER_UA.test((req.headers['user-agent'] as string) || '')) {
@@ -104,13 +103,7 @@ export default async function handler(
     return;
   }
 
-  if (redis) {
-    try {
-      await redis.incr('resume:views');
-    } catch {
-      // Ignore counter failures.
-    }
-  }
+  await makeViewCounter().increment('resume:views');
 
   const download = !!(req.query && 'download' in req.query);
 
