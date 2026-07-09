@@ -26,8 +26,13 @@ export async function runStatus(): Promise<void> {
 
   // ---- environment ---------------------------------------------------------
   const playwright = existsSync(join(root, 'node_modules', 'playwright'));
+  const active = env.llmProvider;
+  const activeTag = (p: 'gemini' | 'deepseek'): string => (active === p ? ` ${pc.cyan('← active')}` : '');
+  const noLlmKey = !env.geminiKey && !env.deepseekKey;
   console.log(ui.heading('Environment'));
-  console.log(ui.kv('Gemini key', env.geminiKey ? `${yes} set ${pc.dim(`(${env.geminiModel})`)}` : `${no} ${pc.red('missing — tailoring will fail')}`));
+  console.log(ui.kv('LLM provider', noLlmKey ? `${no} ${pc.red('no API key — tailoring will fail')}` : `${yes} ${pc.dim(active)}`));
+  console.log(ui.kv('Gemini key', env.geminiKey ? `${yes} set ${pc.dim(`(${env.geminiModel})`)}${activeTag('gemini')}` : `${optional} ${pc.dim('unset')}`));
+  console.log(ui.kv('DeepSeek key', env.deepseekKey ? `${yes} set ${pc.dim(`(${env.deepseekModel})`)}${activeTag('deepseek')}` : `${optional} ${pc.dim('unset')}`));
   console.log(ui.kv('GitHub token', env.githubToken ? `${yes} set` : `${optional} ${pc.dim('unset — public scrape, lower rate limit')}`));
   console.log(ui.kv('LinkedIn live', env.linkedinCookie && playwright ? `${yes} cookie + Playwright` : `${optional} ${pc.dim(`${env.linkedinCookie ? 'cookie set' : 'no cookie'}, ${playwright ? 'Playwright ready' : 'Playwright not installed'} — PDF fallback`)}`));
 

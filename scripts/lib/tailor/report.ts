@@ -18,11 +18,12 @@ export interface TailorReport {
   guards: { pages: number | null; width: string[] };
   paths: OutputPaths;
   guardsPass: boolean;
+  provider: string;
   model: string;
 }
 
 export async function writeTailorReport(
-  { cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass, model }: TailorReport,
+  { cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass, provider, model }: TailorReport,
 ): Promise<void> {
   const pdfRel = relative(root, paths.pdf).replace(/\\/g, '/');
 
@@ -63,7 +64,7 @@ export async function writeTailorReport(
     `# Tailored résumé report — ${paths.base}`,
     ``, `- ATS score: **${score.before} → ${score.after}** (target 92+)`,
     `- Role: ${role}`,
-    `- Engine: gemini ${model}`,
+    `- Engine: ${provider} ${model}`,
     `- Pages: ${guards.pages} · Width: ${guards.width.length === 0 ? 'OK' : guards.width.join('; ')}`,
     ``, `## Matched (${cls.matched.length})`, cls.matched.join(', ') || '(none)',
     ``, `## Surface — true & relevant (${cls.addable.length})`, cls.addable.join(', ') || '(none)',

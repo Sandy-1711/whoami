@@ -1,14 +1,14 @@
 // Gemini transport. This module knows nothing about résumés — it is the single
 // place that talks to the Generative Language API. Prompt templates and response
 // schemas live in ./prompts.ts; callers pass them in.
-import type { GeminiSchema } from './prompts.js';
+import type { JsonSchema } from './prompts.js';
 
 const ENDPOINT = (model: string): string =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 export interface GeminiJsonArgs {
   prompt: string;
-  schema: GeminiSchema;
+  schema: JsonSchema;
   apiKey: string;
   model: string;
   temperature?: number;

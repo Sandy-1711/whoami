@@ -6,7 +6,6 @@ import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { root } from '../lib/root.js';
-import { env } from '../lib/env.js';
 import {
   extractJdKeywords, classify, scoreResume,
   boldify, latexEscape, replaceBlock, latexToPlainText,
@@ -16,7 +15,7 @@ import { ensureFresh } from '../lib/scrape/refresh.js';
 import { compileLatex, renderEngineReason, type EngineReason } from '../lib/latex.js';
 import { checkLog } from '../lib/check/log.js';
 import { extractPdf } from '../lib/check/pdf.js';
-import { geminiJson } from '../lib/gemini.js';
+import { resolveLlm, llmJson } from '../lib/llm.js';
 import { tailorPrompt, tailorFixPrompt, TAILOR_SCHEMA, mapTailorResponse, type TailorResponse } from '../lib/prompts.js';
 import { outputPaths, extractRoleFromJd } from '../lib/naming.js';
 import { writeTailorReport } from '../lib/tailor/report.js';
@@ -28,6 +27,7 @@ export interface RunTailorArgs {
   jd: string;
   company: string;
   role?: string;
+  provider?: string;
   model?: string;
 }
 
@@ -99,12 +99,12 @@ async function renderAndGuard(out: string, paths: OutputPaths): Promise<Guards> 
 }
 
 export async function runTailor(
-  { jd, company, role: roleOverride = '', model = env.geminiModel }: RunTailorArgs,
+  { jd, company, role: roleOverride = '', provider, model }: RunTailorArgs,
 ): Promise<RunTailorResult> {
   if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
   if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
-  const key = env.geminiKey;
-  if (!key) throw new Error('GEMINI_API_KEY not set. Add it to .env (see .env.example).');
+  // Resolve the provider + key + model (throws if the chosen key is missing).
+  const llm = resolveLlm({ provider, model });
 
   // Fail fast if nothing can render the PDF, before spending any LLM call.
   const engineReason = renderEngineReason();
@@ -114,7 +114,7 @@ export async function runTailor(
   const resumeTex = await readFile(join(root, 'resume.tex'), 'utf8');
   const resumeText = latexToPlainText(resumeTex);
 
-  console.log(ui.banner('Résumé Tailor', `JD → ATS-optimized PDF · engine: gemini ${model}`));
+  console.log(ui.banner('Résumé Tailor', `JD → ATS-optimized PDF · engine: ${llm.provider} ${llm.model}`));
 
   // ---- keep scraped sources fresh (fail-soft) ------------------------------
   const spinS = ui.spinner('Refreshing profile sources (GitHub, LinkedIn)…');
@@ -135,21 +135,21 @@ export async function runTailor(
   const cls = classify(jdKeywords, resumeText, facts);
   const score = scoreResume(cls);
 
-  // ---- tailor content (Gemini) ---------------------------------------------
-  const spin = ui.spinner(`Asking Gemini (${model}) to tailor from your fact base…`);
+  // ---- tailor content (LLM) ------------------------------------------------
+  const engineName = llm.provider === 'deepseek' ? 'DeepSeek' : 'Gemini';
+  const spin = ui.spinner(`Asking ${engineName} (${llm.model}) to tailor from your fact base…`);
   let roleTitle: string, summaryText: string, subtitle: string, boldTerms: string[], rationale: string;
   try {
-    const parsed = await geminiJson<TailorResponse>({
+    const parsed = await llmJson<TailorResponse>({
       prompt: tailorPrompt({ jd, facts, classification: cls }),
       schema: TAILOR_SCHEMA,
-      apiKey: key,
-      model,
+      llm,
     });
     ({ roleTitle, summaryText, subtitle, boldTerms, rationale } = mapTailorResponse(parsed));
-    spin.succeed('Gemini tailored the summary & subtitle.');
+    spin.succeed(`${engineName} tailored the summary & subtitle.`);
   } catch (err) {
-    spin.fail(`Gemini failed: ${(err as Error).message}`);
-    throw new Error('Check GEMINI_API_KEY / quota / model name and retry.');
+    spin.fail(`${engineName} failed: ${(err as Error).message}`);
+    throw new Error(`Check the ${engineName} API key / quota / model name and retry.`);
   }
 
   // ---- resolve role + output paths -----------------------------------------
@@ -170,19 +170,18 @@ export async function runTailor(
   for (let attempt = 1; !guardsPass(guards) && attempt <= MAX_FIX_ATTEMPTS; attempt++) {
     const problem = describeGuardFailure(guards);
     const summaryBudget = Math.max(160, 300 - attempt * 60);
-    const spinFix = ui.spinner(`Asking Gemini to tighten the copy (fix ${attempt}/${MAX_FIX_ATTEMPTS})…`);
+    const spinFix = ui.spinner(`Asking ${engineName} to tighten the copy (fix ${attempt}/${MAX_FIX_ATTEMPTS})…`);
     try {
-      const parsed = await geminiJson<TailorResponse>({
+      const parsed = await llmJson<TailorResponse>({
         prompt: tailorFixPrompt({ jd, facts, classification: cls, previous: content, problem, summaryBudget }),
         schema: TAILOR_SCHEMA,
-        apiKey: key,
-        model,
+        llm,
       });
       const fixed = mapTailorResponse(parsed);
       content = { summaryText: fixed.summaryText, subtitle: fixed.subtitle, boldTerms: fixed.boldTerms };
-      spinFix.succeed('Gemini returned a tighter draft — re-rendering…');
+      spinFix.succeed(`${engineName} returned a tighter draft — re-rendering…`);
     } catch (err) {
-      spinFix.fail(`Gemini fix attempt failed: ${(err as Error).message}`);
+      spinFix.fail(`${engineName} fix attempt failed: ${(err as Error).message}`);
       break;
     }
     const spinR = ui.spinner(`Re-rendering PDF & re-checking guards (fix ${attempt})…`);
@@ -194,6 +193,6 @@ export async function runTailor(
   // The loop may have changed the copy — report on whatever finally rendered.
   ({ summaryText, subtitle } = content);
   const passed = guardsPass(guards);
-  await writeTailorReport({ cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass: passed, model });
+  await writeTailorReport({ cls, score, role, summaryText, subtitle, rationale, guards, paths, guardsPass: passed, provider: llm.provider, model: llm.model });
   return { paths, score, role, guardsPass: passed };
 }

@@ -11,7 +11,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { extractPdf } from '../check/pdf.js';
-import { geminiJson } from '../gemini.js';
+import { llmJson, type LlmConfig } from '../llm.js';
 import { linkedinPrompt, LINKEDIN_SCHEMA, type LinkedinResponse } from '../prompts.js';
 import type { LinkedinData } from '../types.js';
 
@@ -95,28 +95,26 @@ async function rawProfileText(root: string, { cookie, url }: { cookie: string; u
 export interface ScrapeLinkedinOptions {
   cookie?: string;
   url?: string;
-  apiKey?: string;
-  model?: string;
+  llm?: LlmConfig;
 }
 
 export async function scrapeLinkedin(
   root: string,
-  { cookie = '', url = '', apiKey, model }: ScrapeLinkedinOptions = {},
+  { cookie = '', url = '', llm }: ScrapeLinkedinOptions = {},
 ): Promise<LinkedinData> {
-  if (!apiKey) throw new Error('GEMINI_API_KEY required to structure the LinkedIn profile.');
+  if (!llm) throw new Error('An LLM API key is required to structure the LinkedIn profile.');
 
   const { via, text, liveError } = await rawProfileText(root, { cookie, url });
 
-  const profile = await geminiJson<LinkedinResponse>({
+  const profile = await llmJson<LinkedinResponse>({
     prompt: linkedinPrompt(text),
     schema: LINKEDIN_SCHEMA,
-    apiKey,
-    model: model || '',
+    llm,
     temperature: 0.1,
   });
 
   return {
-    _comment: 'Auto-scraped from LinkedIn (live cookie scrape or PDF export), structured by Gemini. Edit freely — the tailor treats this as an editable source. Re-scrape with `npm run sync`.',
+    _comment: 'Auto-scraped from LinkedIn (live cookie scrape or PDF export), structured by an LLM. Edit freely — the tailor treats this as an editable source. Re-scrape with `npm run sync`.',
     scrapedAt: new Date().toISOString(),
     via,
     ...(liveError ? { liveError } : {}),

@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { contentHash, isStale, recordScrape, lastScrape } from '../sources.js';
 import { env } from '../env.js';
+import { resolveLlm } from '../llm.js';
 import { scrapeGithub, githubUsername } from './github.js';
 import { scrapeLinkedin } from './linkedin.js';
 import type { Facts, GithubData, LinkedinData, RefreshResult } from '../types.js';
@@ -70,8 +71,7 @@ const SCRAPERS: Record<string, Scraper> = {
     return scrapeLinkedin(root, {
       cookie: env.linkedinCookie,
       url: facts.identity?.linkedin || '',
-      apiKey: env.geminiKey,
-      model: env.geminiModel,
+      llm: resolveLlm(),  // active provider from env; throws (soft-caught) if no key
     });
   },
 };

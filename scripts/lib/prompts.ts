@@ -4,17 +4,21 @@
 // raw responses into typed results. The transport is ./gemini.ts.
 import type { Facts, Classification, TailorContent, LinkedinProfile } from './types.js';
 
-// A minimal subset of JSON Schema — the shape Gemini's responseSchema accepts.
-export interface GeminiSchema {
+// A minimal subset of JSON Schema — the shape Gemini's responseSchema accepts,
+// and (embedded in the prompt) the shape we ask DeepSeek to match.
+export interface JsonSchema {
   type: string;
-  properties?: Record<string, GeminiSchema>;
-  items?: GeminiSchema;
+  properties?: Record<string, JsonSchema>;
+  items?: JsonSchema;
   required?: string[];
 }
 
+/** @deprecated use JsonSchema — kept so existing imports don't break. */
+export type GeminiSchema = JsonSchema;
+
 // ---- résumé tailoring -------------------------------------------------------
 
-export const TAILOR_SCHEMA: GeminiSchema = {
+export const TAILOR_SCHEMA: JsonSchema = {
   type: 'object',
   properties: {
     role_title: { type: 'string' },
@@ -129,7 +133,7 @@ export function mapTailorResponse(parsed: TailorResponse): TailorContent {
 
 // ---- LinkedIn profile structuring -------------------------------------------
 
-export const LINKEDIN_SCHEMA: GeminiSchema = {
+export const LINKEDIN_SCHEMA: JsonSchema = {
   type: 'object',
   properties: {
     name: { type: 'string' },

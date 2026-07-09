@@ -32,7 +32,8 @@ async function directTailor(): Promise<void> {
     jd,
     company: opt('--company') || opt('--name'),
     role: opt('--role'),
-    model: opt('--model', env.geminiModel),
+    provider: opt('--provider'),
+    model: opt('--model'),
   });
 }
 
@@ -58,12 +59,13 @@ function printHelp(): void {
   console.log(ui.banner('resume', 'JD-tailored résumés from a verified profile'));
   console.log(`
   ${pc.bold('Commands')}
-    ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--model <m>]   tailor to a JD
+    ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
     ${pc.cyan('sync')} [--force]                                            refresh GitHub + LinkedIn
     ${pc.cyan('status')}                                                    env, sources, outputs
     ${pc.cyan('build')}                                                     compile the canonical PDF
     ${pc.cyan('check')} [--source|--pdf|--width]                            run the guards
 
+  ${pc.dim('Provider defaults to $LLM_PROVIDER, else whichever API key is set (Gemini first).')}
   ${pc.dim('Run with no command for an interactive menu.')}
 `);
 }
@@ -140,8 +142,23 @@ async function interactiveTailor(): Promise<void> {
   const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
   if (p.isCancel(role)) return;
 
+  // Only ask which model when both keys are configured; otherwise use whatever's set.
+  let provider = '';
+  if (env.geminiKey && env.deepseekKey) {
+    const pick = await p.select({
+      message: 'Which model should tailor the résumé?',
+      initialValue: env.llmProvider,
+      options: [
+        { value: 'gemini', label: 'Gemini', hint: env.geminiModel },
+        { value: 'deepseek', label: 'DeepSeek', hint: env.deepseekModel },
+      ],
+    });
+    if (p.isCancel(pick)) return;
+    provider = pick;
+  }
+
   const { runTailor } = await import('./commands/tailor.js');
-  await runTailor({ jd, company: company.trim(), role: (role || '').trim() });
+  await runTailor({ jd, company: company.trim(), role: (role || '').trim(), provider });
 }
 
 // Clack has no built-in multiline text prompt, so pasted JDs are read directly
