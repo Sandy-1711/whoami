@@ -44,12 +44,26 @@ jobs:
       - name: Check résumé source structure
         run: pnpm --filter @resume/cli run check:source
 
+      # The canonical PDF depends only on resume.tex, so cache it keyed on that
+      # file's hash. Code-only deploys hit the cache and skip the LaTeX step
+      # (and its ~GB TeXLive image pull) entirely.
+      - name: Cache compiled PDF
+        id: pdf-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/assets/resume.pdf
+            resume.log
+          key: resume-pdf-${{ hashFiles('resume.tex') }}
+
       - name: Compile LaTeX -> PDF
+        if: steps.pdf-cache.outputs.cache-hit != 'true'
         uses: xu-cheng/latex-action@v3
         with:
           root_file: resume.tex
 
       - name: Stage PDF for deploy
+        if: steps.pdf-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p apps/web/assets
           cp resume.pdf apps/web/assets/resume.pdf
