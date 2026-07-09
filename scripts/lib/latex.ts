@@ -24,6 +24,17 @@ export interface CompileResult {
   reason?: 'docker-daemon-down' | 'no-engine';
 }
 
+export type EngineReason = 'docker-daemon-down' | 'no-engine';
+
+// Cheap up-front probe mirroring compileLatex's engine selection, so callers can
+// bail before doing expensive work (e.g. an LLM call) when nothing can render.
+// Returns null when a render is possible.
+export function renderEngineReason(): EngineReason | null {
+  if (haveCmd('latexmk')) return null;
+  if (haveCmd('docker')) return dockerDaemonUp() ? null : 'docker-daemon-down';
+  return 'no-engine';
+}
+
 // Returns { engine, status, output }. Caller should verify the PDF exists rather
 // than trusting the exit code (latexmk exits non-zero on benign warnings).
 export function compileLatex(

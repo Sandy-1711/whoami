@@ -68,6 +68,54 @@ KEYWORD ANALYSIS (already computed):
 Return JSON only.`;
 }
 
+// A retry prompt for the tighten-and-render loop: a previous draft made the
+// one-page résumé fail a layout guard (usually spilling to a 2nd page), so ask
+// for a shorter revision with a hard character budget while preserving the
+// strongest JD-matched keywords and metrics.
+export function tailorFixPrompt({
+  jd,
+  facts,
+  classification,
+  previous,
+  problem,
+  summaryBudget,
+}: {
+  jd: string;
+  facts: Facts;
+  classification: Classification;
+  previous: { summaryText: string; subtitle: string };
+  problem: string;
+  summaryBudget: number;
+}): string {
+  return `You are an expert technical resume writer. A previous draft made the one-page résumé FAIL a layout guard. Produce a TIGHTER revision that fixes it.
+
+LAYOUT PROBLEM TO FIX: ${problem}
+The résumé MUST fit on exactly one page. Your previous draft was too long. Shorten aggressively while keeping the strongest JD-matched keywords and metrics.
+
+STRICT RULES:
+- Use ONLY facts, skills, metrics, and keywords present in the FACT BASE. Never invent employers, numbers, or technologies.
+- Keep the summary to ONE sentence, <= ${summaryBudget} characters (shorter is better). Plain text only (no markdown, no LaTeX).
+- The subtitle is a short " | "-separated tagline of AT MOST 3 short role/skill phrases.
+- bold_terms: 3-5 exact substrings from your summary to bold (metrics and top keywords).
+- role_title: keep the SAME job title as the previous draft.
+
+PREVIOUS SUMMARY (too long): """${previous.summaryText}"""
+PREVIOUS SUBTITLE (too long): """${previous.subtitle}"""
+
+JOB DESCRIPTION:
+"""${jd.slice(0, 6000)}"""
+
+FACT BASE (the only truth you may use):
+"""${JSON.stringify(facts).slice(0, 12000)}"""
+
+KEYWORD PRIORITIES:
+- Already covered: ${classification.matched.join(', ') || '(none)'}
+- Surface if room: ${classification.addable.join(', ') || '(none)'}
+- Do NOT claim: ${classification.missing.join(', ') || '(none)'}
+
+Return JSON only.`;
+}
+
 // Normalize a raw tailor response into the shape the pipeline consumes.
 export function mapTailorResponse(parsed: TailorResponse): TailorContent {
   return {
