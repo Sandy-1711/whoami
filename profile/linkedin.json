@@ -73,7 +73,10 @@
     "skills": [
       "Vector Databases",
       "Artificial Intelligence (AI)",
-      "Retrieval-Augmented Generation (RAG)"
+      "Retrieval-Augmented Generation (RAG)",
+      "Anthropic Claude",
+      "Claude Code",
+      "AI Agents"
     ],
     "about": "AI Engineer & Full-Stack Developer focused on building production- grade, scalable systems. I don't just run models; I engineer the infrastructure around them to solve real-world problems. My work lies at the intersection of Agentic AI, System Architecture, and Full-Stack Engineering.",
     "certifications": [
