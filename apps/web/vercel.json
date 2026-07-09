@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "mkdir -p public",
+  "outputDirectory": "public",
   "functions": {
     "api/resume.ts": {
       "includeFiles": "assets/resume.pdf"
