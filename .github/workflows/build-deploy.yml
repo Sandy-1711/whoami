@@ -5,18 +5,13 @@ on:
     branches: [main]
     # Only rebuild + redeploy when something that affects the published PDF or
     # the way it's served actually changed. Pushes that only touch the tooling
-    # (scripts/, profile/, skills, docs, tailored outputs) skip the whole job.
+    # (packages/core, apps/cli, profile/, skills, docs) skip the whole job.
     paths:
       - 'resume.tex'
-      - 'assets/**'
-      - 'api/**'
-      - 'lib/**'
-      - 'vercel.json'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'scripts/check-resume.ts'
-      - 'scripts/lib/check/**'
-      - 'tsconfig.json'
+      - 'apps/web/**'
+      - 'packages/core/src/check/**'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.base.json'
       - '.github/workflows/build-deploy.yml'
   # Manual trigger always runs, regardless of what changed.
   workflow_dispatch:
@@ -34,44 +29,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Check résumé source structure
-        run: npx tsx scripts/check-resume.ts --source
+        run: pnpm --filter @resume/cli run check:source
 
       - name: Compile LaTeX -> PDF
         uses: xu-cheng/latex-action@v3
         with:
           root_file: resume.tex
-          # If your template needs XeLaTeX or LuaLaTeX (e.g. custom fonts via
-          # fontspec), uncomment the matching line below:
-          # latexmk_use_xelatex: true
-          # latexmk_use_lualatex: true
 
       - name: Stage PDF for deploy
         run: |
-          mkdir -p assets
-          cp resume.pdf assets/resume.pdf
+          mkdir -p apps/web/assets
+          cp resume.pdf apps/web/assets/resume.pdf
 
       - name: Check résumé PDF structure (pages, width, sections)
-        run: npx tsx scripts/check-resume.ts --pdf
+        run: pnpm --filter @resume/cli run check:pdf
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v7
         with:
           name: resume-pdf
-          path: assets/resume.pdf
+          path: apps/web/assets/resume.pdf
           if-no-files-found: error
 
       - name: Install Vercel CLI
-        run: npm install -g vercel@latest
+        run: pnpm add -g vercel@latest
 
+      # The Vercel project's Root Directory is set to apps/web in the dashboard,
+      # so the CLI deploys the self-contained web app from there.
       - name: Deploy to Vercel (production)
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

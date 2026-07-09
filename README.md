@@ -39,12 +39,12 @@ instantly shareable. Treating it as a tiny software project gets all of that for
      ▼  GitHub Actions (CI/CD) — .github/workflows/build-deploy.yml
    1. install deps + check résumé SOURCE structure   (fail fast, no LaTeX needed)
    2. compile resume.tex → resume.pdf                 (xu-cheng/latex-action, full TeXLive)
-   3. stage it at assets/resume.pdf
+   3. stage it at apps/web/assets/resume.pdf
    4. check the compiled PDF structure                (1 page, sections present, contact intact)
    5. deploy to Vercel                                (vercel CLI + token)
      │
      ▼  Vercel (hosting / serverless)
-   /  and  /resume.pdf  → api/resume.js:
+   /  and  /resume.pdf  → apps/web/api/resume.ts:
         a. INCR a view counter in Upstash Redis / Vercel KV
         b. stream resume.pdf   (inline; ?download=1 → attachment, named file)
    /api/stats  → { "views": N }
@@ -81,36 +81,42 @@ external storage to read on each request.
 │   ├── github.json             # scraped repos + PR contributions (editable, committed)
 │   ├── linkedin.json           # scraped LinkedIn profile (editable, committed)
 │   └── sources.lock.json       # file-drift hashes + scrape freshness/content hashes
-├── api/                        # Vercel serverless functions (serve + count the PDF)
-│   ├── resume.ts  stats.ts  badge.ts  og.ts
-├── lib/redis.ts                # KV/Upstash client factory (null-safe if unconfigured)
-├── scripts/
-│   ├── cli.ts                  # `resume` — one entrypoint (interactive menu + commands)
-│   ├── commands/               # tailor · sync · status · build · check
-│   ├── check-resume.ts         # structure-check CLI (source + PDF + width)
-│   ├── build-pdf.ts            # compile resume.tex → build/ → assets/resume.pdf
-│   └── lib/
-│       ├── tailor/             # core.ts (scoring/injection)
-│       ├── scrape/             # github.ts · linkedin.ts · refresh.ts (freshness)
+├── packages/core/              # @resume/core — the domain, ports + adapters (DI)
+│   └── src/
+│       ├── ports/              # interfaces: llm · http · latex · logger · config
+│       ├── llm/                # LlmProviderRegistry + providers/gemini.ts, deepseek.ts
+│       ├── tailor/             # TailorService · core.ts (scoring/injection) · report.ts
+│       ├── scrape/             # github.ts · linkedin.ts · refresh.ts (SourceRefresher)
 │       ├── check/              # source.ts · log.ts (width) · pdf.ts (unpdf seam)
-│       ├── gemini.ts prompts.ts   # Gemini transport + centralized prompt templates/schemas
-│       └── env.ts root.ts naming.ts sources.ts latex.ts ui.ts format.ts types.ts
+│       ├── profile/sources.ts  # file-drift + scrape freshness
+│       └── prompts.ts naming.ts format.ts types.ts index.ts
+├── apps/cli/                   # @resume/cli — `resume` toolkit shell
+│   └── src/
+│       ├── main.ts             # entrypoint (interactive menu + dispatch)
+│       ├── container.ts        # composition root — wires adapters + registers providers
+│       ├── commands/           # tailor · sync · status · build · check (thin)
+│       ├── adapters/           # http · latex · config (dotenv) · presenter (clack)
+│       └── build-pdf.ts check-resume.ts ui.ts args.ts paths.ts
+├── apps/web/                   # @resume/web — Vercel app (self-contained; deploy root)
+│   ├── api/                    # resume.ts · stats.ts · badge.ts · og.ts
+│   ├── lib/                    # view-counter.ts (ViewCounter port) · redis.ts · …
+│   ├── apps/web/assets/resume.pdf       # compiled by CI — gitignored, never committed
+│   └── vercel.json
 ├── .claude/skills/             # resume-ats · resume-latex · resume-tailor
 ├── build/                      # LaTeX artifacts (.aux/.log/.pdf …) — gitignored
 ├── tailored/                   # per-JD outputs, tailored/<company>/… — gitignored
-├── assets/resume.pdf           # compiled by CI — gitignored, never committed
 ├── .githooks/pre-commit        # runs the source check when resume.tex is committed
 ├── .github/workflows/build-deploy.yml   # CI/CD: check → compile → check → deploy
-└── vercel.json  package.json  .env.example
+└── pnpm-workspace.yaml  turbo.json  tsconfig.base.json  package.json  .env.example
 ```
 
 ---
 
 ## How it works
 
-### The request lifecycle (`api/resume.js`)
+### The request lifecycle (`apps/web/api/resume.ts`)
 
-1. On cold start, the function reads `assets/resume.pdf` from disk **once** and keeps
+1. On cold start, the function reads `apps/web/assets/resume.pdf` from disk **once** and keeps
    it in memory.
 2. On each request it issues an `INCR resume:views` to the KV store, then streams the
    PDF. If the counter ever fails, the PDF is **still served** — serving the résumé
@@ -124,7 +130,7 @@ external storage to read on each request.
 ### Link previews (Open Graph)
 
 A raw PDF carries no HTML `<head>`, so a shared link would normally unfurl with no
-preview card. To fix that without changing what humans see, `api/resume.js` checks the
+preview card. To fix that without changing what humans see, `apps/web/api/resume.ts` checks the
 `User-Agent`: **social link-preview crawlers** (Slack, Twitter/X, LinkedIn, WhatsApp,
 Telegram, Discord, Facebook, …) receive a tiny HTML page carrying the OG / Twitter
 tags, while every human still gets the PDF inline. The tags point `og:image` at
@@ -137,11 +143,11 @@ crawler list, so we never serve them different content than humans.
 On every push to `main` (or manual `workflow_dispatch`):
 
 1. **Setup + install** Node and dependencies.
-2. **Source check** — `npx tsx scripts/check-resume.ts --source` (fails fast on broken
+2. **Source check** — `pnpm --filter @resume/cli check:source` (fails fast on broken
    LaTeX before spending time compiling).
 3. **Compile** `resume.tex` → `resume.pdf` with full TeXLive.
-4. **Stage** the PDF at `assets/resume.pdf` and upload it as a build artifact.
-5. **PDF check** — `npx tsx scripts/check-resume.ts --pdf` (verifies the rendered output).
+4. **Stage** the PDF at `apps/web/assets/resume.pdf` and upload it as a build artifact.
+5. **PDF check** — `pnpm --filter @resume/cli check:pdf` (verifies the rendered output).
 6. **Deploy** to Vercel production with the CLI + token secrets.
 
 A `concurrency` group cancels any in-progress run when a newer push arrives, so only
@@ -176,7 +182,7 @@ ships. It runs in two phases:
 - **Source** (`resume.tex`) — required sections present, balanced
   environments / braces / list-macros, contact links intact, no empty bullets. Pure
   Node, **no LaTeX needed**.
-- **PDF** (`assets/resume.pdf`) — exactly one page, all sections survive into the
+- **PDF** (`apps/web/assets/resume.pdf`) — exactly one page, all sections survive into the
   rendered text, contact email present. Uses [`unpdf`](https://github.com/unjs/unpdf)
   (a Node-friendly build of pdf.js).
 - **Width** (`build/resume.log`) — parses the LaTeX log for `Overfull \hbox` warnings and
@@ -185,21 +191,21 @@ ships. It runs in two phases:
   doesn't add a page and would otherwise slip through.
 
 ```bash
-npm run check          # source + PDF + width (compiled checks skipped if not built)
-npm run check:source   # source only
-npm run check:pdf      # PDF pages/sections + width (needs assets/resume.pdf + build/resume.log)
-npm run check:width    # width only (needs build/resume.log)
+pnpm check          # source + PDF + width (compiled checks skipped if not built)
+pnpm check:source   # source only
+pnpm check:pdf      # PDF pages/sections + width (needs apps/web/assets/resume.pdf + build/resume.log)
+pnpm check:width    # width only (needs build/resume.log)
 ```
 
 It runs automatically in two places:
 
 - **Pre-commit hook** (`.githooks/pre-commit`) — runs the source check whenever a
-  commit touches `resume.tex`. Wired by the `prepare` script on `npm install`
+  commit touches `resume.tex`. Wired by the `prepare` script on `pnpm install`
   (`git config core.hooksPath .githooks`); bypass once with `git commit --no-verify`.
 - **CI** — the source check gates the build before compiling, and the PDF check runs
   on the freshly compiled PDF before deploy.
 
-The PDF text extraction lives in `scripts/lib/check/pdf.ts` as a reusable seam, so
+The PDF text extraction lives in `packages/core/src/check/pdf.ts` as a reusable seam, so
 the same extraction feeds the tailoring pipeline's ATS scoring.
 
 ---
@@ -223,24 +229,24 @@ No manual build needed — the live link updates automatically once CI finishes.
 You **don't** need LaTeX installed to work on the functions — CI builds the PDF.
 
 ```bash
-npm install                       # installs deps and wires the pre-commit hook
-# put any PDF at assets/resume.pdf as a stand-in (CI generates the real one)
-npm run dev                       # vercel dev → http://localhost:3000
+pnpm install                       # installs deps and wires the pre-commit hook
+# put any PDF at apps/web/assets/resume.pdf as a stand-in (CI generates the real one)
+pnpm dev                       # vercel dev → http://localhost:3000
 ```
 
 To compile and validate the LaTeX locally — **no LaTeX install needed if you have
 Docker** (it uses the same full TeXLive image as CI):
 
 ```bash
-npm run verify                    # build the PDF (Docker or local latexmk) + run all guards
-npm run build:pdf:docker          # just build via Docker → resume.pdf + assets/resume.pdf
+pnpm verify                    # build the PDF (Docker or local latexmk) + run all guards
+pnpm build:pdf                 # just build via Docker/latexmk → apps/web/assets/resume.pdf
 ```
 
-`npm run verify` prefers a local `latexmk` if you have one, otherwise falls back to
+`pnpm verify` prefers a local `latexmk` if you have one, otherwise falls back to
 Docker (`texlive/texlive`, cached after first pull). This gives the exact page/width
 gate CI runs, without pushing — the fast local loop for iterating on layout.
 
-If you do have TeXLive/MiKTeX installed, `npm run build:pdf` uses it directly.
+If you do have TeXLive/MiKTeX installed, `pnpm build:pdf` uses it directly.
 
 ---
 
@@ -255,10 +261,10 @@ guards. Requires `GEMINI_API_KEY` in `.env` — there is no offline mode.
 ```bash
 cp .env.example .env             # set GEMINI_API_KEY (see the file for optional keys)
 
-npm run resume                   # interactive menu (clack) — everything's in here
-npm run tailor -- jd.txt --company "Inteligen-ai" [--role "AI Dev Engineer"]
-npm run sync -- --force          # re-scrape GitHub + LinkedIn now
-npm run status                   # env, sources, toolchain, and outputs at a glance
+pnpm resume                   # interactive menu (clack) — everything's in here
+pnpm tailor -- jd.txt --company "Inteligen-ai" [--role "AI Dev Engineer"]
+pnpm sync -- --force          # re-scrape GitHub + LinkedIn now
+pnpm status                   # env, sources, toolchain, and outputs at a glance
 ```
 
 - **Output naming** — the résumé is filed and named by company + the role read from the
@@ -266,7 +272,7 @@ npm run status                   # env, sources, toolchain, and outputs at a gla
   Engineer.pdf` (with matching `.tex` and `.report.md`). Gemini reads the role from the
   JD; a regex is the fallback, then `Software Engineer`. Override with `--role`.
 - **Score** — 20 pts structure + 80 pts weighted JD-keyword coverage (deterministic, in
-  `scripts/lib/tailor/core.ts`). The report splits keywords into **matched** (already in
+  `packages/core/src/tailor/core.ts`). The report splits keywords into **matched** (already in
   the résumé), **surface** (true & JD-relevant — add these to lift the score), and
   **gaps** (the JD wants them but they're not in your fact base — flagged so you never
   fake them).
@@ -275,7 +281,7 @@ npm run status                   # env, sources, toolchain, and outputs at a gla
 
 ### Profile sources (scraped, tracked, editable)
 
-`npm run sync` refreshes two committed, hand-editable sources of truth; the tailor also
+`pnpm sync` refreshes two committed, hand-editable sources of truth; the tailor also
 refreshes them automatically before each run (fail-soft — a scrape error falls back to
 cached data):
 
@@ -289,7 +295,7 @@ cached data):
 hash**: a source re-scrapes only when older than `SCRAPE_TTL_HOURS` (default 12) or
 `--force`, and the JSON is rewritten only when its content actually changes — the hash
 prevents needless churn. Edit the JSON by hand to correct anything; your edits persist
-until a scrape changes that field. `npm run sync` also re-baselines the file-drift
+until a scrape changes that field. `pnpm sync` also re-baselines the file-drift
 hashes so the tailor stops warning after you edit `facts.json`.
 
 ---

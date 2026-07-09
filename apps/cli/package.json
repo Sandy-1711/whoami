@@ -1,0 +1,39 @@
+{
+  "name": "@resume/cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "resume": "src/main.ts"
+  },
+  "scripts": {
+    "resume": "tsx src/main.ts",
+    "tailor": "tsx src/main.ts tailor",
+    "sync": "tsx src/main.ts sync",
+    "status": "tsx src/main.ts status",
+    "build:pdf": "tsx src/build-pdf.ts",
+    "verify": "tsx src/build-pdf.ts && tsx src/check-resume.ts",
+    "check": "tsx src/check-resume.ts",
+    "check:source": "tsx src/check-resume.ts --source",
+    "check:pdf": "tsx src/check-resume.ts --pdf",
+    "check:width": "tsx src/check-resume.ts --log",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@resume/core": "workspace:*",
+    "@clack/prompts": "^1.7.0",
+    "cli-table3": "^0.6.5",
+    "dotenv": "^17.4.2",
+    "gradient-string": "^3.0.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

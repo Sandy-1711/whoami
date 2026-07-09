@@ -1,47 +1,32 @@
 {
-  "name": "whoami",
+  "name": "resume-monorepo",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "A LaTeX resume compiled in CI and served as a git-tracked, view-counted PDF on Vercel.",
+  "description": "A LaTeX résumé served on Vercel, plus a JD-tailoring CLI — organized as a pnpm + turbo monorepo.",
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "resume": "tsx scripts/cli.ts",
-    "tailor": "tsx scripts/cli.ts tailor",
-    "sync": "tsx scripts/cli.ts sync",
-    "status": "tsx scripts/cli.ts status",
-    "build:pdf": "tsx scripts/build-pdf.ts",
-    "build:pdf:docker": "tsx scripts/build-pdf.ts",
-    "verify": "tsx scripts/build-pdf.ts && tsx scripts/check-resume.ts",
-    "check": "tsx scripts/check-resume.ts",
-    "check:source": "tsx scripts/check-resume.ts --source",
-    "check:pdf": "tsx scripts/check-resume.ts --pdf",
-    "check:width": "tsx scripts/check-resume.ts --log",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "coverage": "vitest run --coverage",
-    "dev": "vercel dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "resume": "pnpm --filter @resume/cli run resume",
+    "tailor": "pnpm --filter @resume/cli run tailor",
+    "sync": "pnpm --filter @resume/cli run sync",
+    "status": "pnpm --filter @resume/cli run status",
+    "build:pdf": "pnpm --filter @resume/cli run build:pdf",
+    "verify": "pnpm --filter @resume/cli run verify",
+    "check": "pnpm --filter @resume/cli run check",
+    "dev": "pnpm --filter @resume/web run dev",
     "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks')}catch{}\""
   },
-  "dependencies": {
-    "@upstash/redis": "^1.34.0",
-    "dotenv": "^17.4.2"
-  },
   "devDependencies": {
-    "@clack/prompts": "^1.7.0",
-    "@types/node": "^26.1.1",
-    "@vercel/node": "^5.8.22",
-    "@vitest/coverage-v8": "^4.1.10",
-    "cli-table3": "^0.6.5",
-    "gradient-string": "^3.0.0",
-    "picocolors": "^1.1.1",
-    "playwright": "^1.61.1",
-    "tsx": "^4.23.0",
+    "turbo": "^2.3.4",
     "typescript": "^6.0.3",
-    "unpdf": "^1.6.2",
-    "vitest": "^4.1.10"
-  },
-  "allowScripts": {
-    "esbuild@0.27.0": true,
-    "esbuild@0.28.1": true
+    "vitest": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.10"
   }
 }
