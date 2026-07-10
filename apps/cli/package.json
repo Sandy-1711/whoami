@@ -10,6 +10,7 @@
     "resume": "tsx src/main.ts",
     "tailor": "tsx src/main.ts tailor",
     "wellfound": "tsx src/main.ts wellfound",
+    "wellfound-profile": "tsx src/main.ts wellfound-profile",
     "sync": "tsx src/main.ts sync",
     "status": "tsx src/main.ts status",
     "build:pdf": "tsx src/build-pdf.ts",

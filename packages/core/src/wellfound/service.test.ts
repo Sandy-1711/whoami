@@ -1,26 +1,29 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WellfoundService } from "./service.js";
 import { silentPresenter } from "../ports/logger.js";
 import type { LlmProvider, LlmRequest } from "../ports/llm.js";
 
-// A fake provider that returns canned JSON, routed by a phrase unique to each
-// prompt (the profile prompt says "optimizing a candidate's Wellfound…").
-function fakeProvider(message: unknown, profile: unknown, spy?: (isProfile: boolean) => void): LlmProvider {
+// A fake provider returning canned JSON regardless of prompt — each test only
+// exercises one of message()/profile(), so no routing is needed.
+function fakeProvider(payload: unknown): LlmProvider {
     return {
         id: "fake", label: "Fake", model: "test",
-        async generateJson<T>(req: LlmRequest): Promise<T> {
-            const isProfile = /optimizing a candidate/i.test(req.prompt);
-            spy?.(isProfile);
-            return (isProfile ? profile : message) as T;
-        },
+        async generateJson<T>(_req: LlmRequest): Promise<T> { return payload as T; },
     };
 }
 
 const MESSAGE = { message: "I shipped RAG agents on FastAPI at AiRA.", rationale: "leads with proof" };
-const PROFILE = { headline: "AI Engineer — Agent Infra", about: "I build agents.", looking_for: "remote AI eng", skills: ["RAG", "FastAPI"], rationale: "tightened" };
+const PROFILE = {
+    headline: "AI Engineer — Agent Infra",
+    looking_for: "remote AI eng at an early-stage startup",
+    about: "I build agents. 12 merged Mastra PRs.",
+    skills: ["TypeScript", "RAG", "FastAPI"],
+    experience: [{ label: "AiRA — AI Engineer", blurb: "Built the Daily Brief agent." }],
+    rationale: "led with the Mastra OSS proof",
+};
 
 const roots: string[] = [];
 async function makeRoot(): Promise<string> {
@@ -37,65 +40,68 @@ afterEach(async () => { await Promise.all(roots.splice(0).map((r) => rm(r, { rec
 
 const JD = "We are hiring an AI Engineer to build RAG agents with FastAPI. Remote, Kubernetes a plus.";
 
-describe("WellfoundService.run", () => {
-    it("writes the note + profile draft and returns a structured result", async () => {
+describe("WellfoundService.message", () => {
+    it("writes the per-JD note under tailored/<slug> and grounds it in real keywords", async () => {
         const root = await makeRoot();
         const svc = new WellfoundService({ root, presenter: silentPresenter });
-        const res = await svc.run({ jd: JD, company: "Acme AI" }, { provider: fakeProvider(MESSAGE, PROFILE) });
+        const res = await svc.message({ jd: JD, company: "Acme AI" }, { provider: fakeProvider(MESSAGE) });
 
         expect(res.paths.slug).toBe("acme_ai");
+        expect(res.paths.file).toContain(join("tailored", "acme_ai", "wellfound-message.txt"));
         expect(res.message).toContain("RAG");
         expect(res.wordCount).toBeGreaterThan(0);
-        expect(res.wroteProfile).toBe(true);
-        expect(res.profile?.headline).toBe("AI Engineer — Agent Infra");
-        expect(res.profile?.lookingFor).toBe("remote AI eng");
-
-        // The deterministic keyword read backs the note with real matches, and
-        // never smuggles a gap the résumé can't support.
+        // Deterministic keyword read backs the note and flags the gap it must not claim.
         expect([...res.cls.matched, ...res.cls.addable]).toContain("RAG");
         expect(res.cls.missing).toContain("Kubernetes");
 
-        const noteFile = await readFile(res.paths.message, "utf8");
-        expect(noteFile).toContain("RAG agents");
-        const profileFile = await readFile(res.paths.profile, "utf8");
-        expect(profileFile).toContain("AI Engineer — Agent Infra");
-        expect(profileFile).toContain("- RAG");
-    });
-
-    it("skips the profile pass under messageOnly", async () => {
-        const root = await makeRoot();
-        const calls: boolean[] = [];
-        const svc = new WellfoundService({ root, presenter: silentPresenter });
-        const res = await svc.run(
-            { jd: JD, company: "Acme", messageOnly: true },
-            { provider: fakeProvider(MESSAGE, PROFILE, (isProfile) => calls.push(isProfile)) },
-        );
-        expect(res.wroteProfile).toBe(false);
-        expect(res.profile).toBeNull();
-        expect(calls).toEqual([false]); // only the message call happened
-    });
-
-    it("does not fail the run when the profile pass errors — note still ships", async () => {
-        const root = await makeRoot();
-        const provider: LlmProvider = {
-            id: "fake", label: "Fake", model: "test",
-            async generateJson<T>(req: LlmRequest): Promise<T> {
-                if (/optimizing a candidate/i.test(req.prompt)) throw new Error("boom");
-                return MESSAGE as T;
-            },
-        };
-        const svc = new WellfoundService({ root, presenter: silentPresenter });
-        const res = await svc.run({ jd: JD, company: "Acme" }, { provider });
-        expect(res.message).toContain("RAG");
-        expect(res.wroteProfile).toBe(false);
+        expect(await readFile(res.paths.file, "utf8")).toContain("RAG agents");
     });
 
     it("rejects a too-short JD and a missing company", async () => {
         const root = await makeRoot();
         const svc = new WellfoundService({ root, presenter: silentPresenter });
-        await expect(svc.run({ jd: "short", company: "Acme" }, { provider: fakeProvider(MESSAGE, PROFILE) }))
+        await expect(svc.message({ jd: "short", company: "Acme" }, { provider: fakeProvider(MESSAGE) }))
             .rejects.toThrow(/too short/i);
-        await expect(svc.run({ jd: JD, company: "" }, { provider: fakeProvider(MESSAGE, PROFILE) }))
+        await expect(svc.message({ jd: JD, company: "" }, { provider: fakeProvider(MESSAGE) }))
             .rejects.toThrow(/No company/i);
+    });
+});
+
+describe("WellfoundService.profile", () => {
+    it("writes ONE standing profile at the repo root (not per-company)", async () => {
+        const root = await makeRoot();
+        const svc = new WellfoundService({ root, presenter: silentPresenter });
+        const res = await svc.profile({ target: "agent infrastructure" }, { provider: fakeProvider(PROFILE) });
+
+        expect(res.relPath).toBe("wellfound-profile.md");
+        expect(res.path).toBe(join(root, "wellfound-profile.md"));
+        expect(res.profile.headline).toBe("AI Engineer — Agent Infra");
+        expect(res.profile.lookingFor).toContain("remote");
+        expect(res.profile.experience).toHaveLength(1);
+
+        const md = await readFile(res.path, "utf8");
+        expect(md).toContain("# Wellfound profile — master draft");
+        expect(md).toContain("AI Engineer — Agent Infra");
+        expect(md).toContain("- TypeScript");
+        expect(md).toContain("### AiRA — AI Engineer");
+        expect(md).toContain("focus: _agent infrastructure_");
+    });
+
+    it("re-running overwrites the same file", async () => {
+        const root = await makeRoot();
+        const svc = new WellfoundService({ root, presenter: silentPresenter });
+        const first = await svc.profile({}, { provider: fakeProvider(PROFILE) });
+        const second = await svc.profile({}, { provider: fakeProvider({ ...PROFILE, headline: "Backend Engineer" }) });
+        expect(second.path).toBe(first.path);
+        expect(await readFile(second.path, "utf8")).toContain("Backend Engineer");
+        // exactly one file, overwritten
+        await expect(stat(second.path)).resolves.toBeTruthy();
+    });
+
+    it("throws a helpful error when the model returns an incomplete profile", async () => {
+        const root = await makeRoot();
+        const svc = new WellfoundService({ root, presenter: silentPresenter });
+        await expect(svc.profile({}, { provider: fakeProvider({ headline: "", about: "", looking_for: "", skills: [] }) }))
+            .rejects.toThrow(/API key|quota|model/i);
     });
 });

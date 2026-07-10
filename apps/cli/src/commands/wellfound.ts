@@ -1,49 +1,47 @@
-// `resume wellfound` — read a Wellfound JD, draft the application-box note, and
-// (unless --message-only) a profile refresh. The pipeline lives in @resume/core;
-// this command is the thin CLI seam: wire config → provider → service, then draw
-// the note prominently so it can be copied straight into Wellfound.
+// `resume wellfound` and `resume wellfound-profile` — the two Wellfound seams.
+// The pipeline lives in @resume/core; these commands wire config → provider →
+// service and draw the result. The note is per-JD; the profile is a single
+// standing document (like LinkedIn), so they are separate commands.
 import { relative } from 'node:path';
-import { WellfoundService, type WellfoundRunResult } from '@resume/core';
+import {
+  WellfoundService, type WellfoundMessageResult, type WellfoundProfileResult,
+} from '@resume/core';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
 import type { Cli } from '../container.js';
+
+// ---- per-JD application-box note --------------------------------------------
 
 export interface RunWellfoundArgs {
   jd: string;
   company: string;
   role?: string;
-  messageOnly?: boolean;
   provider?: string;
   model?: string;
 }
 
 export async function runWellfound(
   cli: Cli,
-  { jd, company, role = '', messageOnly = false, provider, model }: RunWellfoundArgs,
+  { jd, company, role = '', provider, model }: RunWellfoundArgs,
 ): Promise<void> {
   const llm = cli.registry.resolve(cli.config, { provider, model });
-
-  console.log(ui.banner('Wellfound Assistant', `JD → application note${messageOnly ? '' : ' + profile refresh'} · engine: ${llm.label} ${llm.model}`));
+  console.log(ui.banner('Wellfound Note', `JD → application-box message · engine: ${llm.label} ${llm.model}`));
 
   const service = new WellfoundService({ root: cli.root, presenter: cli.presenter });
-  const result = await service.run({ jd, company, role, messageOnly }, { provider: llm });
-  render(cli, result);
+  const result = await service.message({ jd, company, role }, { provider: llm });
+  renderMessage(cli, result);
 }
 
-function render(cli: Cli, r: WellfoundRunResult): void {
-  const { message, wordCount, messageRationale, profile, profileRationale, cls, score, paths, wroteProfile } = r;
-  const msgRel = relative(cli.root, paths.message).replace(/\\/g, '/');
-  const profRel = relative(cli.root, paths.profile).replace(/\\/g, '/');
+function renderMessage(cli: Cli, r: WellfoundMessageResult): void {
+  const { message, wordCount, rationale, cls, score, paths } = r;
+  const rel = relative(cli.root, paths.file).replace(/\\/g, '/');
 
   const L: string[] = [];
-
-  // The note, boxed so it's obvious what to copy.
   L.push(ui.heading(`Application-box note (${wordCount} words) — paste into "What interests you about this role?"`));
   L.push('');
   L.push(boxed(message));
-  if (messageRationale) { L.push(ui.heading('Why this framing')); L.push('  ' + pc.dim(messageRationale)); }
+  if (rationale) { L.push(ui.heading('Why this framing')); L.push('  ' + pc.dim(rationale)); }
 
-  // How well the note's claims are backed by JD keyword coverage.
   L.push(ui.heading(`Grounding — JD keywords you can truthfully lean on (${cls.matched.length + cls.addable.length})`));
   L.push(ui.chips([...cls.matched, ...cls.addable], 'good'));
   if (cls.missing.length) {
@@ -53,28 +51,64 @@ function render(cli: Cli, r: WellfoundRunResult): void {
   L.push(ui.heading('Résumé ATS coverage for this JD'));
   L.push('  ' + ui.gauge('coverage', score.after));
 
-  // Profile refresh.
-  if (profile) {
-    L.push(ui.heading('Wellfound profile refresh (paste manually — no API)'));
-    L.push(ui.kv('headline', pc.cyan(profile.headline)));
-    L.push(ui.kv('about', pc.italic(profile.about)));
-    L.push(ui.kv('looking for', pc.italic(profile.lookingFor)));
-    L.push(ui.kv('skills', profile.skills.join(', ')));
-    if (profileRationale) L.push(ui.kv('why', pc.dim(profileRationale)));
-  } else if (!wroteProfile) {
-    L.push(ui.heading('Wellfound profile refresh'));
-    L.push('  ' + pc.dim('(skipped)'));
-  }
-
   L.push(ui.heading('Output'));
   L.push(ui.kv('company', pc.cyan(paths.slug)));
-  L.push(ui.kv('note', pc.cyan(msgRel)));
-  if (wroteProfile) L.push(ui.kv('profile', pc.cyan(profRel)));
-
-  L.push('\n' + ui.ok(pc.green(`Done. Copy the note above, or open "${msgRel}".`)));
-  L.push(pc.dim('  Reminder: Wellfound has no API — paste the note in the box and apply the profile edits by hand.'));
+  L.push(ui.kv('note', pc.cyan(rel)));
+  L.push('\n' + ui.ok(pc.green(`Done. Copy the note above, or open "${rel}".`)));
+  L.push(pc.dim('  Wellfound has no API — paste the note in the box and apply.'));
   console.log(L.join('\n') + '\n');
 }
+
+// ---- standing profile (one for every role) ----------------------------------
+
+export interface RunWellfoundProfileArgs {
+  target?: string;
+  provider?: string;
+  model?: string;
+}
+
+export async function runWellfoundProfile(
+  cli: Cli,
+  { target = '', provider, model }: RunWellfoundProfileArgs,
+): Promise<void> {
+  const llm = cli.registry.resolve(cli.config, { provider, model });
+  console.log(ui.banner('Wellfound Profile', `standing profile from your fact base · engine: ${llm.label} ${llm.model}`));
+
+  const service = new WellfoundService({ root: cli.root, presenter: cli.presenter });
+  const result = await service.profile({ target }, { provider: llm });
+  renderProfile(cli, result);
+}
+
+function renderProfile(cli: Cli, r: WellfoundProfileResult): void {
+  const { profile, rationale, path } = r;
+  const rel = relative(cli.root, path).replace(/\\/g, '/');
+
+  const L: string[] = [];
+  L.push(ui.heading('Headline'));
+  L.push('  ' + pc.cyan(profile.headline));
+  L.push(ui.heading("What I'm looking for"));
+  L.push('  ' + pc.italic(profile.lookingFor));
+  L.push(ui.heading('About'));
+  L.push(wrapIndent(profile.about, 2, 88));
+  L.push(ui.heading(`Skills (${profile.skills.length}) — add as tags, most important first`));
+  L.push(ui.chips(profile.skills, 'add'));
+  if (profile.experience.length) {
+    L.push(ui.heading(`Experience blurbs (${profile.experience.length}) — paste under each role`));
+    for (const e of profile.experience) {
+      L.push('  ' + pc.bold(e.label));
+      L.push(wrapIndent(e.blurb, 4, 86));
+    }
+  }
+  if (rationale) { L.push(ui.heading('Why these choices')); L.push('  ' + pc.dim(rationale)); }
+
+  L.push(ui.heading('Output'));
+  L.push(ui.kv('profile', pc.cyan(rel)));
+  L.push('\n' + ui.ok(pc.green(`Done. This is your standing profile — open "${rel}" and paste it into Wellfound.`)));
+  L.push(pc.dim('  Re-run anytime (it overwrites) — it improves as your fact base does.'));
+  console.log(L.join('\n') + '\n');
+}
+
+// ---- rendering helpers ------------------------------------------------------
 
 // A cyan-bordered box around the note so it stands apart from the report chrome.
 function boxed(text: string): string {
@@ -85,6 +119,12 @@ function boxed(text: string): string {
   const bottom = border('  └' + '─'.repeat(width + 2) + '┘');
   const body = wrapped.map((l) => border('  │ ') + l.padEnd(width) + border(' │'));
   return [top, ...body, bottom].join('\n');
+}
+
+// Word-wrap and left-pad a paragraph for the plain report sections.
+function wrapIndent(text: string, indent: number, width: number): string {
+  const pad = ' '.repeat(indent);
+  return wrap(text, width).map((l) => pad + l).join('\n');
 }
 
 // Greedy word-wrap to a column width; preserves blank lines between paragraphs.
