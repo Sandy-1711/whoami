@@ -4,7 +4,8 @@
 // standing document (like LinkedIn), so they are separate commands.
 import { relative } from 'node:path';
 import {
-  WellfoundService, type WellfoundMessageResult, type WellfoundProfileResult,
+  WellfoundService, WELLFOUND_BIO_MAX,
+  type WellfoundMessageResult, type WellfoundProfileResult,
 } from '@resume/core';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
@@ -83,13 +84,20 @@ function renderProfile(cli: Cli, r: WellfoundProfileResult): void {
   const { profile, rationale, path } = r;
   const rel = relative(cli.root, path).replace(/\\/g, '/');
 
+  const bioLen = profile.bio.length;
+  const bioTag = bioLen <= WELLFOUND_BIO_MAX ? ui.ok(`${bioLen}/${WELLFOUND_BIO_MAX}`) : ui.fail(`${bioLen}/${WELLFOUND_BIO_MAX}`);
+
   const L: string[] = [];
   L.push(ui.heading('Headline'));
   L.push('  ' + pc.cyan(profile.headline));
+  L.push(ui.heading(`Bio  (${bioTag} chars)`));
+  L.push(wrapIndent(profile.bio, 2, 88));
   L.push(ui.heading("What I'm looking for"));
   L.push('  ' + pc.italic(profile.lookingFor));
-  L.push(ui.heading('About'));
-  L.push(wrapIndent(profile.about, 2, 88));
+  if (profile.achievements.length) {
+    L.push(ui.heading(`Achievements (${profile.achievements.length}) — paste as bullets`));
+    for (const a of profile.achievements) L.push('  ' + pc.dim('• ') + a);
+  }
   L.push(ui.heading(`Skills (${profile.skills.length}) — add as tags, most important first`));
   L.push(ui.chips(profile.skills, 'add'));
   if (profile.experience.length) {

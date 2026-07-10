@@ -61,8 +61,12 @@ export interface TailorContent {
 
 export interface WellfoundProfile {
   headline: string;
-  about: string;
+  // Wellfound's bio field, capped at 160 characters (WELLFOUND_BIO_MAX).
+  bio: string;
   lookingFor: string;
+  // Bullets for Wellfound's Achievements section — carries the proof the short
+  // bio can't hold.
+  achievements: string[];
   skills: string[];
   // One founder-facing blurb per role/project, to paste under each experience.
   experience: { label: string; blurb: string }[];

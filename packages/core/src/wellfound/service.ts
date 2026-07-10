@@ -21,7 +21,7 @@ import { slugCompany } from '../naming.js';
 import { drift } from '../profile/sources.js';
 import {
   wellfoundMessagePrompt, WELLFOUND_MESSAGE_SCHEMA, type WellfoundMessageResponse,
-  wellfoundProfilePrompt, WELLFOUND_PROFILE_SCHEMA, mapWellfoundProfile,
+  wellfoundProfilePrompt, WELLFOUND_PROFILE_SCHEMA, mapWellfoundProfile, WELLFOUND_BIO_MAX,
   type WellfoundProfileResponse,
 } from '../prompts.js';
 import type { Facts, Classification, Score, WellfoundProfile } from '../types.js';
@@ -140,7 +140,7 @@ export class WellfoundService {
       });
       profile = mapWellfoundProfile(parsed);
       rationale = (parsed.rationale || '').trim();
-      if (!profile.headline || !profile.about) throw new Error('incomplete profile');
+      if (!profile.headline || !profile.bio) throw new Error('incomplete profile');
       spin.succeed(`${provider.label} built your Wellfound profile.`);
     } catch (err) {
       spin.fail(`${provider.label} failed: ${(err as Error).message}`);
@@ -179,6 +179,11 @@ function profileMarkdown(p: WellfoundProfile, rationale: string, target: string)
     ``,
     p.headline,
     ``,
+    `## Bio  (${p.bio.length}/${WELLFOUND_BIO_MAX} chars)`,
+    `_Wellfound → Edit profile → bio. Capped at ${WELLFOUND_BIO_MAX} characters._`,
+    ``,
+    p.bio,
+    ``,
     `## What I'm looking for`,
     `_Wellfound → Job preferences → "What are you looking for?"_`,
     ``,
@@ -187,9 +192,9 @@ function profileMarkdown(p: WellfoundProfile, rationale: string, target: string)
     `> Also set the structured job-preference fields founders filter on: remote,`,
     `> role types, company stage, and salary expectations.`,
     ``,
-    `## About`,
+    `## Achievements — paste as bullets`,
     ``,
-    p.about,
+    p.achievements.length ? p.achievements.map((a) => `- ${a}`).join('\n') : '_(none)_',
     ``,
     `## Skills — add as tags, most important first`,
     ``,
