@@ -22,6 +22,10 @@ export function loadConfig(factories: LlmProviderFactory[]): AppConfig {
       keys,
       models,
     },
+    gmail: {
+      user: process.env.GMAIL_USER || '',
+      appPassword: process.env.GMAIL_APP_PASSWORD || '',
+    },
     githubToken: process.env.GITHUB_TOKEN || '',
     linkedinCookie: process.env.LINKEDIN_COOKIE || '',
     scrapeTtlHours: Number(process.env.SCRAPE_TTL_HOURS) || 12,

@@ -183,6 +183,84 @@ KEYWORD ANALYSIS (already computed):
 Return JSON: { "message": the note to paste, "rationale": 1-2 lines on why this framing works — for the candidate's eyes, NOT pasted }.`;
 }
 
+// ---- job-application email --------------------------------------------------
+// A full plain-text application email sent to a recruiter/hiring inbox. Unlike
+// the Wellfound note it has a subject and a sign-off, and it references the
+// attached résumé. Read by a human, so it optimizes for a reply, not keyword
+// density. Draws only on the verified fact base. The contact-link signature is
+// appended deterministically by the service, so the model must NOT invent links.
+
+export const EMAIL_SCHEMA: JsonSchema = {
+  type: 'object',
+  properties: {
+    to: { type: 'string' },
+    subject: { type: 'string' },
+    body: { type: 'string' },
+    rationale: { type: 'string' },
+  },
+  required: ['subject', 'body', 'rationale'],
+};
+
+// Raw JSON shape returned for EMAIL_SCHEMA.
+export interface EmailResponse {
+  // The apply-to address copied verbatim from the JD, or '' when none appears.
+  to?: string;
+  subject: string;
+  body: string;
+  rationale?: string;
+}
+
+export function emailPrompt({
+  jd,
+  company,
+  role,
+  facts,
+  classification,
+  candidateName,
+  hasResume,
+}: {
+  jd: string;
+  company: string;
+  role: string;
+  facts: Facts;
+  classification: Classification;
+  candidateName: string;
+  // Whether a tailored résumé PDF is attached — changes whether the body may
+  // reference "my attached résumé".
+  hasResume: boolean;
+}): string {
+  return `You are helping a strong early-career engineer write a job-application email to a company's hiring inbox. A recruiter or founder reads it directly — optimize for a reply, not ATS keyword density.
+
+GOAL: a concise, confident email (roughly 120-200 words in the body) that makes the reader want to open the résumé and respond.
+
+STRICT RULES:
+- Use ONLY facts, metrics, projects, and skills present in the FACT BASE. Never invent employers, numbers, technologies, or contact details.
+- SUBJECT: short and specific. If the JD states an exact subject line to use (e.g. 'subject: "…"' or 'use the subject …'), copy it EXACTLY. Otherwise use "<Role> Application — <Candidate Name>".
+- TO: if the JD contains an explicit apply-to email address, return it verbatim in "to". If none appears, return "" (empty) — do NOT guess an address.
+- BODY: start with a greeting ("Hi <Company> team," — or "Hi there," if no company). Then 1-3 short paragraphs: open with the single most relevant proof point for THIS role (prefer a "matched"/"surface" keyword below, stated with its metric), then connect concretely to this company's product/stack/problem from the JD.
+- ${hasResume ? 'A tailored résumé PDF is attached — you may refer to "my attached résumé" once, naturally.' : 'No résumé is attached — do NOT claim an attachment or say "attached".'}
+- If the candidate is early-career relative to the ask, do NOT apologize or hedge — frame it as "already shipping in this exact stack, reviewed by maintainers".
+- End the body with a sign-off line and the candidate's name exactly: "Best regards,\\n${candidateName}". Do NOT add phone numbers, emails, portfolio, GitHub, or LinkedIn links — a contact signature is appended automatically after your text.
+- Plain text only. No markdown, no bullet characters, no subject/"To:" headers inside the body.
+
+COMPANY: ${company || '(unknown — infer from the JD)'}
+TARGET ROLE: ${role || '(infer from the JD)'}
+CANDIDATE NAME: ${candidateName}
+
+JOB DESCRIPTION:
+"""${jd.slice(0, 6000)}"""
+
+FACT BASE (the only truth you may use):
+"""${JSON.stringify(facts).slice(0, 12000)}"""
+
+KEYWORD ANALYSIS (already computed):
+- Proven on the résumé (matched): ${classification.matched.join(', ') || '(none)'}
+- TRUE & JD-relevant to emphasize (surface): ${classification.addable.join(', ') || '(none)'}
+- JD wants but candidate lacks — NEVER claim: ${classification.missing.join(', ') || '(none)'}
+
+Return JSON: { "to": apply-to email from the JD or "", "subject": the subject line, "body": the full email body ending in the sign-off + name, "rationale": 1-2 lines on why this framing works — for the candidate's eyes, NOT sent }.`;
+}
+
 // ---- Wellfound profile optimization -----------------------------------------
 // Copy for the STANDING Wellfound profile — one profile shown for every role,
 // like LinkedIn. JD-independent: it's built from the fact base (optionally

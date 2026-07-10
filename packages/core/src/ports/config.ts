@@ -10,8 +10,17 @@ export interface LlmSettings {
   models: Record<string, string>;
 }
 
+export interface GmailSettings {
+  // The Gmail address emails are sent from.
+  user: string;
+  // A Google App Password (not the account password). Whitespace is tolerated —
+  // Google displays it in spaced groups of four.
+  appPassword: string;
+}
+
 export interface AppConfig {
   llm: LlmSettings;
+  gmail: GmailSettings;
   githubToken: string;
   linkedinCookie: string;
   scrapeTtlHours: number;

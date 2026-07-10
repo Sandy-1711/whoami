@@ -16,6 +16,7 @@ const http: HttpClient = {
 function config(llm: Partial<AppConfig['llm']> = {}): AppConfig {
   return {
     llm: { provider: '', keys: {}, models: {}, ...llm },
+    gmail: { user: '', appPassword: '' },
     githubToken: '',
     linkedinCookie: '',
     scrapeTtlHours: 12,

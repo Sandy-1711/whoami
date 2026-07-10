@@ -9,6 +9,7 @@
   "scripts": {
     "resume": "tsx src/main.ts",
     "tailor": "tsx src/main.ts tailor",
+    "email": "tsx src/main.ts email",
     "wellfound": "tsx src/main.ts wellfound",
     "wellfound-profile": "tsx src/main.ts wellfound-profile",
     "sync": "tsx src/main.ts sync",
@@ -24,15 +25,17 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@resume/core": "workspace:*",
     "@clack/prompts": "^1.7.0",
+    "@resume/core": "workspace:*",
     "cli-table3": "^0.6.5",
     "dotenv": "^17.4.2",
     "gradient-string": "^3.0.0",
+    "nodemailer": "^9.0.3",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
+    "@types/nodemailer": "^8.0.1",
     "@vitest/coverage-v8": "^4.1.10",
     "tsx": "^4.23.0",
     "typescript": "^6.0.3",

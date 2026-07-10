@@ -55,6 +55,23 @@ async function directWellfound(cli: Cli): Promise<void> {
   });
 }
 
+async function directEmail(cli: Cli): Promise<void> {
+  const { runEmail } = await import('./commands/email.js');
+  const jd = opt('--jd') || (await fileJd(positionals()[0]));
+  await runEmail(cli, {
+    jd,
+    company: opt('--company') || opt('--name'),
+    role: opt('--role'),
+    to: opt('--to'),
+    attach: opt('--attach'),
+    noAttach: has('--no-attach'),
+    dryRun: has('--dry-run') || has('--no-send'),
+    autoSend: has('--yes') || has('-y'),
+    provider: opt('--provider'),
+    model: opt('--model'),
+  });
+}
+
 async function directWellfoundProfile(cli: Cli): Promise<void> {
   const { runWellfoundProfile } = await import('./commands/wellfound.js');
   await runWellfoundProfile(cli, {
@@ -67,6 +84,7 @@ async function directWellfoundProfile(cli: Cli): Promise<void> {
 function commands(cli: Cli): Record<string, () => Promise<unknown>> {
   return {
     tailor: () => directTailor(cli),
+    email: () => directEmail(cli),
     wellfound: () => directWellfound(cli),
     'wellfound-profile': () => directWellfoundProfile(cli),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force') }),
@@ -85,6 +103,7 @@ function printHelp(): void {
   console.log(`
   ${pc.bold('Commands')}
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
+    ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
     ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
     ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
     ${pc.cyan('sync')} [--force]                                            refresh GitHub + LinkedIn
@@ -108,6 +127,7 @@ async function interactive(cli: Cli): Promise<void> {
       message: 'What do you want to do?',
       options: [
         { value: 'tailor', label: 'Tailor to a job description', hint: 'score → rewrite → PDF' },
+        { value: 'email', label: 'Draft & send an application email', hint: 'JD → Gmail, on approval' },
         { value: 'wellfound', label: 'Wellfound application note', hint: 'JD → the "why this role?" box' },
         { value: 'wellfound-profile', label: 'Build my Wellfound profile', hint: 'standing profile (one for every role)' },
         { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub + LinkedIn' },
@@ -121,6 +141,7 @@ async function interactive(cli: Cli): Promise<void> {
 
     try {
       if (action === 'tailor') await interactiveTailor(cli);
+      else if (action === 'email') await interactiveEmail(cli);
       else if (action === 'wellfound') await interactiveWellfound(cli);
       else if (action === 'wellfound-profile') await interactiveWellfoundProfile(cli);
       else if (action === 'sync') {
@@ -188,6 +209,48 @@ async function interactiveTailor(cli: Cli): Promise<void> {
 
   const { runTailor } = await import('./commands/tailor.js');
   await runTailor(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
+}
+
+async function interactiveEmail(cli: Cli): Promise<void> {
+  const company = await p.text({
+    message: 'Company name',
+    placeholder: 'Inteligen-ai',
+    validate: (v) => (v && v.trim() ? undefined : 'Required — the draft is filed by company.'),
+  });
+  if (p.isCancel(company)) return;
+
+  const source = await p.select({
+    message: 'How do you want to provide the JD?',
+    options: [
+      { value: 'file', label: 'Path to a JD file', hint: './jd.txt' },
+      { value: 'paste', label: 'Paste the JD text', hint: 'multi-line paste' },
+    ],
+  });
+  if (p.isCancel(source)) return;
+
+  let jd: string;
+  if (source === 'file') {
+    const file = await p.text({
+      message: 'Path to the JD file',
+      placeholder: './jd.txt',
+      validate: (v) => (v && existsSync(v.trim()) ? undefined : 'File not found — save the JD to a file and give its path.'),
+    });
+    if (p.isCancel(file)) return;
+    jd = await readFile(file.trim(), 'utf8');
+  } else {
+    jd = await pasteJd();
+    if (!jd.trim()) { console.log('\n' + ui.fail('No JD text received.') + '\n'); return; }
+  }
+
+  const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
+  if (p.isCancel(role)) return;
+
+  const provider = await pickProvider(cli, 'Which model should draft the email?');
+  if (provider === null) return;
+
+  // runEmail draws the draft, then handles recipient approval + the send confirm.
+  const { runEmail } = await import('./commands/email.js');
+  await runEmail(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
 }
 
 async function interactiveWellfound(cli: Cli): Promise<void> {

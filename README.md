@@ -83,9 +83,11 @@ external storage to read on each request.
 │   └── sources.lock.json       # file-drift hashes + scrape freshness/content hashes
 ├── packages/core/              # @resume/core — the domain, ports + adapters (DI)
 │   └── src/
-│       ├── ports/              # interfaces: llm · http · latex · logger · config
+│       ├── ports/              # interfaces: llm · http · latex · logger · config · mailer
 │       ├── llm/                # LlmProviderRegistry + providers/gemini.ts, deepseek.ts
 │       ├── tailor/             # TailorService · core.ts (scoring/injection) · report.ts
+│       ├── email/              # EmailService — draft a JD email + send via the Mailer port
+│       ├── wellfound/          # WellfoundService — application-box note + standing profile
 │       ├── scrape/             # github.ts · linkedin.ts · refresh.ts (SourceRefresher)
 │       ├── check/              # source.ts · log.ts (width) · pdf.ts (unpdf seam)
 │       ├── profile/sources.ts  # file-drift + scrape freshness
@@ -94,8 +96,8 @@ external storage to read on each request.
 │   └── src/
 │       ├── main.ts             # entrypoint (interactive menu + dispatch)
 │       ├── container.ts        # composition root — wires adapters + registers providers
-│       ├── commands/           # tailor · sync · status · build · check (thin)
-│       ├── adapters/           # http · latex · config (dotenv) · presenter (clack)
+│       ├── commands/           # tailor · email · wellfound · sync · status · build · check (thin)
+│       ├── adapters/           # http · latex · config (dotenv) · presenter (clack) · mailer (nodemailer/Gmail)
 │       └── build-pdf.ts check-resume.ts ui.ts args.ts paths.ts
 ├── apps/web/                   # @resume/web — Vercel app (self-contained; deploy root)
 │   ├── api/                    # resume.ts · stats.ts · badge.ts · og.ts
@@ -263,9 +265,21 @@ cp .env.example .env             # set GEMINI_API_KEY (see the file for optional
 
 pnpm resume                   # interactive menu (clack) — everything's in here
 pnpm tailor -- jd.txt --company "Inteligen-ai" [--role "AI Dev Engineer"]
+pnpm email -- jd.txt --company "Northwind AI"  # draft + send a Gmail application email
 pnpm sync -- --force          # re-scrape GitHub + LinkedIn now
 pnpm status                   # env, sources, toolchain, and outputs at a glance
 ```
+
+- **Application email** — `pnpm email -- jd.txt --company "Northwind AI"` drafts a
+  JD-tailored email from the same fact base, reads the apply-to address and subject
+  straight from the JD, and auto-attaches the tailored résumé PDF from
+  `tailored/<company>/` (override with `--attach <pdf>` or `--no-attach`). It then
+  **shows the draft and only sends after you confirm the recipient** — sending goes
+  through Gmail using a **Google App Password** (`GMAIL_USER` + `GMAIL_APP_PASSWORD` in
+  `.env`; see `.env.example`). Without those it drafts only. Flags: `--to <addr>` to set
+  the recipient, `--yes` to skip the confirm (for automation), `--dry-run` to preview
+  only. On a real run the draft is written to `tailored/<company>/application-email.txt`;
+  a `--dry-run` is a read-only preview that never overwrites an existing draft.
 
 - **Output naming** — the résumé is filed and named by company + the role read from the
   JD: `--company "Inteligen-ai"` → `tailored/inteligen_ai/Sandeep Singh - AI Dev

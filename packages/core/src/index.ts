@@ -6,6 +6,7 @@ export * from './ports/llm.js';
 export * from './ports/config.js';
 export * from './ports/latex.js';
 export * from './ports/logger.js';
+export * from './ports/mailer.js';
 
 // LLM registry + provider factories.
 export * from './llm/registry.js';
@@ -25,6 +26,9 @@ export * from './tailor/service.js';
 
 // Wellfound (application-box note + profile refresh).
 export * from './wellfound/service.js';
+
+// Job-application email (draft + send via the Mailer port).
+export * from './email/service.js';
 
 // Profile sources + scraping.
 export * from './profile/sources.js';

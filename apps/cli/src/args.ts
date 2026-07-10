@@ -3,7 +3,7 @@
 
 // Flags that consume the following token as their value, so a value like
 // "--company Acme" is never mistaken for a positional argument.
-export const VALUE_FLAGS = ['--jd', '--company', '--role', '--model', '--name', '--provider', '--target', '--focus'];
+export const VALUE_FLAGS = ['--jd', '--company', '--role', '--model', '--name', '--provider', '--target', '--focus', '--to', '--attach'];
 
 export interface Args {
   // The leading sub-command ('tailor', 'sync', …), or '' when the first token is a flag.
