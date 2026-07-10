@@ -43,9 +43,23 @@ async function directTailor(cli: Cli): Promise<void> {
   });
 }
 
+async function directWellfound(cli: Cli): Promise<void> {
+  const { runWellfound } = await import('./commands/wellfound.js');
+  const jd = opt('--jd') || (await fileJd(positionals()[0]));
+  await runWellfound(cli, {
+    jd,
+    company: opt('--company') || opt('--name'),
+    role: opt('--role'),
+    messageOnly: has('--message-only'),
+    provider: opt('--provider'),
+    model: opt('--model'),
+  });
+}
+
 function commands(cli: Cli): Record<string, () => Promise<unknown>> {
   return {
     tailor: () => directTailor(cli),
+    wellfound: () => directWellfound(cli),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force') }),
     status: async () => (await import('./commands/status.js')).runStatus(cli),
     build: async () => (await import('./commands/build.js')).runBuild(cli),
@@ -62,6 +76,7 @@ function printHelp(): void {
   console.log(`
   ${pc.bold('Commands')}
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
+    ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>] [--message-only]      Wellfound note + profile refresh
     ${pc.cyan('sync')} [--force]                                            refresh GitHub + LinkedIn
     ${pc.cyan('status')}                                                    env, sources, outputs
     ${pc.cyan('build')}                                                     compile the canonical PDF
@@ -83,6 +98,7 @@ async function interactive(cli: Cli): Promise<void> {
       message: 'What do you want to do?',
       options: [
         { value: 'tailor', label: 'Tailor to a job description', hint: 'score → rewrite → PDF' },
+        { value: 'wellfound', label: 'Wellfound assistant', hint: 'JD → application note + profile refresh' },
         { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub + LinkedIn' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
         { value: 'build', label: 'Build canonical résumé', hint: 'resume.tex → PDF' },
@@ -94,6 +110,7 @@ async function interactive(cli: Cli): Promise<void> {
 
     try {
       if (action === 'tailor') await interactiveTailor(cli);
+      else if (action === 'wellfound') await interactiveWellfound(cli);
       else if (action === 'sync') {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
         if (p.isCancel(force)) continue;
@@ -159,6 +176,60 @@ async function interactiveTailor(cli: Cli): Promise<void> {
 
   const { runTailor } = await import('./commands/tailor.js');
   await runTailor(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
+}
+
+async function interactiveWellfound(cli: Cli): Promise<void> {
+  const company = await p.text({
+    message: 'Company name',
+    placeholder: 'Inteligen-ai',
+    validate: (v) => (v && v.trim() ? undefined : 'Required — the note + profile draft are filed by company.'),
+  });
+  if (p.isCancel(company)) return;
+
+  const source = await p.select({
+    message: 'How do you want to provide the JD?',
+    options: [
+      { value: 'file', label: 'Path to a JD file', hint: './jd.txt' },
+      { value: 'paste', label: 'Paste the JD text', hint: 'multi-line paste' },
+    ],
+  });
+  if (p.isCancel(source)) return;
+
+  let jd: string;
+  if (source === 'file') {
+    const file = await p.text({
+      message: 'Path to the JD file',
+      placeholder: './jd.txt',
+      validate: (v) => (v && existsSync(v.trim()) ? undefined : 'File not found — save the JD to a file and give its path.'),
+    });
+    if (p.isCancel(file)) return;
+    jd = await readFile(file.trim(), 'utf8');
+  } else {
+    jd = await pasteJd();
+    if (!jd.trim()) { console.log('\n' + ui.fail('No JD text received.') + '\n'); return; }
+  }
+
+  const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
+  if (p.isCancel(role)) return;
+
+  const scope = await p.confirm({ message: 'Also generate a Wellfound profile refresh (headline / about / skills)?', initialValue: true });
+  if (p.isCancel(scope)) return;
+
+  // Ask which model only when more than one provider has a key configured.
+  let provider = '';
+  const withKeys = cli.registry.list().filter((f) => cli.config.llm.keys[f.id]);
+  if (withKeys.length > 1) {
+    const pick = await p.select({
+      message: 'Which model should draft the note?',
+      initialValue: cli.registry.defaultProviderId(cli.config),
+      options: withKeys.map((f) => ({ value: f.id, label: f.label, hint: cli.config.llm.models[f.id] || f.defaultModel })),
+    });
+    if (p.isCancel(pick)) return;
+    provider = pick as string;
+  }
+
+  const { runWellfound } = await import('./commands/wellfound.js');
+  await runWellfound(cli, { jd, company: company.trim(), role: (role || '').trim(), messageOnly: !scope, provider });
 }
 
 // Clack has no built-in multiline text prompt, so pasted JDs are read directly

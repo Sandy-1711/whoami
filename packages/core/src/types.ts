@@ -57,6 +57,15 @@ export interface TailorContent {
   rationale: string;
 }
 
+// ---- Wellfound (packages/core/src/wellfound/service.ts) --------------------
+
+export interface WellfoundProfile {
+  headline: string;
+  about: string;
+  lookingFor: string;
+  skills: string[];
+}
+
 // ---- output naming (scripts/lib/naming.ts) ---------------------------------
 
 export interface OutputPaths {

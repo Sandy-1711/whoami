@@ -23,6 +23,9 @@ export * from './tailor/core.js';
 export * from './tailor/report.js';
 export * from './tailor/service.js';
 
+// Wellfound (application-box note + profile refresh).
+export * from './wellfound/service.js';
+
 // Profile sources + scraping.
 export * from './profile/sources.js';
 export * from './scrape/github.js';

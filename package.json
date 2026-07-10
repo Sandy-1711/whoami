@@ -15,6 +15,7 @@
     "lint": "turbo run lint",
     "resume": "pnpm --filter @resume/cli run resume",
     "tailor": "pnpm --filter @resume/cli run tailor",
+    "wellfound": "pnpm --filter @resume/cli run wellfound",
     "sync": "pnpm --filter @resume/cli run sync",
     "status": "pnpm --filter @resume/cli run status",
     "build:pdf": "pnpm --filter @resume/cli run build:pdf",
