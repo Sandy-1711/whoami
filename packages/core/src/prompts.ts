@@ -189,12 +189,16 @@ Return JSON: { "message": the note to paste, "rationale": 1-2 lines on why this 
 // focused toward a kind of role) and refined over time. Manual paste — Wellfound
 // has no job-seeker API.
 
+// Wellfound caps the bio field at 160 characters.
+export const WELLFOUND_BIO_MAX = 160;
+
 export const WELLFOUND_PROFILE_SCHEMA: JsonSchema = {
   type: 'object',
   properties: {
     headline: { type: 'string' },
+    bio: { type: 'string' },
     looking_for: { type: 'string' },
-    about: { type: 'string' },
+    achievements: { type: 'array', items: { type: 'string' } },
     skills: { type: 'array', items: { type: 'string' } },
     experience: {
       type: 'array',
@@ -209,14 +213,15 @@ export const WELLFOUND_PROFILE_SCHEMA: JsonSchema = {
     },
     rationale: { type: 'string' },
   },
-  required: ['headline', 'looking_for', 'about', 'skills'],
+  required: ['headline', 'bio', 'looking_for', 'achievements', 'skills'],
 };
 
 // Raw JSON shape returned for WELLFOUND_PROFILE_SCHEMA.
 export interface WellfoundProfileResponse {
   headline: string;
+  bio: string;
   looking_for: string;
-  about: string;
+  achievements?: string[];
   skills?: string[];
   experience?: { label?: string; blurb?: string }[];
   rationale?: string;
@@ -234,11 +239,12 @@ export function wellfoundProfilePrompt({
 STRICT RULES:
 - Use ONLY the FACT BASE. Never invent employers, numbers, titles, or skills.
 - headline: <= 60 characters — the role identity a founder searches for, optionally plus one metric. Align with title_variants (e.g. "AI Engineer — Agent Infrastructure"). No company name.
+- bio: <= ${WELLFOUND_BIO_MAX} characters — HARD LIMIT (Wellfound's bio field is capped at ${WELLFOUND_BIO_MAX}). ONE punchy first-person line, metric-led, plain text. Lead with the single strongest proof (e.g. "12 merged PRs into Mastra's agent runtime"). Count the characters; it MUST be <= ${WELLFOUND_BIO_MAX}.
 - looking_for: 1-2 sentences on the role / team / company stage the candidate wants (e.g. remote AI-engineering or agent-infrastructure work at an early-stage startup). Concrete, not a wish list.
-- about: 3-4 sentences, first person, metric-led plain text. Lead with the strongest proof (merged OSS PRs into a well-known repo, production agents shipped, users scaled), then range and what they want to build. No fluff, no "passionate about".
+- achievements: 4-6 short bullet lines for Wellfound's Achievements section, each metric-led and <= 120 chars, drawn ONLY from headline_metrics / experience highlights (e.g. "Merged 12 PRs into Mastra's agent runtime (25k+ stars)", "Fine-tuned Qwen 4B/8B to 75% accuracy"). This carries the proof that no longer fits in the short bio.
 - skills: 12-18 skill tags ordered by relevance to the roles the candidate targets, each an EXACT token a founder would filter on (e.g. "TypeScript", "RAG", "LLM", "FastAPI", "React"). Most important first. Draw only from the fact base's skills/keywords.
 - experience: for EACH experience entry and notable project in the fact base, one object: { "label": "<Org / Project — Role>", "blurb": "<2-3 sentence founder-facing description, outcome-first, drawn only from that entry's highlights/keywords>" }. Plain text, no markdown. This is the description the candidate pastes under each role on Wellfound.
-- Keep it broad enough to attract a range of relevant AI-engineering / backend roles. If a TARGET FOCUS is given, lean the headline/looking_for/about toward it, but do NOT narrow so far that other strong roles are excluded.
+- Keep it broad enough to attract a range of relevant AI-engineering / backend roles. If a TARGET FOCUS is given, lean the headline/bio/looking_for toward it, but do NOT narrow so far that other strong roles are excluded.
 
 TARGET FOCUS (optional — may be empty):
 """${target.slice(0, 2000)}"""
@@ -249,12 +255,23 @@ FACT BASE (the only truth you may use):
 Return JSON matching the schema. "rationale" is 1-2 lines for the candidate on the positioning choices — not pasted into the profile.`;
 }
 
+// Hard-clamp the bio to Wellfound's limit at a word boundary — a safety net in
+// case the model runs long despite the prompt's HARD LIMIT.
+export function clampBio(s: string, max = WELLFOUND_BIO_MAX): string {
+  const t = (s || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
 // Normalize a raw Wellfound profile response into the domain shape.
 export function mapWellfoundProfile(parsed: WellfoundProfileResponse): WellfoundProfile {
   return {
-    headline: parsed.headline || '',
-    about: parsed.about || '',
+    headline: (parsed.headline || '').trim(),
+    bio: clampBio(parsed.bio || ''),
     lookingFor: parsed.looking_for || '',
+    achievements: (parsed.achievements || []).map((s) => String(s).trim()).filter(Boolean),
     skills: parsed.skills || [],
     experience: (parsed.experience || [])
       .filter((e) => e && (e.label || e.blurb))

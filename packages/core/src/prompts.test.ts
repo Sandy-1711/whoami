@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
     tailorPrompt, mapTailorResponse, linkedinPrompt, TAILOR_SCHEMA, type TailorResponse,
-    wellfoundMessagePrompt, wellfoundProfilePrompt, mapWellfoundProfile,
+    wellfoundMessagePrompt, wellfoundProfilePrompt, mapWellfoundProfile, clampBio, WELLFOUND_BIO_MAX,
     WELLFOUND_MESSAGE_SCHEMA, WELLFOUND_PROFILE_SCHEMA, type WellfoundProfileResponse,
 } from "./prompts.js";
 import type { Facts, Classification } from "./types.js";
@@ -92,6 +92,7 @@ describe("wellfoundProfilePrompt", () => {
         expect(prompt).toContain("agent infrastructure role");
         expect(prompt).toMatch(/headline/);
         expect(prompt).toMatch(/skills/);
+        expect(prompt).toContain(String(WELLFOUND_BIO_MAX)); // states the bio char cap
     });
     it("should default target to empty when omitted", () => {
         const prompt = wellfoundProfilePrompt({ facts });
@@ -100,25 +101,43 @@ describe("wellfoundProfilePrompt", () => {
 });
 
 describe("mapWellfoundProfile", () => {
-    it("should map snake_case looking_for + experience and default arrays", () => {
+    it("should map snake_case looking_for + bio + achievements + experience", () => {
         const raw: WellfoundProfileResponse = {
-            headline: "AI Engineer", about: "Ships agents.", looking_for: "remote AI work", skills: ["RAG"],
+            headline: "AI Engineer", bio: "Ships agents.", looking_for: "remote AI work",
+            achievements: ["12 merged Mastra PRs"], skills: ["RAG"],
             experience: [{ label: "AiRA — AI Engineer", blurb: "Built agents." }],
         };
         expect(mapWellfoundProfile(raw)).toEqual({
-            headline: "AI Engineer", about: "Ships agents.", lookingFor: "remote AI work", skills: ["RAG"],
+            headline: "AI Engineer", bio: "Ships agents.", lookingFor: "remote AI work",
+            achievements: ["12 merged Mastra PRs"], skills: ["RAG"],
             experience: [{ label: "AiRA — AI Engineer", blurb: "Built agents." }],
         });
-        const bare = mapWellfoundProfile({ headline: "x", about: "y", looking_for: "z" } as WellfoundProfileResponse);
+        const bare = mapWellfoundProfile({ headline: "x", bio: "y", looking_for: "z" } as WellfoundProfileResponse);
         expect(bare.skills).toEqual([]);
+        expect(bare.achievements).toEqual([]);
         expect(bare.experience).toEqual([]);
     });
     it("should drop experience entries with neither label nor blurb", () => {
         const mapped = mapWellfoundProfile({
-            headline: "x", about: "y", looking_for: "z",
+            headline: "x", bio: "y", looking_for: "z",
             experience: [{ label: "", blurb: "" }, { label: "Real", blurb: "text" }],
         } as WellfoundProfileResponse);
         expect(mapped.experience).toEqual([{ label: "Real", blurb: "text" }]);
+    });
+    it("should hard-clamp an over-long bio to the Wellfound limit at a word boundary", () => {
+        const long = "word ".repeat(60).trim(); // ~299 chars
+        const bio = mapWellfoundProfile({ headline: "x", bio: long, looking_for: "z" } as WellfoundProfileResponse).bio;
+        expect(bio.length).toBeLessThanOrEqual(WELLFOUND_BIO_MAX);
+        expect(bio.endsWith(" ")).toBe(false);
+    });
+});
+
+describe("clampBio", () => {
+    it("leaves a short bio untouched but trims whitespace", () => {
+        expect(clampBio("  hi   there  ")).toBe("hi there");
+    });
+    it("never exceeds the limit", () => {
+        expect(clampBio("x".repeat(500)).length).toBeLessThanOrEqual(WELLFOUND_BIO_MAX);
     });
 });
 
@@ -126,9 +145,9 @@ describe("Wellfound schemas", () => {
     it("message schema requires the fields the service reads", () => {
         expect(WELLFOUND_MESSAGE_SCHEMA.required).toEqual(expect.arrayContaining(["message", "rationale"]));
     });
-    it("profile schema requires headline, looking_for, about, skills", () => {
+    it("profile schema requires headline, bio, looking_for, achievements, skills", () => {
         expect(WELLFOUND_PROFILE_SCHEMA.required).toEqual(
-            expect.arrayContaining(["headline", "about", "looking_for", "skills"]),
+            expect.arrayContaining(["headline", "bio", "looking_for", "achievements", "skills"]),
         );
     });
 });

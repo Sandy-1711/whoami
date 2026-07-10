@@ -18,8 +18,9 @@ function fakeProvider(payload: unknown): LlmProvider {
 const MESSAGE = { message: "I shipped RAG agents on FastAPI at AiRA.", rationale: "leads with proof" };
 const PROFILE = {
     headline: "AI Engineer — Agent Infra",
+    bio: "AI engineer with 12 merged PRs into Mastra's agent runtime; shipped production agents at AiRA.",
     looking_for: "remote AI eng at an early-stage startup",
-    about: "I build agents. 12 merged Mastra PRs.",
+    achievements: ["Merged 12 PRs into Mastra (25k+ stars)", "Fine-tuned Qwen to 75% accuracy"],
     skills: ["TypeScript", "RAG", "FastAPI"],
     experience: [{ label: "AiRA — AI Engineer", blurb: "Built the Daily Brief agent." }],
     rationale: "led with the Mastra OSS proof",
@@ -76,12 +77,17 @@ describe("WellfoundService.profile", () => {
         expect(res.relPath).toBe("wellfound-profile.md");
         expect(res.path).toBe(join(root, "wellfound-profile.md"));
         expect(res.profile.headline).toBe("AI Engineer — Agent Infra");
+        expect(res.profile.bio.length).toBeLessThanOrEqual(160);
         expect(res.profile.lookingFor).toContain("remote");
+        expect(res.profile.achievements).toHaveLength(2);
         expect(res.profile.experience).toHaveLength(1);
 
         const md = await readFile(res.path, "utf8");
         expect(md).toContain("# Wellfound profile — master draft");
         expect(md).toContain("AI Engineer — Agent Infra");
+        expect(md).toContain("## Bio");
+        expect(md).toContain("## Achievements");
+        expect(md).toContain("- Merged 12 PRs into Mastra (25k+ stars)");
         expect(md).toContain("- TypeScript");
         expect(md).toContain("### AiRA — AI Engineer");
         expect(md).toContain("focus: _agent infrastructure_");
@@ -101,7 +107,7 @@ describe("WellfoundService.profile", () => {
     it("throws a helpful error when the model returns an incomplete profile", async () => {
         const root = await makeRoot();
         const svc = new WellfoundService({ root, presenter: silentPresenter });
-        await expect(svc.profile({}, { provider: fakeProvider({ headline: "", about: "", looking_for: "", skills: [] }) }))
+        await expect(svc.profile({}, { provider: fakeProvider({ headline: "", bio: "", looking_for: "", skills: [] }) }))
             .rejects.toThrow(/API key|quota|model/i);
     });
 });
