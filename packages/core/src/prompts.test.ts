@@ -95,19 +95,30 @@ describe("wellfoundProfilePrompt", () => {
     });
     it("should default target to empty when omitted", () => {
         const prompt = wellfoundProfilePrompt({ facts });
-        expect(prompt).toContain("TARGET CONTEXT");
+        expect(prompt).toContain("TARGET FOCUS");
     });
 });
 
 describe("mapWellfoundProfile", () => {
-    it("should map snake_case looking_for onto lookingFor and default skills", () => {
+    it("should map snake_case looking_for + experience and default arrays", () => {
         const raw: WellfoundProfileResponse = {
             headline: "AI Engineer", about: "Ships agents.", looking_for: "remote AI work", skills: ["RAG"],
+            experience: [{ label: "AiRA — AI Engineer", blurb: "Built agents." }],
         };
         expect(mapWellfoundProfile(raw)).toEqual({
             headline: "AI Engineer", about: "Ships agents.", lookingFor: "remote AI work", skills: ["RAG"],
+            experience: [{ label: "AiRA — AI Engineer", blurb: "Built agents." }],
         });
-        expect(mapWellfoundProfile({ headline: "x", about: "y", looking_for: "z" } as WellfoundProfileResponse).skills).toEqual([]);
+        const bare = mapWellfoundProfile({ headline: "x", about: "y", looking_for: "z" } as WellfoundProfileResponse);
+        expect(bare.skills).toEqual([]);
+        expect(bare.experience).toEqual([]);
+    });
+    it("should drop experience entries with neither label nor blurb", () => {
+        const mapped = mapWellfoundProfile({
+            headline: "x", about: "y", looking_for: "z",
+            experience: [{ label: "", blurb: "" }, { label: "Real", blurb: "text" }],
+        } as WellfoundProfileResponse);
+        expect(mapped.experience).toEqual([{ label: "Real", blurb: "text" }]);
     });
 });
 
@@ -115,7 +126,7 @@ describe("Wellfound schemas", () => {
     it("message schema requires the fields the service reads", () => {
         expect(WELLFOUND_MESSAGE_SCHEMA.required).toEqual(expect.arrayContaining(["message", "rationale"]));
     });
-    it("profile schema requires headline, about, looking_for, skills", () => {
+    it("profile schema requires headline, looking_for, about, skills", () => {
         expect(WELLFOUND_PROFILE_SCHEMA.required).toEqual(
             expect.arrayContaining(["headline", "about", "looking_for", "skills"]),
         );

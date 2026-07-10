@@ -64,6 +64,8 @@ export interface WellfoundProfile {
   about: string;
   lookingFor: string;
   skills: string[];
+  // One founder-facing blurb per role/project, to paste under each experience.
+  experience: { label: string; blurb: string }[];
 }
 
 // ---- output naming (scripts/lib/naming.ts) ---------------------------------

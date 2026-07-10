@@ -50,7 +50,15 @@ async function directWellfound(cli: Cli): Promise<void> {
     jd,
     company: opt('--company') || opt('--name'),
     role: opt('--role'),
-    messageOnly: has('--message-only'),
+    provider: opt('--provider'),
+    model: opt('--model'),
+  });
+}
+
+async function directWellfoundProfile(cli: Cli): Promise<void> {
+  const { runWellfoundProfile } = await import('./commands/wellfound.js');
+  await runWellfoundProfile(cli, {
+    target: opt('--target') || opt('--focus'),
     provider: opt('--provider'),
     model: opt('--model'),
   });
@@ -60,6 +68,7 @@ function commands(cli: Cli): Record<string, () => Promise<unknown>> {
   return {
     tailor: () => directTailor(cli),
     wellfound: () => directWellfound(cli),
+    'wellfound-profile': () => directWellfoundProfile(cli),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force') }),
     status: async () => (await import('./commands/status.js')).runStatus(cli),
     build: async () => (await import('./commands/build.js')).runBuild(cli),
@@ -76,7 +85,8 @@ function printHelp(): void {
   console.log(`
   ${pc.bold('Commands')}
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
-    ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>] [--message-only]      Wellfound note + profile refresh
+    ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
+    ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
     ${pc.cyan('sync')} [--force]                                            refresh GitHub + LinkedIn
     ${pc.cyan('status')}                                                    env, sources, outputs
     ${pc.cyan('build')}                                                     compile the canonical PDF
@@ -98,7 +108,8 @@ async function interactive(cli: Cli): Promise<void> {
       message: 'What do you want to do?',
       options: [
         { value: 'tailor', label: 'Tailor to a job description', hint: 'score → rewrite → PDF' },
-        { value: 'wellfound', label: 'Wellfound assistant', hint: 'JD → application note + profile refresh' },
+        { value: 'wellfound', label: 'Wellfound application note', hint: 'JD → the "why this role?" box' },
+        { value: 'wellfound-profile', label: 'Build my Wellfound profile', hint: 'standing profile (one for every role)' },
         { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub + LinkedIn' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
         { value: 'build', label: 'Build canonical résumé', hint: 'resume.tex → PDF' },
@@ -111,6 +122,7 @@ async function interactive(cli: Cli): Promise<void> {
     try {
       if (action === 'tailor') await interactiveTailor(cli);
       else if (action === 'wellfound') await interactiveWellfound(cli);
+      else if (action === 'wellfound-profile') await interactiveWellfoundProfile(cli);
       else if (action === 'sync') {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
         if (p.isCancel(force)) continue;
@@ -182,7 +194,7 @@ async function interactiveWellfound(cli: Cli): Promise<void> {
   const company = await p.text({
     message: 'Company name',
     placeholder: 'Inteligen-ai',
-    validate: (v) => (v && v.trim() ? undefined : 'Required — the note + profile draft are filed by company.'),
+    validate: (v) => (v && v.trim() ? undefined : 'Required — the note is filed by company.'),
   });
   if (p.isCancel(company)) return;
 
@@ -212,24 +224,40 @@ async function interactiveWellfound(cli: Cli): Promise<void> {
   const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
   if (p.isCancel(role)) return;
 
-  const scope = await p.confirm({ message: 'Also generate a Wellfound profile refresh (headline / about / skills)?', initialValue: true });
-  if (p.isCancel(scope)) return;
-
-  // Ask which model only when more than one provider has a key configured.
-  let provider = '';
-  const withKeys = cli.registry.list().filter((f) => cli.config.llm.keys[f.id]);
-  if (withKeys.length > 1) {
-    const pick = await p.select({
-      message: 'Which model should draft the note?',
-      initialValue: cli.registry.defaultProviderId(cli.config),
-      options: withKeys.map((f) => ({ value: f.id, label: f.label, hint: cli.config.llm.models[f.id] || f.defaultModel })),
-    });
-    if (p.isCancel(pick)) return;
-    provider = pick as string;
-  }
+  const provider = await pickProvider(cli, 'Which model should draft the note?');
+  if (provider === null) return;
 
   const { runWellfound } = await import('./commands/wellfound.js');
-  await runWellfound(cli, { jd, company: company.trim(), role: (role || '').trim(), messageOnly: !scope, provider });
+  await runWellfound(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
+}
+
+// The standing profile — no JD, just an optional focus.
+async function interactiveWellfoundProfile(cli: Cli): Promise<void> {
+  const target = await p.text({
+    message: 'Focus (optional — blank = use your fact base as-is)',
+    placeholder: 'remote agent-infrastructure roles',
+  });
+  if (p.isCancel(target)) return;
+
+  const provider = await pickProvider(cli, 'Which model should build the profile?');
+  if (provider === null) return;
+
+  const { runWellfoundProfile } = await import('./commands/wellfound.js');
+  await runWellfoundProfile(cli, { target: (target || '').trim(), provider });
+}
+
+// Ask which model to use, but only when more than one provider has a key. Returns
+// '' for the auto-pick (single provider), the chosen id, or null on cancel.
+async function pickProvider(cli: Cli, message: string): Promise<string | null> {
+  const withKeys = cli.registry.list().filter((f) => cli.config.llm.keys[f.id]);
+  if (withKeys.length <= 1) return '';
+  const pick = await p.select({
+    message,
+    initialValue: cli.registry.defaultProviderId(cli.config),
+    options: withKeys.map((f) => ({ value: f.id, label: f.label, hint: cli.config.llm.models[f.id] || f.defaultModel })),
+  });
+  if (p.isCancel(pick)) return null;
+  return pick as string;
 }
 
 // Clack has no built-in multiline text prompt, so pasted JDs are read directly

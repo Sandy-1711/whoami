@@ -184,28 +184,41 @@ Return JSON: { "message": the note to paste, "rationale": 1-2 lines on why this 
 }
 
 // ---- Wellfound profile optimization -----------------------------------------
-// Suggested copy for the standing Wellfound profile (headline / about / what
-// I'm looking for / skill tags) so founders searching for talent surface and
-// message the candidate. Manual paste — Wellfound has no job-seeker API.
+// Copy for the STANDING Wellfound profile — one profile shown for every role,
+// like LinkedIn. JD-independent: it's built from the fact base (optionally
+// focused toward a kind of role) and refined over time. Manual paste — Wellfound
+// has no job-seeker API.
 
 export const WELLFOUND_PROFILE_SCHEMA: JsonSchema = {
   type: 'object',
   properties: {
     headline: { type: 'string' },
-    about: { type: 'string' },
     looking_for: { type: 'string' },
+    about: { type: 'string' },
     skills: { type: 'array', items: { type: 'string' } },
+    experience: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          label: { type: 'string' },
+          blurb: { type: 'string' },
+        },
+        required: ['label', 'blurb'],
+      },
+    },
     rationale: { type: 'string' },
   },
-  required: ['headline', 'about', 'looking_for', 'skills'],
+  required: ['headline', 'looking_for', 'about', 'skills'],
 };
 
 // Raw JSON shape returned for WELLFOUND_PROFILE_SCHEMA.
 export interface WellfoundProfileResponse {
   headline: string;
-  about: string;
   looking_for: string;
+  about: string;
   skills?: string[];
+  experience?: { label?: string; blurb?: string }[];
   rationale?: string;
 }
 
@@ -216,23 +229,24 @@ export function wellfoundProfilePrompt({
   facts: Facts;
   target?: string;
 }): string {
-  return `You are optimizing a candidate's Wellfound (AngelList Talent) profile so that startup founders searching for talent surface and message them. Founders filter by role + skill tags and skim the headline and "what I'm looking for" line, so those must earn the click.
+  return `You are writing a candidate's STANDING Wellfound (AngelList Talent) profile — the single profile a startup founder sees for every role, like a LinkedIn profile. It is NOT tailored to one job. Optimize it to maximize relevant inbound: founders filter by role + skill tags and skim the headline and "what I'm looking for" line, so those must earn the click; then they read the about and experience.
 
 STRICT RULES:
 - Use ONLY the FACT BASE. Never invent employers, numbers, titles, or skills.
 - headline: <= 60 characters — the role identity a founder searches for, optionally plus one metric. Align with title_variants (e.g. "AI Engineer — Agent Infrastructure"). No company name.
-- about: 2-3 sentences, metric-led, first person, plain text. Lead with the strongest proof (merged OSS PRs into a well-known repo, production agents shipped, users scaled). No fluff, no "passionate about".
 - looking_for: 1-2 sentences on the role / team / company stage the candidate wants (e.g. remote AI-engineering or agent-infrastructure work at an early-stage startup). Concrete, not a wish list.
-- skills: 12-18 skill tags ordered by relevance to the roles the candidate targets, each an EXACT token founders would filter on (e.g. "TypeScript", "RAG", "LLM", "FastAPI", "React"). Most important first. Draw only from the fact base's skills/keywords.
-- Bias emphasis toward the TARGET CONTEXT if given, but keep the profile broad enough to attract a range of relevant AI-engineering / backend roles — this is a standing profile, not a per-JD document.
+- about: 3-4 sentences, first person, metric-led plain text. Lead with the strongest proof (merged OSS PRs into a well-known repo, production agents shipped, users scaled), then range and what they want to build. No fluff, no "passionate about".
+- skills: 12-18 skill tags ordered by relevance to the roles the candidate targets, each an EXACT token a founder would filter on (e.g. "TypeScript", "RAG", "LLM", "FastAPI", "React"). Most important first. Draw only from the fact base's skills/keywords.
+- experience: for EACH experience entry and notable project in the fact base, one object: { "label": "<Org / Project — Role>", "blurb": "<2-3 sentence founder-facing description, outcome-first, drawn only from that entry's highlights/keywords>" }. Plain text, no markdown. This is the description the candidate pastes under each role on Wellfound.
+- Keep it broad enough to attract a range of relevant AI-engineering / backend roles. If a TARGET FOCUS is given, lean the headline/looking_for/about toward it, but do NOT narrow so far that other strong roles are excluded.
 
-TARGET CONTEXT (optional — may be empty):
+TARGET FOCUS (optional — may be empty):
 """${target.slice(0, 2000)}"""
 
 FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 12000)}"""
+"""${JSON.stringify(facts).slice(0, 14000)}"""
 
-Return JSON matching the schema. "rationale" is 1-2 lines for the candidate on what changed and why — not pasted into the profile.`;
+Return JSON matching the schema. "rationale" is 1-2 lines for the candidate on the positioning choices — not pasted into the profile.`;
 }
 
 // Normalize a raw Wellfound profile response into the domain shape.
@@ -242,6 +256,9 @@ export function mapWellfoundProfile(parsed: WellfoundProfileResponse): Wellfound
     about: parsed.about || '',
     lookingFor: parsed.looking_for || '',
     skills: parsed.skills || [],
+    experience: (parsed.experience || [])
+      .filter((e) => e && (e.label || e.blurb))
+      .map((e) => ({ label: (e.label || '').trim(), blurb: (e.blurb || '').trim() })),
   };
 }
 
