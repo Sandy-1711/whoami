@@ -92,6 +92,7 @@
   {AiRA}{Nov 2025 - March 2026}
   {AI Engineer (Agent Orchestration, Memory, RAG \& Systems)}{Bangalore, India}
   \resumeItemListStart
+    %% >>>TAILOR:exp-aira (bullets; the tailor CLI may rewrite these per JD; safe to edit)
     \resumeItem{Built the flagship \textbf{Daily Brief} agent (\textbf{Python}/\textbf{FastAPI}) --- an \textbf{agentic orchestration loop} coordinating Email, Calendar, and \textbf{Exa AI} web-search tools via \textbf{asyncio} to deliver each user a personalized morning briefing of priority emails, events, and news.}
 
     \resumeItem{Designed a self-maintaining \textbf{Canvas} agent generating persistent, per-user web apps and documents, with automatic \textbf{versioning and data-shape migration} that keeps prior user data compatible across regenerations.}
@@ -103,15 +104,18 @@
     \resumeItem{Cut routing-\textbf{LLM} token usage by \textbf{82\%} via artifact-based generalized prompting and context deduplication across 3 core prompts, and parallelized the Orchestrator's tool-calling to reduce execution latency.}
 
     \resumeItem{Implemented \textbf{Langfuse} observability for LLM traces, latency, and cost, cutting time-to-debug for agent failures in production.}
+    %% <<<TAILOR:exp-aira
   \resumeItemListEnd
 
     \resumeSubheading
       {IIT Kharagpur}{May 2025 - Aug 2025}
       {Research Intern (Multimodal AI)}{Kharagpur, India}
       \resumeItemListStart
+        %% >>>TAILOR:exp-iitkgp (bullets; the tailor CLI may rewrite these per JD; safe to edit)
         \resumeItem{Developed \textbf{CircuitSynth}, a multimodal reasoning framework, fine-tuning \textbf{Qwen models (4B/8B)} with \textbf{LoRA/QLoRA} to generate executable Arduino circuit JSONs.}
         \resumeItem{Achieved \textbf{75\% accuracy} on complex circuit-generation tasks (vs. near-zero for general-purpose GPT models) via a multi-stage \textbf{RAG} pipeline with automated unit-style validation.}
         \resumeItem{Optimized inference for edge deployment, running quantized \textbf{GGUF} models on \textbf{Raspberry Pi} devices.}
+        %% <<<TAILOR:exp-iitkgp
       \resumeItemListEnd
 
   \resumeSubHeadingListEnd
@@ -123,17 +127,21 @@
       \resumeProjectHeading
           {\textbf{Samagra} --- Founding Software Engineer, Indigle \, \href{https://play.google.com/store/apps/details?id=com.indigle.samagra}{\underline{Play Store}}}{Sep 2024 - Sep 2025}
           \resumeItemListStart
+            %% >>>TAILOR:proj-samagra (bullets; the tailor CLI may rewrite these per JD; safe to edit)
             \resumeItem{Built \textbf{Samagra}, a full-stack campus ERP platform grown to \textbf{10,000+ active users}, spanning a \textbf{React Native} mobile client, a \textbf{Node.js}/\textbf{Express} \textbf{REST API}, \textbf{MongoDB}, and a \textbf{Next.js} web app.}
             \resumeItem{Engineered \textbf{JWT authentication} with \textbf{role-based access control}, rate limiting, and \textbf{Socket.io} real-time sync across the platform, sustaining \textbf{99.9\% uptime}.}
             \resumeItem{Owned the product end-to-end --- architecture, \textbf{CI/CD}, release, and Play Store distribution --- on a \textbf{zero-cost} Vercel-hosted backend handling \textbf{150k+ monthly API requests} at sub-100ms latency.}
+            %% <<<TAILOR:proj-samagra
           \resumeItemListEnd
 
       \resumeProjectHeading
           {\textbf{Open Source} $|$ \emph{TypeScript, Node.js, React, Vue.js}}{2025 - Present}
           \resumeItemListStart
+            %% >>>TAILOR:proj-oss (bullets; the tailor CLI may rewrite these per JD; safe to edit)
             \resumeItem{\textbf{mastra-ai/mastra (25k+ stars)} \href{https://github.com/mastra-ai/mastra/pulls?q=author:Sandy-1711}{\underline{[PR list]}}: \textbf{12 merged PRs} across the core agent runtime, streaming, ai-sdk, and Studio --- including fixes to \textbf{semantic recall} injection, duplicate \textbf{stream-event delivery} on observe/replay, and tool-level \textbf{background execution} config. Active contributor since June 2026.}
             \resumeItem{\textbf{cal.com (46k+ stars)}: Authored a full \textbf{BigBlueButton video integration} (checksum-signed client, encrypted credential storage) plus a generalized install-router fix for non-OAuth apps --- \textbf{912 LOC, 32 unit tests} (bounty issue).}
             \resumeItem{\textbf{n8n (195k+ stars)}: Authored core infrastructure fixes --- a Webhook CSP security bug (\texttt{allow-same-origin}) and a cross-platform build-path failure.}
+            %% <<<TAILOR:proj-oss
           \resumeItemListEnd
 
     \resumeSubHeadingListEnd
