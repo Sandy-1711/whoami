@@ -12,6 +12,7 @@ import { wellfoundTools } from './tools/wellfound.js';
 import { emailTools } from './tools/email.js';
 import { factsTools } from './tools/facts.js';
 import { enhanceTools } from './tools/enhance.js';
+import { githubTools } from './tools/github.js';
 
 export interface BuiltAgent {
   agent: Agent;
@@ -30,6 +31,7 @@ export function buildAgent(deps: AgentDeps): BuiltAgent {
     ...emailTools(deps),
     ...factsTools(deps),
     ...enhanceTools(deps),
+    ...githubTools(deps),
   };
 
   const agent = new Agent({
