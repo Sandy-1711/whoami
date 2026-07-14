@@ -6,7 +6,7 @@
 // missing rather than failing deep in the pipeline.
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { IngestService, readEvidence, readCuration, curatedUnits } from '@resume/core';
+import { IngestService, readEvidence, readCuration, curatedUnits, auditBuild } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
 
@@ -80,5 +80,26 @@ export function evidenceTools(deps: AgentDeps) {
     },
   });
 
-  return { ingest_evidence, list_evidence };
+  const audit_build = createTool({
+    id: 'audit_build',
+    description:
+      "Replay a tailored build's lockfile (tailored/<slug>/build.lock.json) to verify it is still " +
+      'trustworthy before the user submits it: every selected evidence unit still exists (grounding), ' +
+      'the page/width guards passed, the tailored PDF is still one page, and whether resume.tex or ' +
+      'weights drifted since. Use after a --coverage tailor, or before an application goes out.',
+    inputSchema: z.object({
+      slug: z.string().describe('The company slug of the tailored build (see tailored/ or list_outputs).'),
+    }),
+    execute: async ({ slug }) => {
+      const r = await auditBuild({ root: deps.root, slug, pdf: deps.pdf });
+      return {
+        slug: r.slug,
+        found: r.found,
+        pass: r.pass,
+        checks: r.checks.map((c) => ({ name: c.name, pass: c.pass, critical: c.critical, detail: c.detail })),
+      };
+    },
+  });
+
+  return { ingest_evidence, list_evidence, audit_build };
 }

@@ -96,6 +96,7 @@ function commands(cli: Cli): Record<string, () => Promise<unknown>> {
     'wellfound-profile': () => directWellfoundProfile(cli),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force') }),
     ingest: async () => (await import('./commands/ingest.js')).runIngest(cli, { force: has('--force') }),
+    audit: async () => (await import('./commands/audit.js')).runAudit(cli, { slug: positionals()[0] || opt('--slug') }),
     status: async () => (await import('./commands/status.js')).runStatus(cli),
     build: async () => (await import('./commands/build.js')).runBuild(cli),
     check: async () => {
@@ -117,6 +118,7 @@ function printHelp(): void {
     ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
     ${pc.cyan('sync')} [--force]                                            refresh GitHub + LinkedIn
     ${pc.cyan('ingest')} [--force]                                          (re)build the evidence store from your sources
+    ${pc.cyan('audit')} <slug>                                              replay a tailored build's lockfile (grounding + guards)
     ${pc.cyan('status')}                                                    env, sources, outputs
     ${pc.cyan('build')}                                                     compile the canonical PDF
     ${pc.cyan('check')} [--source|--pdf|--width]                            run the guards
