@@ -9,3 +9,4 @@ export { buildMemory, AGENT_RESOURCE_ID, type AgentMemory } from './memory.js';
 export { buildAgent, type BuiltAgent } from './agent.js';
 export { readOnlyTools } from './tools/readonly.js';
 export { pipelineTools } from './tools/pipeline.js';
+export { wellfoundTools } from './tools/wellfound.js';

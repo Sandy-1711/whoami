@@ -8,6 +8,7 @@ import { buildMemory, type AgentMemory } from './memory.js';
 import { RESUME_AGENT_INSTRUCTIONS } from './instructions.js';
 import { readOnlyTools } from './tools/readonly.js';
 import { pipelineTools } from './tools/pipeline.js';
+import { wellfoundTools } from './tools/wellfound.js';
 
 export interface BuiltAgent {
   agent: Agent;
@@ -22,6 +23,7 @@ export function buildAgent(deps: AgentDeps): BuiltAgent {
   const tools = {
     ...readOnlyTools(deps),
     ...pipelineTools(deps),
+    ...wellfoundTools(deps),
   };
 
   const agent = new Agent({
