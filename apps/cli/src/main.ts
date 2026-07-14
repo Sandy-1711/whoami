@@ -83,6 +83,7 @@ async function directWellfoundProfile(cli: Cli): Promise<void> {
 
 function commands(cli: Cli): Record<string, () => Promise<unknown>> {
   return {
+    chat: async () => (await import('./commands/chat.js')).runChat(cli, { fresh: has('--new') }),
     tailor: () => directTailor(cli),
     email: () => directEmail(cli),
     wellfound: () => directWellfound(cli),
@@ -102,6 +103,7 @@ function printHelp(): void {
   console.log(ui.banner('resume', 'JD-tailored résumés from a verified profile'));
   console.log(`
   ${pc.bold('Commands')}
+    ${pc.cyan('chat')} [--new]                                              chat with the job-search agent (all tools)
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
     ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
