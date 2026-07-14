@@ -30,6 +30,9 @@ export * from './wellfound/service.js';
 // Profile enhancer (fact base vs live surfaces → paste-ready suggestions).
 export * from './enhance/service.js';
 
+// Outreach messages (cold email / LinkedIn DM / follow-up / referral ask).
+export * from './outreach/service.js';
+
 // Job-application email (draft + send via the Mailer port).
 export * from './email/service.js';
 
