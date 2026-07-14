@@ -32,6 +32,7 @@ export * from './email/service.js';
 
 // Profile sources + scraping.
 export * from './profile/sources.js';
+export * from './profile/status.js';
 export * from './scrape/github.js';
 export * from './scrape/linkedin.js';
 export * from './scrape/refresh.js';
