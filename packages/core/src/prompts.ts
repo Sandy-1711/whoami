@@ -510,6 +510,66 @@ const OUTREACH_SPEC: Record<OutreachKind, { words: number; subject: boolean; bri
   referral_ask: { words: 100, subject: false, brief: 'A message asking a contact (often a stranger who works there) for a referral. Make it easy: say why you fit in one line, attach nothing, offer your résumé/links.' },
 };
 
+// ---- evidence extraction (source text → atomic claims) ---------------------
+
+export const EXTRACT_SCHEMA: JsonSchema = {
+  type: 'object',
+  properties: {
+    units: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          claim: { type: 'string' },
+          skills: { type: 'array', items: { type: 'string' } },
+          domains: { type: 'array', items: { type: 'string' } },
+          seniority_signal: { type: 'string' },
+          impact: {
+            type: 'object',
+            properties: { metric: { type: 'string' }, value: { type: 'string' }, scope: { type: 'string' } },
+          },
+        },
+        required: ['claim'],
+      },
+    },
+  },
+  required: ['units'],
+};
+
+export interface ExtractedUnitResponse {
+  claim: string;
+  skills?: string[];
+  domains?: string[];
+  seniority_signal?: string;
+  impact?: { metric?: string; value?: string; scope?: string };
+}
+
+export interface ExtractResponse {
+  units: ExtractedUnitResponse[];
+}
+
+// Extract atomic, résumé-worthy claims from ONE source's raw text. Strictly
+// grounded — the model may only restate what the text supports, never invent a
+// metric, employer, or technology. Each claim gets its concrete skills, the
+// problem domains it demonstrates, and (only if a figure appears verbatim) a
+// quantified impact.
+export function extractPrompt(record: { source: string; ref: string; text: string }): string {
+  return `Extract atomic résumé-evidence claims from the SOURCE below. Each claim is one specific, self-contained accomplishment or capability — the kind of thing that could become a single résumé bullet.
+
+STRICT RULES:
+- Use ONLY what the SOURCE states or directly implies. NEVER invent numbers, employers, tech, or outcomes not present in the text.
+- Prefer specific over generic ("built an async agent loop over Email/Calendar tools" beats "worked on AI").
+- skills = concrete technologies/tools named or clearly implied (e.g. "FastAPI", "Redis", "TypeScript").
+- domains = the problem areas it demonstrates (e.g. "agents", "RAG", "backend", "auth", "observability").
+- impact = ONLY when a figure appears verbatim in the source; copy the value exactly (do not round or invent). Otherwise omit it.
+- If the source is too thin to support any real claim, return an empty units array.
+
+SOURCE (${record.source} · ${record.ref}):
+"""${record.text.slice(0, 6000)}"""
+
+Return JSON: { "units": [ { "claim": string, "skills": string[], "domains": string[], "seniority_signal"?: string, "impact"?: { "metric": string, "value": string, "scope"?: string } } ] }.`;
+}
+
 // ---- evidence quality gate (Stage B — LLM judge) ---------------------------
 
 export const GATE_SCHEMA: JsonSchema = {
