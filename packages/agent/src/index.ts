@@ -11,3 +11,4 @@ export { readOnlyTools } from './tools/readonly.js';
 export { pipelineTools } from './tools/pipeline.js';
 export { wellfoundTools } from './tools/wellfound.js';
 export { emailTools } from './tools/email.js';
+export { factsTools } from './tools/facts.js';
