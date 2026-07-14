@@ -114,6 +114,11 @@ export interface GithubRepo {
   topics: string[];
   archived: boolean;
   pushedAt: string;
+  // Quality-gate signals (evidence architecture, Stage A). `fork` lets the gate
+  // down-weight forks; `readmeSize` (bytes, 0 if none) distinguishes substantial
+  // projects from empty experiments.
+  fork: boolean;
+  readmeSize: number;
 }
 
 export interface GithubContribution {
