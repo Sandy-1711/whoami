@@ -41,3 +41,4 @@ export * from './scrape/refresh.js';
 export * from './check/log.js';
 export * from './check/pdf.js';
 export * from './check/source.js';
+export * from './check/resume.js';
