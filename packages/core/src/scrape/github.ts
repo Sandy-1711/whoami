@@ -34,11 +34,23 @@ export function githubUsername(idOrUrl?: string): string {
   return (m ? m[1]! : s).replace(/^@/, '');
 }
 
-// The user's own public, non-fork repositories, richest first.
+// README byte size for a repo, 0 when there is none. Cheap REST, fail-soft: a
+// missing README (404) or any hiccup just yields 0 so it never sinks the scrape.
+async function fetchReadmeSize(repo: string, token?: string): Promise<number> {
+  try {
+    const r = await gh<{ size?: number }>(`/repos/${repo}/readme`, token);
+    return typeof r.size === 'number' ? r.size : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// The user's own public repositories, richest first. Forks are kept (flagged) so
+// the quality gate can down-weight them; README size is captured for non-forks
+// (the gate's substance signal) — forks stay at 0 to save API calls.
 async function fetchRepos(user: string, token?: string): Promise<GithubRepo[]> {
   const raw = await gh<any[]>(`/users/${user}/repos?per_page=100&type=owner&sort=pushed`, token);
-  return raw
-    .filter((r) => !r.fork)
+  const repos = raw
     .map((r): GithubRepo => ({
       name: r.name,
       description: r.description || '',
@@ -49,8 +61,15 @@ async function fetchRepos(user: string, token?: string): Promise<GithubRepo[]> {
       topics: r.topics || [],
       archived: !!r.archived,
       pushedAt: r.pushed_at,
+      fork: !!r.fork,
+      readmeSize: 0,
     }))
     .sort((a, b) => b.stars - a.stars || new Date(b.pushedAt).getTime() - new Date(a.pushedAt).getTime());
+
+  for (const r of repos) {
+    if (!r.fork) r.readmeSize = await fetchReadmeSize(`${user}/${r.name}`, token);
+  }
+  return repos;
 }
 
 // Pull requests the user has authored anywhere, grouped by target repo with
@@ -101,9 +120,11 @@ export async function scrapeGithub({ username, token }: { username?: string; tok
     fetchContributions(user, token),
   ]);
 
+  // Totals describe the user's own work — forks don't count toward repo/star tallies.
+  const own = repos.filter((r) => !r.fork);
   const totals = {
-    publicRepos: repos.length,
-    totalStars: repos.reduce((n, r) => n + r.stars, 0),
+    publicRepos: own.length,
+    totalStars: own.reduce((n, r) => n + r.stars, 0),
     mergedPRs: contributions.reduce((n, c) => n + c.merged, 0),
     externalRepos: contributions.length,
   };

@@ -46,6 +46,10 @@ function stubGithubApi(): void {
                 { name: "older", fork: false, description: "", html_url: "u2", homepage: "", stargazers_count: 5, language: "JS", topics: [], archived: false, pushed_at: "2026-01-01" },
             ]);
         }
+        // /repos/<owner>/<name>/readme — README size for own repos.
+        if (url.includes("/readme")) {
+            return json({ size: 1200 });
+        }
         // /repos/<owner>/<name> — star enrichment for an external repo.
         return json({ stargazers_count: 25000 });
     }));
@@ -60,10 +64,15 @@ describe("scrapeGithub", () => {
         stubGithubApi();
         const data = await scrapeGithub({ username: "Sandy-1711" });
 
-        // Forks excluded; own repos sorted by stars desc.
-        expect(data.repos.map((r) => r.name)).toEqual(["whoami", "older"]);
+        // Forks are kept (flagged) but sorted by stars desc; totals exclude them.
+        expect(data.repos.map((r) => r.name)).toEqual(["forked", "whoami", "older"]);
+        expect(data.repos.find((r) => r.name === "forked")!.fork).toBe(true);
         expect(data.totals.publicRepos).toBe(2);
         expect(data.totals.totalStars).toBe(15);
+
+        // README size captured for own repos, skipped (0) for forks.
+        expect(data.repos.find((r) => r.name === "whoami")!.readmeSize).toBe(1200);
+        expect(data.repos.find((r) => r.name === "forked")!.readmeSize).toBe(0);
 
         // The self-authored PR on an own repo is skipped; only the external repo counts.
         expect(data.totals.externalRepos).toBe(1);
