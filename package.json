@@ -14,6 +14,7 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "resume": "pnpm --filter @resume/cli run resume",
+    "chat": "pnpm --filter @resume/cli run chat",
     "tailor": "pnpm --filter @resume/cli run tailor",
     "email": "pnpm --filter @resume/cli run email",
     "wellfound": "pnpm --filter @resume/cli run wellfound",

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "resume": "tsx src/main.ts",
+    "chat": "tsx src/main.ts chat",
     "tailor": "tsx src/main.ts tailor",
     "email": "tsx src/main.ts email",
     "wellfound": "tsx src/main.ts wellfound",
@@ -26,6 +27,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
+    "@resume/agent": "workspace:*",
     "@resume/core": "workspace:*",
     "cli-table3": "^0.6.5",
     "dotenv": "^17.4.2",
