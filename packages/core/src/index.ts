@@ -53,6 +53,7 @@ export * from './evidence/dedup.js';
 export * from './evidence/ingest.js';
 export * from './evidence/requirements.js';
 export * from './evidence/relevance.js';
+export * from './evidence/selector.js';
 
 // GitHub profile writes (bio, repo descriptions, profile README).
 export * from './github/profile.js';
