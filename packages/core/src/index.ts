@@ -37,6 +37,9 @@ export * from './email/service.js';
 export * from './profile/sources.js';
 export * from './profile/status.js';
 export * from './profile/facts-editor.js';
+
+// GitHub profile writes (bio, repo descriptions, profile README).
+export * from './github/profile.js';
 export * from './scrape/github.js';
 export * from './scrape/linkedin.js';
 export * from './scrape/refresh.js';
