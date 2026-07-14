@@ -1,6 +1,6 @@
 {
   "_comment": "Auto-scraped from GitHub. Edit freely — the tailor treats this as an editable source of truth. Re-scrape with `npm run sync`.",
-  "scrapedAt": "2026-07-09T08:16:26.572Z",
+  "scrapedAt": "2026-07-11T09:06:59.413Z",
   "username": "Sandy-1711",
   "profileUrl": "https://github.com/Sandy-1711",
   "totals": {
@@ -228,7 +228,7 @@
       "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-08T17:00:19Z"
+      "pushedAt": "2026-07-10T09:34:52Z"
     },
     {
       "name": "Sandy-1711",
@@ -533,20 +533,26 @@
       "repo": "mastra-ai/mastra",
       "url": "https://github.com/mastra-ai/mastra",
       "merged": 12,
-      "open": 3,
+      "open": 4,
       "closedUnmerged": 4,
       "samplePRs": [
         {
-          "number": 18421,
-          "title": "fix(playground): warn and block when agents reference unpublished prompt blocks",
+          "number": 19256,
+          "title": "feat(playground): display experiment names and descriptions in Studio",
           "state": "open",
-          "url": "https://github.com/mastra-ai/mastra/pull/18421"
+          "url": "https://github.com/mastra-ai/mastra/pull/19256"
         },
         {
           "number": 18980,
           "title": "fix(react): keep interleaved text and tool calls in order while streaming",
           "state": "open",
           "url": "https://github.com/mastra-ai/mastra/pull/18980"
+        },
+        {
+          "number": 18421,
+          "title": "fix(playground): warn and block when agents reference unpublished prompt blocks",
+          "state": "open",
+          "url": "https://github.com/mastra-ai/mastra/pull/18421"
         },
         {
           "number": 18963,
@@ -565,15 +571,9 @@
           "title": "fix(ai-sdk,core): deliver background-task-started chunk to the UI stream and onChunk",
           "state": "closed",
           "url": "https://github.com/mastra-ai/mastra/pull/18473"
-        },
-        {
-          "number": 18592,
-          "title": "fix(ai-sdk): apply editor stored overrides in chatRoute",
-          "state": "merged",
-          "url": "https://github.com/mastra-ai/mastra/pull/18592"
         }
       ],
-      "stars": 25973
+      "stars": 26036
     },
     {
       "repo": "TejasMishr/ERP_Client",
@@ -839,7 +839,7 @@
           "url": "https://github.com/formbricks/formbricks/pull/1467"
         }
       ],
-      "stars": 12504
+      "stars": 12522
     },
     {
       "repo": "calcom/cal.diy",
@@ -867,7 +867,7 @@
           "url": "https://github.com/calcom/cal.diy/pull/29355"
         }
       ],
-      "stars": 46240
+      "stars": 46297
     },
     {
       "repo": "therealanshuman/hwce-sandeep",
@@ -927,7 +927,7 @@
           "url": "https://github.com/n8n-io/n8n/pull/20329"
         }
       ],
-      "stars": 195765
+      "stars": 196020
     }
   ]
 }
