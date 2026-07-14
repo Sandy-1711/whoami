@@ -128,6 +128,7 @@ async function interactive(cli: Cli): Promise<void> {
     const action = await p.select({
       message: 'What do you want to do?',
       options: [
+        { value: 'chat', label: 'Chat with the agent', hint: 'conversational — every capability as a tool' },
         { value: 'tailor', label: 'Tailor to a job description', hint: 'score → rewrite → PDF' },
         { value: 'email', label: 'Draft & send an application email', hint: 'JD → Gmail, on approval' },
         { value: 'wellfound', label: 'Wellfound application note', hint: 'JD → the "why this role?" box' },
@@ -142,7 +143,8 @@ async function interactive(cli: Cli): Promise<void> {
     if (p.isCancel(action) || action === 'exit') { p.outro('Bye 👋'); return; }
 
     try {
-      if (action === 'tailor') await interactiveTailor(cli);
+      if (action === 'chat') { await (await import('./commands/chat.js')).runChat(cli); continue; }
+      else if (action === 'tailor') await interactiveTailor(cli);
       else if (action === 'email') await interactiveEmail(cli);
       else if (action === 'wellfound') await interactiveWellfound(cli);
       else if (action === 'wellfound-profile') await interactiveWellfoundProfile(cli);

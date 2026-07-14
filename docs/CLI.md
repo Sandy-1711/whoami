@@ -21,6 +21,27 @@ until you choose Exit.
 
 ## Commands
 
+### `chat` — conversational agent (every capability as a tool)
+
+```
+resume chat [--new]
+```
+
+Opens a streaming chat with the job-search agent (Mastra + Gemini/DeepSeek). It has all the
+toolkit's capabilities as tools — scoring, tailoring, drafting/sending email, Wellfound notes,
+syncing, building, updating facts, and more — and calls them for you. Text streams back; tool
+calls and progress show as dim lines; `Ctrl+C` cancels the current turn without quitting.
+
+Memory persists across sessions (libSQL under `.agent/`, gitignored): past threads, a
+working-memory scratchpad (active applications, preferences), and semantic recall when a Gemini
+key is set. By default it resumes your most recent thread; `--new` starts fresh.
+
+Slash commands: `/help`, `/new`, `/threads` (list + switch), `/paste` (multi-line JD),
+`/jd <file>` (attach a JD file to the next message), `/status`, `/facts`, `/exit`.
+
+Configure the agent model with `AGENT_PROVIDER` / `AGENT_MODEL` (see `.env.example`); it defaults
+to the same provider chain as `tailor`.
+
 ### `tailor` — JD → ATS-optimized PDF
 
 ```
