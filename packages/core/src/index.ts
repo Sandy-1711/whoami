@@ -46,6 +46,7 @@ export * from './profile/facts-editor.js';
 // Evidence store (canonical proof units + curation tiers — architecture L1-3).
 export * from './evidence/store.js';
 export * from './evidence/embedding.js';
+export * from './evidence/gate.js';
 
 // GitHub profile writes (bio, repo descriptions, profile README).
 export * from './github/profile.js';
