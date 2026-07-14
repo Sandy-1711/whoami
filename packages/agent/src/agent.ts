@@ -10,6 +10,7 @@ import { readOnlyTools } from './tools/readonly.js';
 import { pipelineTools } from './tools/pipeline.js';
 import { wellfoundTools } from './tools/wellfound.js';
 import { emailTools } from './tools/email.js';
+import { factsTools } from './tools/facts.js';
 
 export interface BuiltAgent {
   agent: Agent;
@@ -26,6 +27,7 @@ export function buildAgent(deps: AgentDeps): BuiltAgent {
     ...pipelineTools(deps),
     ...wellfoundTools(deps),
     ...emailTools(deps),
+    ...factsTools(deps),
   };
 
   const agent = new Agent({
