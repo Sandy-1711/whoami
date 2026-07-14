@@ -4,7 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkResume } from './resume.js';
 
-// A minimal, structurally-sound resume.tex so the source guard passes.
+// A minimal, structurally-sound resume.tex so the source guard passes — includes
+// the required TAILOR anchor pairs.
+const ANCHORS = ['subtitle', 'summary', 'skills', 'exp-aira', 'exp-iitkgp', 'proj-samagra', 'proj-oss']
+  .map((a) => `%% >>>TAILOR:${a}\n%% <<<TAILOR:${a}`)
+  .join('\n');
 const GOOD_TEX = String.raw`\documentclass{article}
 \begin{document}
 \href{mailto:me@example.com}{me@example.com} linkedin github
@@ -12,6 +16,7 @@ const GOOD_TEX = String.raw`\documentclass{article}
 \section{Projects}
 \section{Technical Skills}
 \section{Education}
+${ANCHORS}
 \end{document}`;
 
 describe('checkResume', () => {

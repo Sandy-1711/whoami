@@ -21,14 +21,21 @@ ship a change that fails them.
   `\resumeItemListStart/End`. No empty `\resumeItem{}`.
 
 ## TAILOR anchors — do not hand-edit content, edit around them
-`resume.tex` has three machine-managed blocks the tailor rewrites per JD:
+`resume.tex` has machine-managed blocks the tailor rewrites per JD:
 ```
-%% >>>TAILOR:subtitle ... %% <<<TAILOR:subtitle
-%% >>>TAILOR:summary  ... %% <<<TAILOR:summary
-%% >>>TAILOR:skills   ... %% <<<TAILOR:skills
+%% >>>TAILOR:subtitle     ... %% <<<TAILOR:subtitle
+%% >>>TAILOR:summary      ... %% <<<TAILOR:summary
+%% >>>TAILOR:skills       ... %% <<<TAILOR:skills
+%% >>>TAILOR:exp-aira     ... %% <<<TAILOR:exp-aira      (Experience bullet groups)
+%% >>>TAILOR:exp-iitkgp   ... %% <<<TAILOR:exp-iitkgp
+%% >>>TAILOR:proj-samagra ... %% <<<TAILOR:proj-samagra  (Project bullet groups)
+%% >>>TAILOR:proj-oss     ... %% <<<TAILOR:proj-oss
 ```
 The content between markers is safe to edit by hand, but keep the marker lines
-intact — `scripts/lib/tailor/core.ts` (`replaceBlock`) depends on them.
+intact — the tailor's `replaceBlock` depends on them, and `check/source.ts`
+(`REQUIRED_TAILOR_ANCHORS`) requires every anchor to be present and balanced.
+Add a new tailorable region by wrapping it in a matched `>>>`/`<<<` pair **and**
+adding its name to `REQUIRED_TAILOR_ANCHORS`.
 
 ## Build + verify workflow
 LaTeX artifacts go into `build/` (never the repo root). Build needs a local

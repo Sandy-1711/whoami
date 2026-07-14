@@ -4,6 +4,13 @@ import { readFile } from 'node:fs/promises';
 // shape changes intentionally.
 export const REQUIRED_SECTIONS: string[] = ['Experience', 'Projects', 'Technical Skills', 'Education'];
 
+// TAILOR anchors the coverage-based tailor rewrites per JD. Each must appear as a
+// matched `%% >>>TAILOR:<name>` / `%% <<<TAILOR:<name>` comment pair. Add an entry
+// here when a new tailorable region is introduced in resume.tex.
+export const REQUIRED_TAILOR_ANCHORS: string[] = [
+  'subtitle', 'summary', 'skills', 'exp-aira', 'exp-iitkgp', 'proj-samagra', 'proj-oss',
+];
+
 // Custom list macros (defined via \newcommand in resume.tex) that must open and
 // close in matching pairs.
 const MACRO_PAIRS: [string, string][] = [
@@ -84,6 +91,21 @@ export async function checkSource(path: string): Promise<string[]> {
 
   // No empty bullets shipped by accident.
   if (/\\resumeItem\{\s*\}/.test(tex)) problems.push('Found an empty \\resumeItem{}.');
+
+  // TAILOR anchors — validated on the RAW text since the anchors are LaTeX
+  // comments (stripped from `tex`). Every anchor must open and close exactly once,
+  // and every required region must be present, so the tailor can target each.
+  const opens = [...raw.matchAll(/%%\s*>>>TAILOR:([\w-]+)/g)].map((m) => m[1]!);
+  const closes = [...raw.matchAll(/%%\s*<<<TAILOR:([\w-]+)/g)].map((m) => m[1]!);
+  for (const name of new Set([...opens, ...closes])) {
+    const o = opens.filter((n) => n === name).length;
+    const c = closes.filter((n) => n === name).length;
+    if (o !== c) problems.push(`Unbalanced TAILOR anchor "${name}": ${o} open vs ${c} close.`);
+    else if (o > 1) problems.push(`Duplicate TAILOR anchor "${name}": appears ${o} times.`);
+  }
+  for (const name of REQUIRED_TAILOR_ANCHORS) {
+    if (!opens.includes(name)) problems.push(`Missing required TAILOR anchor: %% >>>TAILOR:${name}.`);
+  }
 
   return problems;
 }
