@@ -510,6 +510,63 @@ const OUTREACH_SPEC: Record<OutreachKind, { words: number; subject: boolean; bri
   referral_ask: { words: 100, subject: false, brief: 'A message asking a contact (often a stranger who works there) for a referral. Make it easy: say why you fit in one line, attach nothing, offer your résumé/links.' },
 };
 
+// ---- JD → requirement graph (architecture Layer 5) -------------------------
+
+export const REQUIREMENTS_SCHEMA: JsonSchema = {
+  type: 'object',
+  properties: {
+    must_have: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { req: { type: 'string' }, weight: { type: 'number' } },
+        required: ['req', 'weight'],
+      },
+    },
+    nice_to_have: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { req: { type: 'string' }, weight: { type: 'number' } },
+        required: ['req'],
+      },
+    },
+    ats_keywords: { type: 'array', items: { type: 'string' } },
+    seniority: { type: 'string' },
+    domain: { type: 'string' },
+  },
+  required: ['must_have', 'nice_to_have', 'ats_keywords', 'seniority', 'domain'],
+};
+
+export interface RequirementResponse {
+  must_have?: { req: string; weight?: number }[];
+  nice_to_have?: { req: string; weight?: number }[];
+  ats_keywords?: string[];
+  seniority?: string;
+  domain?: string;
+}
+
+// Parse a job description into a structured requirement graph. Requirements are
+// the real capabilities the role needs (not raw keywords — those are the separate
+// ats_keywords list, kept for ATS-score continuity). Weights reflect how central
+// each requirement is to the role.
+export function requirementsPrompt(jd: string): string {
+  return `Analyze this JOB DESCRIPTION and extract a structured requirement graph.
+
+- must_have: the core capabilities the role genuinely requires, each with a weight 0..1 (1 = central to the role, 0.5 = expected, lower = minor). Capabilities, not keywords — e.g. "build and operate LLM agent pipelines", not "LLM".
+- nice_to_have: secondary/bonus capabilities (weight optional, default lower).
+- ats_keywords: the concrete terms/technologies an ATS would scan for (React, FastAPI, Kubernetes, RAG…). Flat list, verbatim from the JD where possible.
+- seniority: the level the JD targets (e.g. "junior", "mid", "senior", "staff", or a range).
+- domain: the primary problem domain (e.g. "AI agent infrastructure", "fintech backend", "frontend platform").
+
+Extract only what the JD supports — do not invent requirements it doesn't state.
+
+JOB DESCRIPTION:
+"""${jd.slice(0, 8000)}"""
+
+Return JSON: { "must_have": [{ "req": string, "weight": number }], "nice_to_have": [{ "req": string, "weight"?: number }], "ats_keywords": string[], "seniority": string, "domain": string }.`;
+}
+
 // ---- evidence dedup (merge near-duplicate claims) --------------------------
 
 export const MERGE_SCHEMA: JsonSchema = {
