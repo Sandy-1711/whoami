@@ -510,6 +510,58 @@ const OUTREACH_SPEC: Record<OutreachKind, { words: number; subject: boolean; bri
   referral_ask: { words: 100, subject: false, brief: 'A message asking a contact (often a stranger who works there) for a referral. Make it easy: say why you fit in one line, attach nothing, offer your résumé/links.' },
 };
 
+// ---- evidence quality gate (Stage B — LLM judge) ---------------------------
+
+export const GATE_SCHEMA: JsonSchema = {
+  type: 'object',
+  properties: {
+    repos: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          keep: { type: 'boolean' },
+          quality: { type: 'number' },
+          reason: { type: 'string' },
+        },
+        required: ['name', 'keep', 'quality', 'reason'],
+      },
+    },
+  },
+  required: ['repos'],
+};
+
+export interface GateJudgement {
+  name: string;
+  keep: boolean;
+  quality: number; // 0..1
+  reason: string;
+}
+
+export interface GateResponse {
+  repos: GateJudgement[];
+}
+
+// The judge sees only cheap repo metadata — it decides whether each is
+// résumé-worthy *evidence of engineering skill* (a real, substantive project or
+// tool) vs. noise (coursework, tutorials, toy demos, config/dotfiles, empty
+// scaffolds). It never invents; it ranks what it's given.
+export function gatePrompt(
+  repos: { name: string; description: string; language: string; topics: string[]; stars: number; readmeSize: number; pushedAt: string }[],
+): string {
+  return `You are curating a strong engineer's GitHub repositories for use as résumé evidence. For EACH repo, decide whether it is worth mining for résumé bullet points and score its quality.
+
+KEEP a repo when it looks like real, substantive engineering: a working tool/library/app, non-trivial code, a real README, relevant topics. DROP coursework, tutorial follow-alongs, toy/demo scaffolds, dotfiles/config repos, and empty or abandoned experiments.
+
+Judge on the SIGNALS given (description, README size in bytes, stars, recency, topics, language). Missing description + tiny README + no stars is a strong drop signal; a clear description + substantial README is a strong keep. Do not reward star count alone.
+
+REPOS (JSON):
+"""${JSON.stringify(repos).slice(0, 12000)}"""
+
+Return JSON: { "repos": [ { "name": exact repo name, "keep": boolean, "quality": 0..1 (résumé-evidence value), "reason": one short phrase } ] }. Include EVERY repo exactly once.`;
+}
+
 export function outreachPrompt({
   kind,
   facts,
