@@ -25,6 +25,7 @@ export * from './prompts.js';
 export * from './tailor/core.js';
 export * from './tailor/report.js';
 export * from './tailor/service.js';
+export * from './tailor/coverage.js';
 
 // Wellfound (application-box note + profile refresh).
 export * from './wellfound/service.js';
