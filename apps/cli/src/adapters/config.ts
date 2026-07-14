@@ -29,5 +29,10 @@ export function loadConfig(factories: LlmProviderFactory[]): AppConfig {
     githubToken: process.env.GITHUB_TOKEN || '',
     linkedinCookie: process.env.LINKEDIN_COOKIE || '',
     scrapeTtlHours: Number(process.env.SCRAPE_TTL_HOURS) || 12,
+    agent: {
+      provider: (process.env.AGENT_PROVIDER || '').toLowerCase(),
+      model: process.env.AGENT_MODEL || '',
+      embeddingModel: process.env.AGENT_EMBEDDING_MODEL || '',
+    },
   };
 }
