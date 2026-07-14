@@ -13,6 +13,7 @@ import { emailTools } from './tools/email.js';
 import { factsTools } from './tools/facts.js';
 import { enhanceTools } from './tools/enhance.js';
 import { githubTools } from './tools/github.js';
+import { outreachTools } from './tools/outreach.js';
 
 export interface BuiltAgent {
   agent: Agent;
@@ -32,6 +33,7 @@ export function buildAgent(deps: AgentDeps): BuiltAgent {
     ...factsTools(deps),
     ...enhanceTools(deps),
     ...githubTools(deps),
+    ...outreachTools(deps),
   };
 
   const agent = new Agent({

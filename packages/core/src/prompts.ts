@@ -480,3 +480,70 @@ CURRENT GITHUB (scraped):
 
 Return JSON only.`;
 }
+
+// ---- outreach (cold reach-out / DM / follow-up / referral) ------------------
+// Short, human-to-human messages for reaching out on job boards, email, or
+// LinkedIn. Grounded in the fact base; optionally anchored to a specific JD.
+
+export type OutreachKind = 'cold_email' | 'linkedin_dm' | 'followup' | 'referral_ask';
+
+export const OUTREACH_SCHEMA: JsonSchema = {
+  type: 'object',
+  properties: {
+    subject: { type: 'string' },
+    message: { type: 'string' },
+    rationale: { type: 'string' },
+  },
+  required: ['message'],
+};
+
+export interface OutreachResponse {
+  subject?: string;
+  message: string;
+  rationale?: string;
+}
+
+const OUTREACH_SPEC: Record<OutreachKind, { words: number; subject: boolean; brief: string }> = {
+  cold_email: { words: 130, subject: true, brief: 'A cold email to a hiring manager or founder. Has a subject line. One clear ask (a quick chat or to be considered). Lead with the single most relevant proof point.' },
+  linkedin_dm: { words: 60, subject: false, brief: 'A LinkedIn connection/DM note. Very short (LinkedIn caps ~300 chars). No subject. Warm, specific, one hook, one soft ask.' },
+  followup: { words: 90, subject: true, brief: 'A polite follow-up after applying or an earlier message with no reply. Reference the prior touch, add one new proof point, restate the ask lightly. Not pushy.' },
+  referral_ask: { words: 100, subject: false, brief: 'A message asking a contact (often a stranger who works there) for a referral. Make it easy: say why you fit in one line, attach nothing, offer your résumé/links.' },
+};
+
+export function outreachPrompt({
+  kind,
+  facts,
+  company,
+  role,
+  jd,
+  context,
+}: {
+  kind: OutreachKind;
+  facts: Facts;
+  company: string;
+  role: string;
+  jd: string;
+  context: string;
+}): string {
+  const spec = OUTREACH_SPEC[kind];
+  return `You write short, effective outreach messages for a strong early-career engineer's job search. A real person reads this — optimize for a reply, not keyword density.
+
+MESSAGE TYPE: ${kind} — ${spec.brief}
+LENGTH: about ${spec.words} words max.${spec.subject ? ' Include a short, specific subject line.' : ' No subject line (this is a DM).'}
+
+STRICT RULES:
+- Use ONLY facts, metrics, projects, and skills in the FACT BASE. Never invent employers, numbers, or technologies.
+- Refer to the Indigle/Samagra role as "Founding Software Engineer" — never "co-founder" or "CTO".
+- Be specific about THIS company/role — reference the real product area or stack. Generic enthusiasm fails.
+- First person, confident, conversational. No clichés, no "I am passionate about". One sharp hook beats three adjectives.
+- If early-career relative to the ask, frame it as "already shipping in this exact stack, reviewed by maintainers" — do not apologize.
+- Plain text only. No markdown.
+
+COMPANY: ${company || '(unspecified)'}
+TARGET ROLE: ${role || '(unspecified)'}
+${context ? `EXTRA CONTEXT (from the user): ${context}\n` : ''}${jd ? `JOB DESCRIPTION:\n"""${jd.slice(0, 4000)}"""\n` : ''}
+FACT BASE (the only truth you may use):
+"""${JSON.stringify(facts).slice(0, 12000)}"""
+
+Return JSON: { ${spec.subject ? '"subject": the subject line, ' : ''}"message": the message to send, "rationale": 1-2 lines on why this framing works (for the candidate, not sent) }.`;
+}
