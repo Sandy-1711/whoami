@@ -9,6 +9,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { EmailService, slugCompany, type EmailDraft } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
+import { logApplication } from '../tracker.js';
 import { cap } from './shared.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
@@ -82,7 +83,13 @@ export function emailTools(deps: AgentDeps) {
       if (!ok) return { sent: false, reason: 'Cancelled — not sent.' };
 
       const res = await service.send(draft, { mailer: deps.mailer, to: recipient });
-      return { sent: true, to: recipient, messageId: res.messageId, accepted: res.accepted, rejected: res.rejected };
+      // Auto-log the application so the tracker stays honest without a second step.
+      await logApplication(deps.root, {
+        company, role: draft.role, channel: 'email', status: 'sent',
+        notes: `Subject: ${draft.subject}`,
+        artifacts: draft.resumeRelPath ? [draft.resumeRelPath] : [],
+      }).catch(() => { /* tracking is best-effort; never fail a successful send */ });
+      return { sent: true, to: recipient, messageId: res.messageId, accepted: res.accepted, rejected: res.rejected, logged: true };
     },
   });
 
