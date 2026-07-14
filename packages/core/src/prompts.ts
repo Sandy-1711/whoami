@@ -510,6 +510,53 @@ const OUTREACH_SPEC: Record<OutreachKind, { words: number; subject: boolean; bri
   referral_ask: { words: 100, subject: false, brief: 'A message asking a contact (often a stranger who works there) for a referral. Make it easy: say why you fit in one line, attach nothing, offer your résumé/links.' },
 };
 
+// ---- grounded bullet writer (architecture Layer 6) -------------------------
+
+export const WRITER_SCHEMA: JsonSchema = {
+  type: 'object',
+  properties: {
+    bullets: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { unit_id: { type: 'string' }, text: { type: 'string' } },
+        required: ['unit_id', 'text'],
+      },
+    },
+  },
+  required: ['bullets'],
+};
+
+export interface WriterResponse {
+  bullets: { unit_id: string; text: string }[];
+}
+
+// Write résumé bullets from a fixed set of selected evidence units. The model
+// sees ONLY these units — so every bullet is grounded — and tags each bullet with
+// the unit_id it came from, which the deterministic groundedness check verifies.
+export function writerPrompt(input: {
+  section: string;
+  units: { id: string; claim: string; skills: string[]; impact?: { metric: string; value: string; scope?: string } }[];
+  atsKeywords: string[];
+  maxBullets: number;
+}): string {
+  const { section, units, atsKeywords, maxBullets } = input;
+  return `Write concise, high-impact résumé bullets for the section "${section}", using ONLY the evidence units below. Each bullet must be grounded in exactly ONE unit and tagged with that unit's id.
+
+STRICT RULES:
+- Use ONLY facts present in the cited unit. NEVER invent or inflate a number, employer, technology, or outcome. If a figure isn't in the unit, don't state one.
+- Copy metrics VERBATIM from the unit (same digits, %, +, k).
+- Weave in these ATS keywords ONLY where the unit truthfully supports them: ${atsKeywords.slice(0, 40).join(', ') || '(none)'}.
+- One sentence per bullet, active voice, results-first. No first person, no fluff.
+- Return at most ${maxBullets} bullets — the strongest, most JD-relevant units first. Do not merge two units into one bullet.
+- Refer to the Indigle/Samagra role as "Founding Software Engineer" (never co-founder).
+
+EVIDENCE UNITS (the only facts you may use):
+"""${JSON.stringify(units).slice(0, 8000)}"""
+
+Return JSON: { "bullets": [ { "unit_id": the exact id of the cited unit, "text": the bullet } ] }.`;
+}
+
 // ---- JD → requirement graph (architecture Layer 5) -------------------------
 
 export const REQUIREMENTS_SCHEMA: JsonSchema = {
