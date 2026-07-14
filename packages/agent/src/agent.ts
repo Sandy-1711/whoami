@@ -9,6 +9,7 @@ import { RESUME_AGENT_INSTRUCTIONS } from './instructions.js';
 import { readOnlyTools } from './tools/readonly.js';
 import { pipelineTools } from './tools/pipeline.js';
 import { wellfoundTools } from './tools/wellfound.js';
+import { emailTools } from './tools/email.js';
 
 export interface BuiltAgent {
   agent: Agent;
@@ -24,6 +25,7 @@ export function buildAgent(deps: AgentDeps): BuiltAgent {
     ...readOnlyTools(deps),
     ...pipelineTools(deps),
     ...wellfoundTools(deps),
+    ...emailTools(deps),
   };
 
   const agent = new Agent({
