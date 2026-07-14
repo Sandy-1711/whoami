@@ -48,6 +48,7 @@ export * from './evidence/store.js';
 export * from './evidence/embedding.js';
 export * from './evidence/gate.js';
 export * from './evidence/normalize.js';
+export * from './evidence/extract.js';
 
 // GitHub profile writes (bio, repo descriptions, profile README).
 export * from './github/profile.js';
