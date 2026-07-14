@@ -32,15 +32,21 @@ async function fileJd(file?: string): Promise<string> {
 
 // ---- direct commands -------------------------------------------------------
 async function directTailor(cli: Cli): Promise<void> {
-  const { runTailor } = await import('./commands/tailor.js');
   const jd = opt('--jd') || (await fileJd(positionals()[0]));
-  await runTailor(cli, {
+  const args = {
     jd,
     company: opt('--company') || opt('--name'),
     role: opt('--role'),
     provider: opt('--provider'),
     model: opt('--model'),
-  });
+  };
+  if (has('--coverage')) {
+    const { runCoverageTailor } = await import('./commands/tailor-coverage.js');
+    await runCoverageTailor(cli, args);
+    return;
+  }
+  const { runTailor } = await import('./commands/tailor.js');
+  await runTailor(cli, args);
 }
 
 async function directWellfound(cli: Cli): Promise<void> {
@@ -105,7 +111,7 @@ function printHelp(): void {
   console.log(`
   ${pc.bold('Commands')}
     ${pc.cyan('chat')} [--new]                                              chat with the job-search agent (all tools)
-    ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
+    ${pc.cyan('tailor')} <jd> --company <name> [--coverage] [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD (--coverage = evidence-based v2)
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
     ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
     ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
