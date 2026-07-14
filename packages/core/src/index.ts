@@ -56,6 +56,7 @@ export * from './evidence/relevance.js';
 export * from './evidence/selector.js';
 export * from './evidence/writer.js';
 export * from './evidence/lockfile.js';
+export * from './evidence/anchors.js';
 
 // GitHub profile writes (bio, repo descriptions, profile README).
 export * from './github/profile.js';
