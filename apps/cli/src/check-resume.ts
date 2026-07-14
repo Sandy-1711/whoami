@@ -1,123 +1,48 @@
 #!/usr/bin/env node
-// Resume structure checker.
-//
-//   tsx scripts/check-resume.ts            # source + PDF (PDF skipped if absent)
-//   tsx scripts/check-resume.ts --source   # source only (no deps, used by the git hook)
-//   tsx scripts/check-resume.ts --pdf       # PDF only (fails if the PDF is missing)
-//
-// Exits non-zero if any requested check fails, so it works as a CI gate and a
+// Résumé structure checker — the CLI face of core's checkResume(). Renders the
+// guard outcomes and sets the exit code, so it works as a CI gate and a
 // pre-commit hook.
-import { existsSync } from 'node:fs';
+//
+//   tsx check-resume.ts            # source + PDF + width (PDF/width skipped if absent)
+//   tsx check-resume.ts --source   # source only (used by the git hook)
+//   tsx check-resume.ts --pdf       # PDF (+ width); fails if the PDF is missing
+//   tsx check-resume.ts --log       # width only
+import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { checkSource, REQUIRED_SECTIONS } from '@resume/core';
+import { checkResume, type CheckScope, type GuardOutcome } from '@resume/core';
 
 // apps/cli/src/ -> ../../../ is the monorepo root (where resume.tex lives).
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const SOURCE = join(root, 'resume.tex');
-const PDF = join(root, 'apps', 'web', 'assets', 'resume.pdf');
-// Local builds write the log to build/ (see build-pdf.ts); CI's latex-action
-// leaves it at the repo root. Prefer build/, fall back to root.
-const LOG = [join(root, 'build', 'resume.log'), join(root, 'resume.log')].find(existsSync)
-  || join(root, 'build', 'resume.log');
-
-// What the compiled PDF must look like.
-const EXPECTED_PAGES = 1;
-const MIN_TEXT_LENGTH = 200; // guards against an empty / image-only render
-const CONTACT_EMAIL = 'sandy1711003@gmail.com';
-const MAX_OVERFULL_PT = 2; // flag lines wider than this many points past the margin
 
 const args = new Set(process.argv.slice(2));
 const onlyFlags = args.has('--source') || args.has('--pdf') || args.has('--log');
-const wantSource = args.has('--source') || !onlyFlags;
-const wantPdf = args.has('--pdf') || !onlyFlags;
-// Width is a property of the compiled output, so it rides along with --pdf.
-const wantLog = args.has('--log') || args.has('--pdf') || !onlyFlags;
-const pdfExplicit = args.has('--pdf');
-const logExplicit = args.has('--log') || args.has('--pdf');
+// --pdf pulls the width guard along, since overflow is a property of that render.
+const scope: CheckScope | undefined = onlyFlags
+  ? { source: args.has('--source'), pdf: args.has('--pdf'), width: args.has('--log') || args.has('--pdf') }
+  : undefined;
 
-function report(title: string, problems: string[]): boolean {
-  if (problems.length === 0) {
-    console.log(`✓ ${title}: passed`);
-    return true;
-  }
-  console.error(`✗ ${title}: ${problems.length} problem(s)`);
-  for (const p of problems) console.error(`    - ${p}`);
-  return false;
+async function contactEmail(): Promise<string | undefined> {
+  try {
+    const facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
+    return facts?.identity?.email;
+  } catch { return undefined; }
 }
 
-let ok = true;
-
-if (wantSource) {
-  const problems = await checkSource(SOURCE);
-  ok = report('Source structure (resume.tex)', problems) && ok;
+function render(title: string, g: GuardOutcome): void {
+  if (g.skipped) { console.log(`• ${title}: skipped (artifact not built yet)`); return; }
+  if (!g.ran) return;
+  if (g.problems.length === 0) { console.log(`✓ ${title}: passed`); return; }
+  console.error(`✗ ${title}: ${g.problems.length} problem(s)`);
+  for (const p of g.problems) console.error(`    - ${p}`);
 }
 
-if (wantPdf) {
-  if (!existsSync(PDF)) {
-    if (pdfExplicit) {
-      ok =
-        report('PDF structure (assets/resume.pdf)', [
-          `PDF not found at ${PDF} — build it first (npm run build:pdf).`,
-        ]) && ok;
-    } else {
-      console.log('• PDF structure: skipped (assets/resume.pdf not built yet)');
-    }
-  } else {
-    const problems: string[] = [];
-    try {
-      // Imported lazily so the source-only path needs no node_modules.
-      const { extractPdf } = await import('@resume/core');
-      const { text, totalPages } = await extractPdf(PDF);
+const result = await checkResume({ root, contactEmail: await contactEmail(), scope });
+render('Source structure (resume.tex)', result.source);
+render('PDF structure (assets/resume.pdf)', result.pdf);
+render('Width (resume.log)', result.width);
 
-      if (totalPages !== EXPECTED_PAGES) {
-        problems.push(`Expected ${EXPECTED_PAGES} page(s), found ${totalPages}.`);
-      }
-      const compact = text.replace(/\s+/g, ' ').trim();
-      if (compact.length < MIN_TEXT_LENGTH) {
-        problems.push(
-          `Extracted text is suspiciously short (${compact.length} chars) — PDF may be empty or image-only.`,
-        );
-      }
-      for (const name of REQUIRED_SECTIONS) {
-        // Allow flexible whitespace between words (PDF text can drop spaces).
-        const re = new RegExp(
-          name
-            .split(/\s+/)
-            .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-            .join('\\s*'),
-          'i',
-        );
-        if (!re.test(text)) problems.push(`Section "${name}" not found in rendered PDF text.`);
-      }
-      if (!text.includes(CONTACT_EMAIL)) {
-        problems.push(`Contact email ${CONTACT_EMAIL} not found in rendered PDF text.`);
-      }
-    } catch (err) {
-      problems.push(`Failed to parse PDF: ${(err as Error).message}`);
-    }
-    ok = report('PDF structure (assets/resume.pdf)', problems) && ok;
-  }
-}
-
-if (wantLog) {
-  if (!existsSync(LOG)) {
-    if (logExplicit) {
-      ok =
-        report('Width (resume.log)', [
-          `LaTeX log not found at ${LOG} — build the PDF first (npm run build:pdf).`,
-        ]) && ok;
-    } else {
-      console.log('• Width: skipped (resume.log not present yet)');
-    }
-  } else {
-    const { checkLog } = await import('@resume/core');
-    const problems = await checkLog(LOG, { maxOverfullPt: MAX_OVERFULL_PT });
-    ok = report('Width (resume.log)', problems) && ok;
-  }
-}
-
-if (!ok) {
+if (!result.pass) {
   console.error('\nResume structure check FAILED.');
   process.exit(1);
 }
