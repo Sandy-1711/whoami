@@ -18,10 +18,25 @@ export interface GmailSettings {
   appPassword: string;
 }
 
+// Chat-agent runtime settings. The deterministic pipelines (tailor/email/…)
+// keep using LlmSettings + the provider registry; these only steer the Mastra
+// conversation loop and its embeddings. All optional overrides — blank falls
+// back to the same provider chain the pipelines use.
+export interface AgentSettings {
+  // Provider id for the agent loop (AGENT_PROVIDER); '' → reuse llm.provider / first key.
+  provider: string;
+  // Chat model override (AGENT_MODEL); '' → provider default.
+  model: string;
+  // Embedding model for semantic recall (AGENT_EMBEDDING_MODEL); '' → provider default.
+  embeddingModel: string;
+}
+
 export interface AppConfig {
   llm: LlmSettings;
   gmail: GmailSettings;
   githubToken: string;
   linkedinCookie: string;
   scrapeTtlHours: number;
+  // Present when the CLI loads the agent; older call sites (tests) may omit it.
+  agent?: AgentSettings;
 }
