@@ -7,11 +7,13 @@ export * from './ports/config.js';
 export * from './ports/latex.js';
 export * from './ports/logger.js';
 export * from './ports/mailer.js';
+export * from './ports/embedding.js';
 
 // LLM registry + provider factories.
 export * from './llm/registry.js';
 export { geminiFactory } from './llm/providers/gemini.js';
 export { deepseekFactory } from './llm/providers/deepseek.js';
+export { createGeminiEmbedder, GEMINI_EMBED_MODEL } from './llm/providers/gemini-embedder.js';
 
 // Domain types + pure helpers.
 export * from './types.js';
@@ -43,6 +45,7 @@ export * from './profile/facts-editor.js';
 
 // Evidence store (canonical proof units + curation tiers — architecture L1-3).
 export * from './evidence/store.js';
+export * from './evidence/embedding.js';
 
 // GitHub profile writes (bio, repo descriptions, profile README).
 export * from './github/profile.js';
