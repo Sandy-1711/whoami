@@ -510,6 +510,36 @@ const OUTREACH_SPEC: Record<OutreachKind, { words: number; subject: boolean; bri
   referral_ask: { words: 100, subject: false, brief: 'A message asking a contact (often a stranger who works there) for a referral. Make it easy: say why you fit in one line, attach nothing, offer your résumé/links.' },
 };
 
+// ---- evidence dedup (merge near-duplicate claims) --------------------------
+
+export const MERGE_SCHEMA: JsonSchema = {
+  type: 'object',
+  properties: { claim: { type: 'string' } },
+  required: ['claim'],
+};
+
+export interface MergeResponse {
+  claim: string;
+}
+
+// Fold a cluster of near-duplicate claims into one. The merged claim must keep
+// the most specific, verifiable version — never a superset that asserts more than
+// any single input did. Metrics are copied verbatim; nothing is invented.
+export function mergePrompt(claims: string[]): string {
+  return `These claims describe the SAME accomplishment, extracted from different sources. Merge them into ONE clear, specific claim.
+
+RULES:
+- Keep the most specific, concrete version. Prefer named tech and exact figures.
+- Copy any metric verbatim from the inputs — never invent, round, or inflate.
+- Do NOT combine into a superset that asserts more than the inputs support.
+- One sentence, résumé-bullet style.
+
+CLAIMS:
+${claims.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+
+Return JSON: { "claim": the single merged claim }.`;
+}
+
 // ---- evidence extraction (source text → atomic claims) ---------------------
 
 export const EXTRACT_SCHEMA: JsonSchema = {
