@@ -1,11 +1,11 @@
 {
   "_comment": "Auto-scraped from GitHub. Edit freely — the tailor treats this as an editable source of truth. Re-scrape with `npm run sync`.",
-  "scrapedAt": "2026-07-11T09:06:59.413Z",
+  "scrapedAt": "2026-07-14T16:47:27.337Z",
   "username": "Sandy-1711",
   "profileUrl": "https://github.com/Sandy-1711",
   "totals": {
     "publicRepos": 47,
-    "totalStars": 31,
+    "totalStars": 56,
     "mergedPRs": 38,
     "externalRepos": 16
   },
@@ -15,11 +15,13 @@
       "description": "",
       "url": "https://github.com/Sandy-1711/React_Native_Starter",
       "homepage": "",
-      "stars": 8,
+      "stars": 9,
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2025-02-19T17:50:51Z"
+      "pushedAt": "2025-02-19T17:50:51Z",
+      "fork": false,
+      "readmeSize": 87
     },
     {
       "name": "Portfolio",
@@ -30,18 +32,399 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-06-04T11:43:25Z"
+      "pushedAt": "2024-06-04T11:43:25Z",
+      "fork": false,
+      "readmeSize": 1369
     },
     {
       "name": "reddit-clone-backend",
       "description": "",
       "url": "https://github.com/Sandy-1711/reddit-clone-backend",
       "homepage": "",
+      "stars": 2,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-08-01T18:50:44Z",
+      "fork": false,
+      "readmeSize": 0
+    },
+    {
+      "name": "gdsc23",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/gdsc23",
+      "homepage": "",
+      "stars": 2,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-01-10T15:26:16Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "whoami",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/whoami",
+      "homepage": "https://iamsandeep.vercel.app/",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-14T16:08:43Z",
+      "fork": false,
+      "readmeSize": 17919
+    },
+    {
+      "name": "mastra",
+      "description": "From the team behind Gatsby, Mastra is a framework for building AI-powered applications and agents with a modern TypeScript stack.",
+      "url": "https://github.com/Sandy-1711/mastra",
+      "homepage": "https://mastra.ai",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-14T08:06:13Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "screenpipe",
+      "description": "YC (S26) | AI that knows what you've seen, said, or heard. Records everything you do, say, hear 24/7, local, private, secure. Connect to OpenClaw, Hermes agent and 100+ apps",
+      "url": "https://github.com/Sandy-1711/screenpipe",
+      "homepage": "https://screenpipe.com",
+      "stars": 1,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-11T18:24:40Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "cal.com",
+      "description": "Scheduling infrastructure for absolutely everyone.",
+      "url": "https://github.com/Sandy-1711/cal.com",
+      "homepage": "https://cal.com",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-09T08:19:00Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "Sandy-1711",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Sandy-1711",
+      "homepage": "",
+      "stars": 1,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-08T07:51:34Z",
+      "fork": false,
+      "readmeSize": 4202
+    },
+    {
+      "name": "mastra-tools-vanish-repro",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/mastra-tools-vanish-repro",
+      "homepage": "",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-24T05:46:43Z",
+      "fork": false,
+      "readmeSize": 1851
+    },
+    {
+      "name": "EmailPartner",
+      "description": "Turns incoming Gmail into live AI cards — headline, summary, illustration, and voice narration per email. FastAPI + Pub/Sub push + durable worker queue + Gemini.",
+      "url": "https://github.com/Sandy-1711/EmailPartner",
+      "homepage": "",
+      "stars": 1,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-18T09:27:58Z",
+      "fork": false,
+      "readmeSize": 8481
+    },
+    {
+      "name": "studio-instructions-lock-repro",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/studio-instructions-lock-repro",
+      "homepage": "",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-17T07:33:37Z",
+      "fork": false,
+      "readmeSize": 1856
+    },
+    {
+      "name": "DualOnline",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/DualOnline",
+      "homepage": "",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-13T19:47:20Z",
+      "fork": false,
+      "readmeSize": 1927
+    },
+    {
+      "name": "Portfolio-Website",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Portfolio-Website",
+      "homepage": "https://devsandy.vercel.app",
       "stars": 1,
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-08-01T18:50:44Z"
+      "pushedAt": "2026-06-10T12:33:19Z",
+      "fork": false,
+      "readmeSize": 2995
+    },
+    {
+      "name": "SWAN_CIRCUIT_LLM_BACKEND",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/SWAN_CIRCUIT_LLM_BACKEND",
+      "homepage": "",
+      "stars": 1,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-02T08:48:03Z",
+      "fork": false,
+      "readmeSize": 5239
+    },
+    {
+      "name": "SWAN-Circuit-LLM-Frontend",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/SWAN-Circuit-LLM-Frontend",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-02T08:44:57Z",
+      "fork": false,
+      "readmeSize": 4154
+    },
+    {
+      "name": "ERP-Student-App",
+      "description": "An ERP application developed using React Native Expo, part of the ERP project.",
+      "url": "https://github.com/Sandy-1711/ERP-Student-App",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-02T08:43:04Z",
+      "fork": false,
+      "readmeSize": 3832
+    },
+    {
+      "name": "flo101-Assessment",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/flo101-Assessment",
+      "homepage": "",
+      "stars": 1,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-05-10T11:23:44Z",
+      "fork": false,
+      "readmeSize": 11297
+    },
+    {
+      "name": "Web-Aware-Rag-Engine",
+      "description": "Production-style RAG engine: async web ingestion, semantic search, and AI answers — load-balanced FastAPI replicas, Next.js 15 frontend.",
+      "url": "https://github.com/Sandy-1711/Web-Aware-Rag-Engine",
+      "homepage": "",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-01-19T10:59:07Z",
+      "fork": false,
+      "readmeSize": 26723
+    },
+    {
+      "name": "SWAN-Evalutations",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/SWAN-Evalutations",
+      "homepage": "",
+      "stars": 1,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-11-05T14:32:14Z",
+      "fork": false,
+      "readmeSize": 160
+    },
+    {
+      "name": "Synchrone.ai-Assessment",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Synchrone.ai-Assessment",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-10-15T16:31:04Z",
+      "fork": false,
+      "readmeSize": 2993
+    },
+    {
+      "name": "IntelliCommerce",
+      "description": "An ecommerce chatbot capable of deciding intent based on the user query and redirect to different microservices.",
+      "url": "https://github.com/Sandy-1711/IntelliCommerce",
+      "homepage": "",
+      "stars": 1,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-08-27T10:03:13Z",
+      "fork": false,
+      "readmeSize": 4540
+    },
+    {
+      "name": "Product-Scan",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Product-Scan",
+      "homepage": "",
+      "stars": 1,
+      "language": "Jupyter Notebook",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-04-21T19:22:59Z",
+      "fork": false,
+      "readmeSize": 9137
+    },
+    {
+      "name": "Motion-Gesture",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Motion-Gesture",
+      "homepage": "",
+      "stars": 1,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-04-21T19:20:25Z",
+      "fork": false,
+      "readmeSize": 3021
+    },
+    {
+      "name": "E2E_ML_1",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/E2E_ML_1",
+      "homepage": "",
+      "stars": 1,
+      "language": "Jupyter Notebook",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-03-30T12:54:45Z",
+      "fork": false,
+      "readmeSize": 50
+    },
+    {
+      "name": "Travel-Startup",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Travel-Startup",
+      "homepage": "https://tirthayatrik.vercel.app",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-03-25T08:45:14Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "MANGA",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/MANGA",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-01-12T11:54:39Z",
+      "fork": false,
+      "readmeSize": 0
+    },
+    {
+      "name": "BULLnCode_Statement1",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/BULLnCode_Statement1",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-12-17T11:11:02Z",
+      "fork": false,
+      "readmeSize": 1458
+    },
+    {
+      "name": "Stock-Portfolio-Analysis-Toolkit",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Stock-Portfolio-Analysis-Toolkit",
+      "homepage": "",
+      "stars": 1,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-12-16T20:22:53Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "FSCA",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/FSCA",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-08-19T18:18:39Z",
+      "fork": false,
+      "readmeSize": 0
+    },
+    {
+      "name": "VC-Server",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/VC-Server",
+      "homepage": "",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-08-06T13:03:59Z",
+      "fork": false,
+      "readmeSize": 0
+    },
+    {
+      "name": "VC-Client",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/VC-Client",
+      "homepage": "https://vc-client-nu.vercel.app",
+      "stars": 1,
+      "language": "JavaScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-08-06T12:51:15Z",
+      "fork": false,
+      "readmeSize": 1382
     },
     {
       "name": "social-media",
@@ -52,7 +435,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-03-06T21:41:07Z"
+      "pushedAt": "2024-03-06T21:41:07Z",
+      "fork": false,
+      "readmeSize": 0
     },
     {
       "name": "reddit-clone-client",
@@ -63,7 +448,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-01-13T12:02:24Z"
+      "pushedAt": "2024-01-13T12:02:24Z",
+      "fork": false,
+      "readmeSize": 1382
     },
     {
       "name": "Octabiz",
@@ -74,7 +461,9 @@
       "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-01-10T19:04:31Z"
+      "pushedAt": "2024-01-10T19:04:31Z",
+      "fork": false,
+      "readmeSize": 1383
     },
     {
       "name": "Evana",
@@ -85,7 +474,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-01-10T06:02:56Z"
+      "pushedAt": "2024-01-10T06:02:56Z",
+      "fork": false,
+      "readmeSize": 1382
     },
     {
       "name": "MMMUT-RESO-NEXT",
@@ -96,7 +487,22 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-01-06T10:40:10Z"
+      "pushedAt": "2024-01-06T10:40:10Z",
+      "fork": false,
+      "readmeSize": 1382
+    },
+    {
+      "name": "MMMUTRESO",
+      "description": "link",
+      "url": "https://github.com/Sandy-1711/MMMUTRESO",
+      "homepage": "https://tejasmishr.github.io/MMMUTRESO/",
+      "stars": 1,
+      "language": "HTML",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-12-24T19:25:45Z",
+      "fork": true,
+      "readmeSize": 0
     },
     {
       "name": "WebAccuracy",
@@ -107,7 +513,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-12-23T11:41:00Z"
+      "pushedAt": "2023-12-23T11:41:00Z",
+      "fork": false,
+      "readmeSize": 1369
     },
     {
       "name": "Expense-Tracker",
@@ -118,7 +526,9 @@
       "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-12-23T11:16:28Z"
+      "pushedAt": "2023-12-23T11:16:28Z",
+      "fork": false,
+      "readmeSize": 167
     },
     {
       "name": "Construction",
@@ -129,7 +539,22 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-12-11T11:47:04Z"
+      "pushedAt": "2023-12-11T11:47:04Z",
+      "fork": false,
+      "readmeSize": 1382
+    },
+    {
+      "name": "NextJs-Prisma-Fullstack-Blog",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/NextJs-Prisma-Fullstack-Blog",
+      "homepage": "",
+      "stars": 1,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-10-31T14:24:43Z",
+      "fork": true,
+      "readmeSize": 0
     },
     {
       "name": "SIH",
@@ -140,7 +565,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-10-31T11:24:52Z"
+      "pushedAt": "2023-10-31T11:24:52Z",
+      "fork": false,
+      "readmeSize": 3359
     },
     {
       "name": "SIH-Backend",
@@ -151,7 +578,22 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-10-31T08:51:41Z"
+      "pushedAt": "2023-10-31T08:51:41Z",
+      "fork": false,
+      "readmeSize": 0
+    },
+    {
+      "name": "react-projects",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/react-projects",
+      "homepage": "",
+      "stars": 1,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2023-09-10T01:53:06Z",
+      "fork": true,
+      "readmeSize": 0
     },
     {
       "name": "AGOI",
@@ -162,7 +604,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-09-06T14:36:18Z"
+      "pushedAt": "2023-09-06T14:36:18Z",
+      "fork": false,
+      "readmeSize": 3359
     },
     {
       "name": "WA",
@@ -173,7 +617,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-08-21T19:55:22Z"
+      "pushedAt": "2023-08-21T19:55:22Z",
+      "fork": false,
+      "readmeSize": 0
     },
     {
       "name": "github-upload-test",
@@ -184,7 +630,9 @@
       "language": "HTML",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-08-05T16:19:25Z"
+      "pushedAt": "2023-08-05T16:19:25Z",
+      "fork": false,
+      "readmeSize": 0
     },
     {
       "name": "FoodOrderClone",
@@ -195,7 +643,9 @@
       "language": "SCSS",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-07-09T19:38:27Z"
+      "pushedAt": "2023-07-09T19:38:27Z",
+      "fork": false,
+      "readmeSize": 3359
     },
     {
       "name": "Musicfy",
@@ -206,7 +656,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-06-27T16:44:30Z"
+      "pushedAt": "2023-06-27T16:44:30Z",
+      "fork": false,
+      "readmeSize": 3359
     },
     {
       "name": "DTU-Hack",
@@ -217,260 +669,74 @@
       "language": "HTML",
       "topics": [],
       "archived": false,
-      "pushedAt": "2023-04-04T07:51:54Z"
+      "pushedAt": "2023-04-04T07:51:54Z",
+      "fork": false,
+      "readmeSize": 0
     },
     {
-      "name": "whoami",
+      "name": "agoi-client-front",
       "description": "",
-      "url": "https://github.com/Sandy-1711/whoami",
-      "homepage": "https://iamsandeep.vercel.app/",
-      "stars": 0,
-      "language": "TypeScript",
+      "url": "https://github.com/Sandy-1711/agoi-client-front",
+      "homepage": "",
+      "stars": 1,
+      "language": "",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-10T09:34:52Z"
+      "pushedAt": "2022-10-13T10:50:37Z",
+      "fork": true,
+      "readmeSize": 0
     },
     {
-      "name": "Sandy-1711",
+      "name": "Agoifinancialservices",
       "description": "",
-      "url": "https://github.com/Sandy-1711/Sandy-1711",
+      "url": "https://github.com/Sandy-1711/Agoifinancialservices",
       "homepage": "",
+      "stars": 1,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2022-10-13T05:54:22Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "Agoi-Api-backend",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Agoi-Api-backend",
+      "homepage": "",
+      "stars": 1,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2022-07-14T20:35:13Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "twenty",
+      "description": "The open alternative to Salesforce, designed for AI.",
+      "url": "https://github.com/Sandy-1711/twenty",
+      "homepage": "https://twenty.com",
       "stars": 0,
       "language": "",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-08T07:51:34Z"
+      "pushedAt": "2026-07-14T15:17:01Z",
+      "fork": true,
+      "readmeSize": 0
     },
     {
-      "name": "mastra-tools-vanish-repro",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/mastra-tools-vanish-repro",
-      "homepage": "",
+      "name": "pangolin",
+      "description": "Identity-aware VPN and tunneled reverse proxy for remote access based on WireGuard®.",
+      "url": "https://github.com/Sandy-1711/pangolin",
+      "homepage": "https://pangolin.net",
       "stars": 0,
-      "language": "TypeScript",
+      "language": "",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-06-24T05:46:43Z"
-    },
-    {
-      "name": "EmailPartner",
-      "description": "Turns incoming Gmail into live AI cards — headline, summary, illustration, and voice narration per email. FastAPI + Pub/Sub push + durable worker queue + Gemini.",
-      "url": "https://github.com/Sandy-1711/EmailPartner",
-      "homepage": "",
-      "stars": 0,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-18T09:27:58Z"
-    },
-    {
-      "name": "studio-instructions-lock-repro",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/studio-instructions-lock-repro",
-      "homepage": "",
-      "stars": 0,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-17T07:33:37Z"
-    },
-    {
-      "name": "DualOnline",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/DualOnline",
-      "homepage": "",
-      "stars": 0,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-13T19:47:20Z"
-    },
-    {
-      "name": "Portfolio-Website",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/Portfolio-Website",
-      "homepage": "https://devsandy.vercel.app",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-10T12:33:19Z"
-    },
-    {
-      "name": "SWAN_CIRCUIT_LLM_BACKEND",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/SWAN_CIRCUIT_LLM_BACKEND",
-      "homepage": "",
-      "stars": 0,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-02T08:48:03Z"
-    },
-    {
-      "name": "SWAN-Circuit-LLM-Frontend",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/SWAN-Circuit-LLM-Frontend",
-      "homepage": "",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-02T08:44:57Z"
-    },
-    {
-      "name": "ERP-Student-App",
-      "description": "An ERP application developed using React Native Expo, part of the ERP project.",
-      "url": "https://github.com/Sandy-1711/ERP-Student-App",
-      "homepage": "",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-02T08:43:04Z"
-    },
-    {
-      "name": "flo101-Assessment",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/flo101-Assessment",
-      "homepage": "",
-      "stars": 0,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-05-10T11:23:44Z"
-    },
-    {
-      "name": "Web-Aware-Rag-Engine",
-      "description": "Production-style RAG engine: async web ingestion, semantic search, and AI answers — load-balanced FastAPI replicas, Next.js 15 frontend.",
-      "url": "https://github.com/Sandy-1711/Web-Aware-Rag-Engine",
-      "homepage": "",
-      "stars": 0,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-01-19T10:59:07Z"
-    },
-    {
-      "name": "SWAN-Evalutations",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/SWAN-Evalutations",
-      "homepage": "",
-      "stars": 0,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2025-11-05T14:32:14Z"
-    },
-    {
-      "name": "Synchrone.ai-Assessment",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/Synchrone.ai-Assessment",
-      "homepage": "",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2025-10-15T16:31:04Z"
-    },
-    {
-      "name": "IntelliCommerce",
-      "description": "An ecommerce chatbot capable of deciding intent based on the user query and redirect to different microservices.",
-      "url": "https://github.com/Sandy-1711/IntelliCommerce",
-      "homepage": "",
-      "stars": 0,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2025-08-27T10:03:13Z"
-    },
-    {
-      "name": "Product-Scan",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/Product-Scan",
-      "homepage": "",
-      "stars": 0,
-      "language": "Jupyter Notebook",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2025-04-21T19:22:59Z"
-    },
-    {
-      "name": "Motion-Gesture",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/Motion-Gesture",
-      "homepage": "",
-      "stars": 0,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2025-04-21T19:20:25Z"
-    },
-    {
-      "name": "E2E_ML_1",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/E2E_ML_1",
-      "homepage": "",
-      "stars": 0,
-      "language": "Jupyter Notebook",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2025-03-30T12:54:45Z"
-    },
-    {
-      "name": "MANGA",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/MANGA",
-      "homepage": "",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2025-01-12T11:54:39Z"
-    },
-    {
-      "name": "BULLnCode_Statement1",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/BULLnCode_Statement1",
-      "homepage": "",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2024-12-17T11:11:02Z"
-    },
-    {
-      "name": "FSCA",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/FSCA",
-      "homepage": "",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2024-08-19T18:18:39Z"
-    },
-    {
-      "name": "VC-Server",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/VC-Server",
-      "homepage": "",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2024-08-06T13:03:59Z"
-    },
-    {
-      "name": "VC-Client",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/VC-Client",
-      "homepage": "https://vc-client-nu.vercel.app",
-      "stars": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2024-08-06T12:51:15Z"
+      "pushedAt": "2026-07-13T01:47:12Z",
+      "fork": true,
+      "readmeSize": 0
     },
     {
       "name": "Barcode",
@@ -481,7 +747,9 @@
       "language": "HTML",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-07-17T17:53:08Z"
+      "pushedAt": "2024-07-17T17:53:08Z",
+      "fork": false,
+      "readmeSize": 0
     },
     {
       "name": "DSA-Striver-Java",
@@ -492,7 +760,35 @@
       "language": "Java",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-06-23T12:39:44Z"
+      "pushedAt": "2024-06-23T12:39:44Z",
+      "fork": false,
+      "readmeSize": 0
+    },
+    {
+      "name": "MoneyPrinterV2",
+      "description": "Automate the process of making money online.",
+      "url": "https://github.com/Sandy-1711/MoneyPrinterV2",
+      "homepage": "",
+      "stars": 0,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-02-19T13:47:57Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "MoneyPrinter",
+      "description": "Automate Creation of YouTube Shorts using MoviePy.",
+      "url": "https://github.com/Sandy-1711/MoneyPrinter",
+      "homepage": "",
+      "stars": 0,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-02-18T07:31:39Z",
+      "fork": true,
+      "readmeSize": 0
     },
     {
       "name": "erp.frontend.xyz",
@@ -503,7 +799,22 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-02-09T11:08:57Z"
+      "pushedAt": "2024-02-09T11:08:57Z",
+      "fork": false,
+      "readmeSize": 1382
+    },
+    {
+      "name": "abhyudayafest",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/abhyudayafest",
+      "homepage": "",
+      "stars": 0,
+      "language": "CSS",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2024-01-18T16:57:00Z",
+      "fork": true,
+      "readmeSize": 0
     },
     {
       "name": "gpt",
@@ -514,7 +825,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-01-13T20:31:33Z"
+      "pushedAt": "2024-01-13T20:31:33Z",
+      "fork": false,
+      "readmeSize": 3359
     },
     {
       "name": "Ambicure",
@@ -525,7 +838,9 @@
       "language": "JavaScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-01-10T10:21:26Z"
+      "pushedAt": "2024-01-10T10:21:26Z",
+      "fork": false,
+      "readmeSize": 1382
     }
   ],
   "contributions": [
@@ -533,14 +848,20 @@
       "repo": "mastra-ai/mastra",
       "url": "https://github.com/mastra-ai/mastra",
       "merged": 12,
-      "open": 4,
+      "open": 5,
       "closedUnmerged": 4,
       "samplePRs": [
         {
-          "number": 19256,
-          "title": "feat(playground): display experiment names and descriptions in Studio",
+          "number": 19299,
+          "title": "fix: preserve Cloudflare execution context through the custom-route bridge",
           "state": "open",
-          "url": "https://github.com/mastra-ai/mastra/pull/19256"
+          "url": "https://github.com/mastra-ai/mastra/pull/19299"
+        },
+        {
+          "number": 18421,
+          "title": "fix(playground): warn and block when agents reference unpublished prompt blocks",
+          "state": "open",
+          "url": "https://github.com/mastra-ai/mastra/pull/18421"
         },
         {
           "number": 18980,
@@ -549,10 +870,10 @@
           "url": "https://github.com/mastra-ai/mastra/pull/18980"
         },
         {
-          "number": 18421,
-          "title": "fix(playground): warn and block when agents reference unpublished prompt blocks",
+          "number": 19256,
+          "title": "feat(playground): display experiment names and descriptions in Studio",
           "state": "open",
-          "url": "https://github.com/mastra-ai/mastra/pull/18421"
+          "url": "https://github.com/mastra-ai/mastra/pull/19256"
         },
         {
           "number": 18963,
@@ -565,15 +886,9 @@
           "title": "fix(playground): respect editor config locks for code-agent instructions",
           "state": "open",
           "url": "https://github.com/mastra-ai/mastra/pull/18059"
-        },
-        {
-          "number": 18473,
-          "title": "fix(ai-sdk,core): deliver background-task-started chunk to the UI stream and onChunk",
-          "state": "closed",
-          "url": "https://github.com/mastra-ai/mastra/pull/18473"
         }
       ],
-      "stars": 26036
+      "stars": 26163
     },
     {
       "repo": "TejasMishr/ERP_Client",
@@ -839,7 +1154,7 @@
           "url": "https://github.com/formbricks/formbricks/pull/1467"
         }
       ],
-      "stars": 12522
+      "stars": 12545
     },
     {
       "repo": "calcom/cal.diy",
@@ -867,7 +1182,7 @@
           "url": "https://github.com/calcom/cal.diy/pull/29355"
         }
       ],
-      "stars": 46297
+      "stars": 46403
     },
     {
       "repo": "therealanshuman/hwce-sandeep",
@@ -927,7 +1242,7 @@
           "url": "https://github.com/n8n-io/n8n/pull/20329"
         }
       ],
-      "stars": 196020
+      "stars": 196425
     }
   ]
 }
