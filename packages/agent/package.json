@@ -1,0 +1,30 @@
+{
+  "name": "@resume/agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/deepseek": "^3.0.7",
+    "@ai-sdk/google": "^4.0.12",
+    "@mastra/core": "^1.50.1",
+    "@mastra/libsql": "^1.15.1",
+    "@mastra/memory": "^1.22.2",
+    "@resume/core": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}
