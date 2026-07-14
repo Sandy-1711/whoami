@@ -71,6 +71,6 @@ describe('resolveAgentEmbedder', () => {
 
   it('builds a Gemini embedder when a key is present', () => {
     const e = resolveAgentEmbedder(config({ llm: { provider: '', keys: { gemini: 'g' }, models: {} } }));
-    expect(e?.modelId).toBe('text-embedding-004');
+    expect(e?.modelId).toBe('gemini-embedding-001');
   });
 });

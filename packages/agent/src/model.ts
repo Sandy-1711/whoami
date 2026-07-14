@@ -22,9 +22,9 @@ const DEFAULT_CHAT_MODEL: Record<AgentProviderId, string> = {
 
 const LABEL: Record<AgentProviderId, string> = { gemini: 'Gemini', deepseek: 'DeepSeek' };
 
-// Gemini's current text embedding model. Only Gemini has an embedding adapter
+// Gemini's current GA text embedding model. Only Gemini has an embedding adapter
 // here; a DeepSeek-only setup runs the agent without semantic recall.
-const DEFAULT_EMBEDDING_MODEL = 'text-embedding-004';
+const DEFAULT_EMBEDDING_MODEL = 'gemini-embedding-001';
 
 export interface AgentModel {
   providerId: AgentProviderId;
@@ -37,7 +37,7 @@ export interface AgentModel {
 export interface AgentEmbedder {
   modelId: string;
   // AI SDK embedding model instance, passed to `new Memory({ embedder })`.
-  model: ReturnType<ReturnType<typeof createGoogleGenerativeAI>['textEmbeddingModel']>;
+  model: ReturnType<ReturnType<typeof createGoogleGenerativeAI>['embeddingModel']>;
 }
 
 function firstKeyedProvider(config: AppConfig): AgentProviderId | '' {
@@ -86,5 +86,5 @@ export function resolveAgentEmbedder(config: AppConfig): AgentEmbedder | null {
   const apiKey = config.llm.keys.gemini || '';
   if (!apiKey) return null;
   const modelId = config.agent?.embeddingModel || DEFAULT_EMBEDDING_MODEL;
-  return { modelId, model: createGoogleGenerativeAI({ apiKey }).textEmbeddingModel(modelId) };
+  return { modelId, model: createGoogleGenerativeAI({ apiKey }).embeddingModel(modelId) };
 }
