@@ -119,6 +119,8 @@ export interface GithubRepo {
   // projects from empty experiments.
   fork: boolean;
   readmeSize: number;
+  // Set by profile/curation.json — pinned repos are always surfaced first.
+  pinned?: boolean;
 }
 
 export interface GithubContribution {
@@ -129,6 +131,8 @@ export interface GithubContribution {
   closedUnmerged: number;
   stars?: number;
   samplePRs: { number: number; title: string; state: string; url: string }[];
+  // Set by profile/curation.json — pinned contributions are always surfaced first.
+  pinned?: boolean;
 }
 
 export interface GithubTotals {

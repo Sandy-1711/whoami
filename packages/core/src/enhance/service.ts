@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import type { LlmProvider } from '../ports/llm.js';
 import type { Presenter } from '../ports/logger.js';
 import { drift } from '../profile/sources.js';
+import { loadCuration, applyCuration } from '../profile/curation.js';
 import { enhancePrompt, ENHANCE_SCHEMA, type EnhanceResponse } from '../prompts.js';
 import type { Facts, GithubData, LinkedinData } from '../types.js';
 
@@ -46,7 +47,10 @@ export class EnhanceService {
     const facts = await this.readJson<Facts>(join(root, 'profile', 'facts.json'));
     if (!facts) throw new Error('facts.json not found — cannot suggest without a fact base.');
     const linkedin = await this.readJson<LinkedinData>(join(root, 'profile', 'linkedin.json'));
-    const github = await this.readJson<GithubData>(join(root, 'profile', 'github.json'));
+    const rawGithub = await this.readJson<GithubData>(join(root, 'profile', 'github.json'));
+    // Curate at read time too, so a curation.json edit takes effect immediately
+    // even when github.json was scraped before the edit.
+    const github = rawGithub ? applyCuration(rawGithub, await loadCuration(root)) : null;
 
     // The suggestions are only as good as the scrape — warn when it's stale.
     const d = await drift(root);
