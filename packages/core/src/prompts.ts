@@ -455,7 +455,7 @@ export function enhancePrompt({
     ? { headline: linkedin.profile.headline, about: linkedin.profile.about, skills: linkedin.profile.skills }
     : null;
   const gh = github
-    ? { bio: (github as unknown as { bio?: string }).bio ?? null, topRepos: (github.repos || []).filter((r) => !r.fork).slice(0, 8).map((r) => ({ name: r.name, description: r.description })) }
+    ? { bio: (github as unknown as { bio?: string }).bio ?? null, topRepos: (github.repos || []).filter((r) => r.pinned || !r.fork).slice(0, 8).map((r) => ({ name: r.name, description: r.description })) }
     : null;
 
   return `You keep a job-seeker's public profiles consistent with their VERIFIED fact base. Compare the current LinkedIn + GitHub surfaces to the fact base and propose better, truthful copy — plus flag what's stale or missing.

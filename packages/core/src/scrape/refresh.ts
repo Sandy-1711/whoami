@@ -12,6 +12,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { contentHash, isStale, recordScrape, lastScrape } from '../profile/sources.js';
+import { loadCuration, applyCuration } from '../profile/curation.js';
 import type { LlmProvider } from '../ports/llm.js';
 import { scrapeGithub, githubUsername } from './github.js';
 import { scrapeLinkedin } from './linkedin.js';
@@ -41,7 +42,10 @@ export class SourceRefresher {
       github: async (root) => {
         const facts = await readFacts(root);
         const username = githubUsername(facts.identity?.github || 'Sandy-1711');
-        return scrapeGithub({ username, token: config.githubToken });
+        const data = await scrapeGithub({ username, token: config.githubToken });
+        // profile/curation.json: drop banned repos, float pinned ones first, so
+        // github.json on disk (and everything downstream) is already curated.
+        return applyCuration(data, await loadCuration(root));
       },
       linkedin: async (root) => {
         const facts = await readFacts(root);

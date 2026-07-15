@@ -1,0 +1,5 @@
+{
+  "_comment": "Manual repo curation — yours to edit; sync never overwrites this file. `pin`: repos to always surface first, in this order (own repos by name, e.g. \"Web-Aware-Rag-Engine\"; external contribution repos by full \"owner/name\", e.g. \"mastra-ai/mastra\"). `ban`: repos to hide everywhere — dropped from github.json on sync, excluded from LLM prompts, and excluded from repo/star totals. Matching is case-insensitive. Applied on `resume sync` and whenever the enhancer reads github.json.",
+  "pin": [],
+  "ban": []
+}
