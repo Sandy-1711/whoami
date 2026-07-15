@@ -36,11 +36,18 @@ Memory persists across sessions (libSQL under `.agent/`, gitignored): past threa
 working-memory scratchpad (active applications, preferences), and semantic recall when a Gemini
 key is set. By default it resumes your most recent thread; `--new` starts fresh.
 
-Slash commands: `/help`, `/new`, `/threads` (list + switch), `/paste` (multi-line JD),
-`/jd <file>` (attach a JD file to the next message), `/status`, `/facts`, `/exit`.
+Slash commands: `/help`, `/new`, `/threads` (list + switch), `/model` (switch the chat model
+for this session), `/usage` (token usage, est. spend, context-window status), `/paste`
+(multi-line JD), `/jd <file>` (attach a JD file to the next message), `/status`, `/facts`, `/exit`.
+
+After every turn a dim status line reports the model, how full the context window is
+(last prompt tokens / window), tokens moved (↑ in / ↓ out), and estimated spend for the
+turn and the session. Prices are approximate public list prices for local display only —
+not billing. `/model` only offers providers that have a key; switching keeps the current
+thread and running usage totals.
 
 Configure the agent model with `AGENT_PROVIDER` / `AGENT_MODEL` (see `.env.example`); it defaults
-to the same provider chain as `tailor`.
+to the same provider chain as `tailor`. `/model` overrides both for the running session.
 
 ### `tailor` — JD → ATS-optimized PDF
 

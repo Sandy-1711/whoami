@@ -3,7 +3,7 @@
 // Agent plus the metadata the CLI shows (which model, whether recall is on).
 import { Agent } from '@mastra/core/agent';
 import type { AgentDeps } from './deps.js';
-import { resolveAgentModel } from './model.js';
+import { resolveAgentModel, type AgentModelOverride } from './model.js';
 import { buildMemory, type AgentMemory } from './memory.js';
 import { RESUME_AGENT_INSTRUCTIONS } from './instructions.js';
 import { readOnlyTools } from './tools/readonly.js';
@@ -22,9 +22,17 @@ export interface BuiltAgent {
   memory: AgentMemory;
 }
 
-export function buildAgent(deps: AgentDeps): BuiltAgent {
-  const resolved = resolveAgentModel(deps.config);
-  const mem = buildMemory(deps.root, deps.config);
+export interface BuildAgentOptions {
+  // Runtime model pick from `/model`; overrides config/env resolution.
+  modelOverride?: AgentModelOverride;
+  // Reuse an already-open memory (e.g. when switching models mid-session) so we
+  // don't reopen the libSQL store — the thread + working memory carry over.
+  memory?: AgentMemory;
+}
+
+export function buildAgent(deps: AgentDeps, opts: BuildAgentOptions = {}): BuiltAgent {
+  const resolved = resolveAgentModel(deps.config, opts.modelOverride);
+  const mem = opts.memory ?? buildMemory(deps.root, deps.config);
 
   const tools = {
     ...readOnlyTools(deps),

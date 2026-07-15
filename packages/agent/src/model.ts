@@ -66,17 +66,26 @@ export function resolveAgentProviderId(config: AppConfig): AgentProviderId {
   return (SUPPORTED as readonly string[]).includes(wanted) ? (wanted as AgentProviderId) : 'gemini';
 }
 
-// Build the chat model instance. Throws a pointed error when the key is missing.
-export function resolveAgentModel(config: AppConfig): AgentModel {
-  const providerId = resolveAgentProviderId(config);
+// A runtime pick from the `/model` command: switch the agent to this exact
+// provider+model for the session, overriding config/env resolution.
+export interface AgentModelOverride {
+  providerId: AgentProviderId;
+  modelId: string;
+}
+
+// Build the chat model instance. An override (from `/model`) wins over config
+// resolution. Throws a pointed error when the chosen provider has no key.
+export function resolveAgentModel(config: AppConfig, override?: AgentModelOverride): AgentModel {
+  const providerId = override?.providerId ?? resolveAgentProviderId(config);
   const apiKey = config.llm.keys[providerId] || '';
   if (!apiKey) {
     const envName = providerId === 'gemini' ? 'GEMINI_API_KEY' : 'DEEPSEEK_API_KEY';
     throw new Error(`${envName} not set — the chat agent needs a Gemini or DeepSeek key in .env.`);
   }
   // Chat model is decoupled from the pipeline's GEMINI_MODEL: an explicit
-  // AGENT_MODEL wins, otherwise the fast chat default — NOT the pro pipeline model.
-  const modelId = config.agent?.model || DEFAULT_CHAT_MODEL[providerId];
+  // override (or AGENT_MODEL) wins, otherwise the fast chat default — NOT the
+  // pro pipeline model.
+  const modelId = override?.modelId || config.agent?.model || DEFAULT_CHAT_MODEL[providerId];
 
   const model = providerId === 'gemini'
     ? createGoogleGenerativeAI({ apiKey })(modelId)
@@ -85,6 +94,12 @@ export function resolveAgentModel(config: AppConfig): AgentModel {
     : (createDeepSeek({ apiKey })(modelId) as unknown as AgentModel['model']);
 
   return { providerId, modelId, label: LABEL[providerId], model };
+}
+
+// Which supported providers actually have a key — the set `/model` may switch
+// between without erroring.
+export function keyedAgentProviders(config: AppConfig): AgentProviderId[] {
+  return SUPPORTED.filter((id) => !!config.llm.keys[id]);
 }
 
 // Build the embedding model for semantic recall, or null when no Gemini key is
