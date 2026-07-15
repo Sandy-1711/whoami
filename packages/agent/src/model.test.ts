@@ -56,11 +56,13 @@ describe('resolveAgentModel', () => {
     expect(m.label).toBe('Gemini');
   });
 
-  it('falls back to the per-provider model override, then the default', () => {
-    const withOverride = resolveAgentModel(config({ llm: { provider: '', keys: { deepseek: 'k' }, models: { deepseek: 'deepseek-reasoner' } } }));
-    expect(withOverride.modelId).toBe('deepseek-reasoner');
-    const withDefault = resolveAgentModel(config({ llm: { provider: '', keys: { gemini: 'g' }, models: {} } }));
-    expect(withDefault.modelId).toBe('gemini-2.5-pro');
+  it('uses the fast chat default, decoupled from the pipeline model (GEMINI_MODEL)', () => {
+    // The chat loop must NOT inherit the pro pipeline model — it defaults to the
+    // fast/cheap chat model even when models[provider] is set.
+    const gem = resolveAgentModel(config({ llm: { provider: '', keys: { gemini: 'g' }, models: { gemini: 'gemini-2.5-pro' } } }));
+    expect(gem.modelId).toBe('gemini-2.5-flash');
+    const ds = resolveAgentModel(config({ llm: { provider: '', keys: { deepseek: 'k' }, models: { deepseek: 'deepseek-reasoner' } } }));
+    expect(ds.modelId).toBe('deepseek-chat');
   });
 });
 
