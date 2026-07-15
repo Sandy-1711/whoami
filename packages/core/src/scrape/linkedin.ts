@@ -1,10 +1,12 @@
 // LinkedIn scraper. LinkedIn has no open API and actively blocks automation, so
-// this does the pragmatic thing:
+// this prefers the safe, complete source and only automates as a last resort:
 //
-//   1. LIVE (preferred, opt-in): if LINKEDIN_COOKIE (your `li_at` session cookie)
-//      is set and Playwright is installed, render your own profile page and pull
-//      the visible text.
-//   2. FALLBACK: parse the Linkedin_Profile.pdf export in the repo root.
+//   1. PDF (preferred): parse the Linkedin_Profile.pdf export in the repo root —
+//      the full profile, and it touches no LinkedIn servers (no automation, no
+//      account-ban risk).
+//   2. LIVE (fallback, opt-in): only when no PDF is present — if LINKEDIN_COOKIE
+//      (your `li_at` session cookie) is set and Playwright is installed, render
+//      your own profile page and pull the visible text.
 //
 // Either way the raw text is structured into clean JSON by Gemini and written to
 // profile/linkedin.json — an editable source of truth you can hand-correct.
@@ -77,18 +79,20 @@ async function pdfText(root: string): Promise<string> {
 interface RawProfile {
   via: 'live' | 'pdf';
   text: string;
-  liveError?: string;
 }
 
-// Get raw profile text via live scrape (if configured) or the PDF export.
+// Prefer the offline PDF export when present: it's the complete profile and hits
+// no LinkedIn servers (no automation, no ban risk). The live cookie scrape is a
+// fallback used only when no PDF has been dropped in the repo root.
 async function rawProfileText(root: string, { cookie, url }: { cookie: string; url: string }): Promise<RawProfile> {
-  if (cookie && url) {
-    try {
-      return { via: 'live', text: await liveText({ cookie, url }) };
-    } catch (err) {
-      return { via: 'pdf', text: await pdfText(root), liveError: (err as Error).message };
-    }
+  if (existsSync(join(root, 'Linkedin_Profile.pdf'))) {
+    return { via: 'pdf', text: await pdfText(root) };
   }
+  if (cookie && url) {
+    return { via: 'live', text: await liveText({ cookie, url }) };
+  }
+  // No PDF and no live config — pdfText throws the actionable "export your
+  // profile to PDF and drop it in the repo root" guidance.
   return { via: 'pdf', text: await pdfText(root) };
 }
 
@@ -104,7 +108,7 @@ export async function scrapeLinkedin(
 ): Promise<LinkedinData> {
   if (!llm) throw new Error('An LLM API key is required to structure the LinkedIn profile.');
 
-  const { via, text, liveError } = await rawProfileText(root, { cookie, url });
+  const { via, text } = await rawProfileText(root, { cookie, url });
 
   const profile = await llm.generateJson<LinkedinResponse>({
     prompt: linkedinPrompt(text),
@@ -113,10 +117,9 @@ export async function scrapeLinkedin(
   });
 
   return {
-    _comment: 'Auto-scraped from LinkedIn (live cookie scrape or PDF export), structured by an LLM. Edit freely — the tailor treats this as an editable source. Re-scrape with `npm run sync`.',
+    _comment: 'Auto-scraped from LinkedIn (PDF export preferred, else live cookie scrape), structured by an LLM. Edit freely — the tailor treats this as an editable source. Re-scrape with `npm run sync -- --linkedin`.',
     scrapedAt: new Date().toISOString(),
     via,
-    ...(liveError ? { liveError } : {}),
     profileUrl: url || '',
     profile,
   };

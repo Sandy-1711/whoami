@@ -4,7 +4,7 @@
 //   resume                         interactive menu
 //   resume tailor <jd> --company X [--role X] [--provider gemini|deepseek] [--model X]
 //   resume tailor --jd "text..." --company X
-//   resume sync [--force]          refresh scraped GitHub + LinkedIn sources
+//   resume sync [--force] [--linkedin]   refresh scraped GitHub (LinkedIn is opt-in)
 //   resume status                  show env, sources, outputs
 //   resume build                   compile resume.tex → apps/web/assets/resume.pdf
 //   resume check [--source|--pdf|--width]
@@ -89,7 +89,7 @@ function commands(cli: Cli): Record<string, () => Promise<unknown>> {
     email: () => directEmail(cli),
     wellfound: () => directWellfound(cli),
     'wellfound-profile': () => directWellfoundProfile(cli),
-    sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force') }),
+    sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force'), linkedin: has('--linkedin') }),
     status: async () => (await import('./commands/status.js')).runStatus(cli),
     build: async () => (await import('./commands/build.js')).runBuild(cli),
     check: async () => {
@@ -110,7 +110,7 @@ function printHelp(): void {
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
     ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
     ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
-    ${pc.cyan('sync')} [--force]                                            refresh GitHub + LinkedIn
+    ${pc.cyan('sync')} [--force] [--linkedin]                                refresh GitHub (LinkedIn opt-in via --linkedin)
     ${pc.cyan('status')}                                                    env, sources, outputs
     ${pc.cyan('build')}                                                     compile the canonical PDF
     ${pc.cyan('check')} [--source|--pdf|--width]                            run the guards
@@ -135,7 +135,7 @@ async function interactive(cli: Cli): Promise<void> {
         { value: 'email', label: 'Draft & send an application email', hint: 'JD → Gmail, on approval' },
         { value: 'wellfound', label: 'Wellfound application note', hint: 'JD → the "why this role?" box' },
         { value: 'wellfound-profile', label: 'Build my Wellfound profile', hint: 'standing profile (one for every role)' },
-        { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub + LinkedIn' },
+        { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub (LinkedIn opt-in)' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
         { value: 'build', label: 'Build canonical résumé', hint: 'resume.tex → PDF' },
         { value: 'check', label: 'Run guards', hint: 'structure / pages / width' },
@@ -153,7 +153,9 @@ async function interactive(cli: Cli): Promise<void> {
       else if (action === 'sync') {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
         if (p.isCancel(force)) continue;
-        await (await import('./commands/sync.js')).runSync(cli, { force });
+        const linkedin = await p.confirm({ message: 'Also scrape LinkedIn? (automated, against their ToS — opt-in)', initialValue: false });
+        if (p.isCancel(linkedin)) continue;
+        await (await import('./commands/sync.js')).runSync(cli, { force, linkedin });
       } else if (action === 'status') await (await import('./commands/status.js')).runStatus(cli);
       else if (action === 'build') await (await import('./commands/build.js')).runBuild(cli);
       else if (action === 'check') await (await import('./commands/check.js')).runCheck(cli, {});

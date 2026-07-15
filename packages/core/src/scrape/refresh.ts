@@ -21,10 +21,19 @@ import type { Facts, GithubData, LinkedinData, RefreshResult } from '../types.js
 export type RefreshLogger = (r: RefreshResult) => void;
 type Scraper = (root: string) => Promise<GithubData | LinkedinData>;
 
+// Sources that automate a login-walled site and can get an account restricted:
+// they never refresh on their own — a caller must explicitly opt in (liveLinkedin).
+const GATED_SOURCES = new Set(['linkedin']);
+
 export interface ScrapeConfig {
   githubToken: string;
   linkedinCookie: string;
   ttlHours: number;
+  // Opt-in gate for the LinkedIn scrape. LinkedIn's User Agreement forbids
+  // automated scraping and can get an account restricted, so the live LinkedIn
+  // refresh runs ONLY when this is explicitly true (the CLI's `--linkedin` flag).
+  // Left false, sync / tailor / the agent never touch LinkedIn on their own.
+  liveLinkedin?: boolean;
   // Provider used to structure the LinkedIn profile. Undefined is allowed — the
   // linkedin scrape then fails soft (surfaced as a per-source error).
   llm?: LlmProvider;
@@ -74,6 +83,14 @@ export class SourceRefresher {
   ): Promise<RefreshResult> {
     const file = join(root, 'profile', `${source}.json`);
     const missing = !existsSync(file);
+
+    // Opt-in gate: a login-walled source (LinkedIn) is left untouched unless the
+    // caller explicitly authorized it, even under --force. The existing JSON on
+    // disk is preserved and reused downstream.
+    if (GATED_SOURCES.has(source) && !this.config.liveLinkedin) {
+      log({ source, status: 'skipped' });
+      return { source, status: 'skipped' };
+    }
 
     if (!force && !missing && !(await isStale(root, source, this.ttlMs()))) {
       const prev = await lastScrape(root, source);

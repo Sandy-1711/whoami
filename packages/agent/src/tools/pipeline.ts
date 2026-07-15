@@ -63,19 +63,22 @@ export function pipelineTools(deps: AgentDeps) {
   const sync_profiles = createTool({
     id: 'sync_profiles',
     description:
-      'Refresh the scraped profile sources (GitHub + LinkedIn) into profile/*.json when stale, then ' +
-      're-baseline the drift hashes so tailoring stops warning about stale facts. Use when the user ' +
-      'says their GitHub/LinkedIn changed, or when status shows drift. `force` ignores the freshness TTL.',
+      'Refresh the scraped profile sources into profile/*.json when stale, then re-baseline the drift ' +
+      'hashes so tailoring stops warning about stale facts. Refreshes GitHub by default; the LinkedIn ' +
+      'scrape is automated against their ToS (account-ban risk) so it is OPT-IN — set `linkedin: true` ' +
+      'only when the user explicitly asks to scrape LinkedIn. `force` ignores the freshness TTL.',
     inputSchema: z.object({
       force: z.boolean().optional().describe('Re-scrape even if sources are still fresh.'),
+      linkedin: z.boolean().optional().describe('Opt in to the LinkedIn scrape (default off — ToS/ban risk). Only when the user explicitly asks.'),
     }),
-    execute: async ({ force }) => {
+    execute: async ({ force, linkedin }) => {
       let llm;
       try { llm = deps.registry.resolve(deps.config); } catch { llm = undefined; }
       const refresher = new SourceRefresher({
         githubToken: deps.config.githubToken,
         linkedinCookie: deps.config.linkedinCookie,
         ttlHours: deps.config.scrapeTtlHours,
+        liveLinkedin: Boolean(linkedin),
         llm,
       });
       const results = await refresher.refreshAll(deps.root, {
