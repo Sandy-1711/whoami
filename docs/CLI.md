@@ -57,6 +57,32 @@ defaults to the same chain as `tailor` (`AGENT_PROVIDER` → `LLM_PROVIDER` → 
 Set `AGENT_MODEL` to override (e.g. `gemini-2.5-pro` for depth, `deepseek-reasoner` to stream
 DeepSeek's reasoning). `/model` overrides both for the running session.
 
+### `mcp` — serve the tools over MCP (for Claude Code / Cursor / Claude Desktop)
+
+```
+resume mcp        # or: pnpm mcp
+```
+
+Exposes the **same tools the `chat` agent uses** over the [Model Context Protocol](https://modelcontextprotocol.io)
+on stdio, so an external agent can call them directly — score a JD, tailor and build the résumé,
+draft/send outreach, read and edit the fact base, refresh scraped sources, and track applications.
+It's a pure tool provider: no model, no chat memory — the connecting client (e.g. Claude Code)
+brings the model and decides which tools to call.
+
+The repo ships a project-scoped [`.mcp.json`](../.mcp.json), so **Claude Code auto-discovers the
+server** when you open this repo — just approve it (`/mcp` to check status). For other clients, point
+them at the command `pnpm mcp` (working directory = repo root). Env (`GEMINI_API_KEY`, `GMAIL_*`, …)
+is read from `.env` at the repo root exactly like the CLI — nothing to configure per client.
+
+- **Transport:** stdio. `stdout` carries the JSON-RPC stream; all logs/progress go to `stderr`.
+- **Confirms:** the outward/irreversible tools (`send_application_email`, `update_github_profile`,
+  identity `update_facts`) are gated by a human confirm in `chat`. Over MCP that gate auto-approves,
+  because the MCP client prompts you before each tool call — that prompt is the human-in-the-loop.
+  Approve sends/pushes deliberately; declining the client's prompt is how you say no.
+- **Cost:** the pipeline/draft tools call the LLM (Gemini/DeepSeek) and spend credits when invoked,
+  just as they do from the CLI. The read-only tools (`score_jd`, `profile_status`, `read_facts`,
+  `list_outputs`) are free.
+
 ### `tailor` — JD → ATS-optimized PDF
 
 ```

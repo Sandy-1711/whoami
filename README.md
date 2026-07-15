@@ -272,13 +272,15 @@ Wellfound notes, outreach, application tracking). Everything is grounded in a **
 fact base** (`profile/facts.json`), so it never fabricates experience, and it works with
 **Gemini or DeepSeek** (set at least one key; there's no offline mode for LLM steps).
 
-There are **two ways to drive it**: a conversational **chat agent** that wraps every
-capability as a tool and calls them for you, or the **individual commands** run directly.
+There are **three ways to drive it**: a conversational **chat agent** that wraps every
+capability as a tool and calls them for you, the **individual commands** run directly, or an
+**MCP server** that hands the same tools to an external agent like Claude Code or Cursor.
 
 ```bash
 cp .env.example .env             # set GEMINI_API_KEY and/or DEEPSEEK_API_KEY (see the file)
 
 pnpm chat                     # ⭐ conversational agent — every capability as a tool
+pnpm mcp                      # serve the tools over MCP (stdio) to Claude Code / Cursor
 pnpm resume                   # interactive menu (clack) — the same commands, guided
 pnpm tailor -- jd.txt --company "Inteligen-ai" [--role "AI Dev Engineer"]
 pnpm email  -- jd.txt --company "Northwind AI"   # draft + send a Gmail application email
@@ -302,6 +304,19 @@ commands include `/model` (switch model), `/usage` (token spend + context window
 defaults to a fast, cheap one (`gemini-2.5-flash`), decoupled from the pipeline's
 `GEMINI_MODEL`; override with `AGENT_PROVIDER` / `AGENT_MODEL`. See [docs/CLI.md](docs/CLI.md)
 for the full command + slash-command reference.
+
+### MCP — serve the tools to Claude Code / Cursor (`pnpm mcp`)
+
+The same tools, exposed over the [Model Context Protocol](https://modelcontextprotocol.io) on
+stdio, so an **external agent drives them** — `score_jd`, `tailor_resume`, `build_resume`,
+`draft_application_email`, `outreach_message`, `read_facts`/`update_facts`, `sync_profiles`,
+`log_application`, and the rest. It's a pure tool provider (no model, no chat memory): the
+connecting client brings the model and decides what to call. The repo ships a project-scoped
+[`.mcp.json`](.mcp.json), so **Claude Code auto-discovers it** when you open this repo — approve
+it and run `/mcp` to check status. Env is read from `.env` at the repo root, same as the CLI.
+The client prompts before each tool call, so that prompt is the human-in-the-loop for sends and
+pushes. See [docs/CLI.md](docs/CLI.md#mcp--serve-the-tools-over-mcp-for-claude-code--cursor--claude-desktop)
+for details.
 
 - **Application email** — `pnpm email -- jd.txt --company "Northwind AI"` drafts a
   JD-tailored email from the same fact base, reads the apply-to address and subject
