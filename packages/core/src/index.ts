@@ -7,13 +7,11 @@ export * from './ports/config.js';
 export * from './ports/latex.js';
 export * from './ports/logger.js';
 export * from './ports/mailer.js';
-export * from './ports/embedding.js';
 
 // LLM registry + provider factories.
 export * from './llm/registry.js';
 export { geminiFactory } from './llm/providers/gemini.js';
 export { deepseekFactory } from './llm/providers/deepseek.js';
-export { createGeminiEmbedder, GEMINI_EMBED_MODEL } from './llm/providers/gemini-embedder.js';
 
 // Domain types + pure helpers.
 export * from './types.js';
@@ -25,7 +23,6 @@ export * from './prompts.js';
 export * from './tailor/core.js';
 export * from './tailor/report.js';
 export * from './tailor/service.js';
-export * from './tailor/coverage.js';
 
 // Wellfound (application-box note + profile refresh).
 export * from './wellfound/service.js';
@@ -43,23 +40,6 @@ export * from './email/service.js';
 export * from './profile/sources.js';
 export * from './profile/status.js';
 export * from './profile/facts-editor.js';
-
-// Evidence store (canonical proof units + curation tiers — architecture L1-3).
-export * from './evidence/store.js';
-export * from './evidence/embedding.js';
-export * from './evidence/gate.js';
-export * from './evidence/normalize.js';
-export * from './evidence/extract.js';
-export * from './evidence/dedup.js';
-export * from './evidence/ingest.js';
-export * from './evidence/requirements.js';
-export * from './evidence/relevance.js';
-export * from './evidence/selector.js';
-export * from './evidence/writer.js';
-export * from './evidence/lockfile.js';
-export * from './evidence/anchors.js';
-export * from './evidence/audit.js';
-export * from './evidence/drift.js';
 
 // GitHub profile writes (bio, repo descriptions, profile README).
 export * from './github/profile.js';

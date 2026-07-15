@@ -4,8 +4,7 @@
 // the CLI or core changes.
 import {
   LlmProviderRegistry, geminiFactory, deepseekFactory, UnpdfInspector,
-  createGeminiEmbedder, GEMINI_EMBED_MODEL,
-  type AppConfig, type LatexCompiler, type PdfInspector, type Presenter, type Mailer, type Embedder,
+  type AppConfig, type LatexCompiler, type PdfInspector, type Presenter, type Mailer,
 } from '@resume/core';
 import { repoRoot } from './paths.js';
 import { loadConfig } from './adapters/config.js';
@@ -22,14 +21,10 @@ export interface Cli {
   pdf: PdfInspector;
   presenter: Presenter;
   mailer: Mailer;
-  // Evidence-store embeddings (Gemini, via the same HttpClient as the registry).
-  // Distinct from the agent's Mastra memory embedder — this one is HttpClient-based.
-  embedder: Embedder;
 }
 
 export function buildCli(): Cli {
-  const http = new NodeFetch();
-  const registry = new LlmProviderRegistry(http)
+  const registry = new LlmProviderRegistry(new NodeFetch())
     .register(geminiFactory)
     .register(deepseekFactory);
   const config = loadConfig(registry.list());
@@ -41,10 +36,5 @@ export function buildCli(): Cli {
     pdf: new UnpdfInspector(),
     presenter: new ClackPresenter(),
     mailer: new GmailMailer(config.gmail.user, config.gmail.appPassword),
-    embedder: createGeminiEmbedder({
-      apiKey: config.llm.keys.gemini || '',
-      model: config.agent?.embeddingModel || GEMINI_EMBED_MODEL,
-      http,
-    }),
   };
 }

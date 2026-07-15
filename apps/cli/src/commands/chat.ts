@@ -53,7 +53,6 @@ function buildDeps(cli: Cli, out: Out, ask: (q: string) => Promise<string>): Age
     latex: cli.latex,
     pdf: cli.pdf,
     mailer: cli.mailer,
-    embedder: cli.embedder,
     presenter: progressPresenter((line) => out.line(pc.dim('  ' + line))),
     confirm: async (question: string) => {
       const a = (await ask('\n' + pc.yellow('? ') + question + pc.dim(' [y/N] '))).trim();

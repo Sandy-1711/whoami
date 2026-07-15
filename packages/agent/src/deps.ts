@@ -4,7 +4,7 @@
 // Playwright flag for the status tool. Tools close over an AgentDeps; they never
 // read process.env or construct adapters themselves.
 import type {
-  AppConfig, LlmProviderRegistry, LatexCompiler, PdfInspector, Mailer, Presenter, Embedder,
+  AppConfig, LlmProviderRegistry, LatexCompiler, PdfInspector, Mailer, Presenter,
 } from '@resume/core';
 import type { ConfirmGate } from './confirm.js';
 
@@ -16,9 +16,6 @@ export interface AgentDeps {
   pdf: PdfInspector;
   mailer: Mailer;
   presenter: Presenter;
-  // Evidence-store embeddings (Gemini). Used by ingest_evidence; distinct from the
-  // Mastra memory embedder wired inside memory.ts.
-  embedder: Embedder;
   // Human-in-the-loop gate for irreversible/outward-facing actions (sending an
   // email, pushing to GitHub). The model cannot bypass it.
   confirm: ConfirmGate;

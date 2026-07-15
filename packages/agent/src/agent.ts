@@ -15,7 +15,6 @@ import { enhanceTools } from './tools/enhance.js';
 import { githubTools } from './tools/github.js';
 import { outreachTools } from './tools/outreach.js';
 import { trackerTools } from './tools/tracker.js';
-import { evidenceTools } from './tools/evidence.js';
 
 export interface BuiltAgent {
   agent: Agent;
@@ -37,7 +36,6 @@ export function buildAgent(deps: AgentDeps): BuiltAgent {
     ...githubTools(deps),
     ...outreachTools(deps),
     ...trackerTools(deps),
-    ...evidenceTools(deps),
   };
 
   const agent = new Agent({

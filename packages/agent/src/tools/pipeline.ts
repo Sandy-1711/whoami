@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import {
-  SourceRefresher, TailorService, CoverageTailorService, checkResume,
+  SourceRefresher, TailorService, checkResume,
   hashSources, writeLock, type CheckScope,
 } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
@@ -56,50 +56,6 @@ export function pipelineTools(deps: AgentDeps) {
         widthProblems: r.guards.width,
         summary: r.summaryText,
         subtitle: r.subtitle,
-      };
-    },
-  });
-
-  const tailor_coverage = createTool({
-    id: 'tailor_coverage',
-    description:
-      'Evidence-based résumé tailoring (v2): parse the JD into a requirement graph, select the ' +
-      'best-covering units from the evidence store, write bullets grounded ONLY in those units ' +
-      '(each metric verified verbatim), render a one-page PDF (shrinking bullets on overflow), and ' +
-      'emit a build lockfile. Prefer this over tailor_resume when the evidence store is populated ' +
-      '(run list_evidence / ingest_evidence first). Needs a Gemini key (embeddings) + LaTeX toolchain. ' +
-      'Returns the coverage score, selected-unit count, ATS score, PDF + lockfile paths.',
-    inputSchema: z.object({
-      jd: z.string().describe('The full job description text.'),
-      company: z.string().describe('Company name — the output is filed and named by it.'),
-      role: z.string().optional().describe('Override the role title; omit to infer from the JD.'),
-    }),
-    execute: async ({ jd, company, role }) => {
-      if (!deps.config.llm.keys.gemini) {
-        return { error: 'tailor_coverage needs a Gemini API key for embeddings — set GEMINI_API_KEY in .env.' };
-      }
-      const llm = deps.registry.resolve(deps.config);
-      const refresher = new SourceRefresher({
-        githubToken: deps.config.githubToken,
-        linkedinCookie: deps.config.linkedinCookie,
-        ttlHours: deps.config.scrapeTtlHours,
-        llm,
-      });
-      const service = new CoverageTailorService({
-        root: deps.root, latex: deps.latex, pdf: deps.pdf, presenter: deps.presenter,
-      });
-      const r = await service.run({ jd, company, role: role || '' }, { provider: llm, embedder: deps.embedder, refresher });
-      return {
-        company: r.paths.slug,
-        role: r.role,
-        score: { current: r.score.before, tailored: r.score.after },
-        coverageScore: r.coverageScore,
-        unitsSelected: r.selectedCount,
-        pdf: rel(deps.root, r.paths.pdf),
-        lockfile: rel(deps.root, r.lockPath),
-        guardsPass: r.guardsPass,
-        pages: r.report.guards.pages,
-        widthProblems: r.report.guards.width,
       };
     },
   });
@@ -186,5 +142,5 @@ export function pipelineTools(deps: AgentDeps) {
     },
   });
 
-  return { tailor_resume, tailor_coverage, sync_profiles, build_resume, check_resume };
+  return { tailor_resume, sync_profiles, build_resume, check_resume };
 }

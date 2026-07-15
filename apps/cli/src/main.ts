@@ -32,21 +32,15 @@ async function fileJd(file?: string): Promise<string> {
 
 // ---- direct commands -------------------------------------------------------
 async function directTailor(cli: Cli): Promise<void> {
+  const { runTailor } = await import('./commands/tailor.js');
   const jd = opt('--jd') || (await fileJd(positionals()[0]));
-  const args = {
+  await runTailor(cli, {
     jd,
     company: opt('--company') || opt('--name'),
     role: opt('--role'),
     provider: opt('--provider'),
     model: opt('--model'),
-  };
-  if (has('--coverage')) {
-    const { runCoverageTailor } = await import('./commands/tailor-coverage.js');
-    await runCoverageTailor(cli, args);
-    return;
-  }
-  const { runTailor } = await import('./commands/tailor.js');
-  await runTailor(cli, args);
+  });
 }
 
 async function directWellfound(cli: Cli): Promise<void> {
@@ -95,8 +89,6 @@ function commands(cli: Cli): Record<string, () => Promise<unknown>> {
     wellfound: () => directWellfound(cli),
     'wellfound-profile': () => directWellfoundProfile(cli),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force') }),
-    ingest: async () => (await import('./commands/ingest.js')).runIngest(cli, { force: has('--force') }),
-    audit: async () => (await import('./commands/audit.js')).runAudit(cli, { slug: positionals()[0] || opt('--slug') }),
     status: async () => (await import('./commands/status.js')).runStatus(cli),
     build: async () => (await import('./commands/build.js')).runBuild(cli),
     check: async () => {
@@ -112,13 +104,11 @@ function printHelp(): void {
   console.log(`
   ${pc.bold('Commands')}
     ${pc.cyan('chat')} [--new]                                              chat with the job-search agent (all tools)
-    ${pc.cyan('tailor')} <jd> --company <name> [--coverage] [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD (--coverage = evidence-based v2)
+    ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
     ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
     ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
     ${pc.cyan('sync')} [--force]                                            refresh GitHub + LinkedIn
-    ${pc.cyan('ingest')} [--force]                                          (re)build the evidence store from your sources
-    ${pc.cyan('audit')} <slug>                                              replay a tailored build's lockfile (grounding + guards)
     ${pc.cyan('status')}                                                    env, sources, outputs
     ${pc.cyan('build')}                                                     compile the canonical PDF
     ${pc.cyan('check')} [--source|--pdf|--width]                            run the guards
@@ -144,7 +134,6 @@ async function interactive(cli: Cli): Promise<void> {
         { value: 'wellfound', label: 'Wellfound application note', hint: 'JD → the "why this role?" box' },
         { value: 'wellfound-profile', label: 'Build my Wellfound profile', hint: 'standing profile (one for every role)' },
         { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub + LinkedIn' },
-        { value: 'ingest', label: 'Ingest evidence store', hint: 'build evidence.json from your sources' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
         { value: 'build', label: 'Build canonical résumé', hint: 'resume.tex → PDF' },
         { value: 'check', label: 'Run guards', hint: 'structure / pages / width' },
@@ -163,10 +152,6 @@ async function interactive(cli: Cli): Promise<void> {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
         if (p.isCancel(force)) continue;
         await (await import('./commands/sync.js')).runSync(cli, { force });
-      } else if (action === 'ingest') {
-        const force = await p.confirm({ message: 'Force overwrite an existing evidence.json (discards hand edits)?', initialValue: false });
-        if (p.isCancel(force)) continue;
-        await (await import('./commands/ingest.js')).runIngest(cli, { force });
       } else if (action === 'status') await (await import('./commands/status.js')).runStatus(cli);
       else if (action === 'build') await (await import('./commands/build.js')).runBuild(cli);
       else if (action === 'check') await (await import('./commands/check.js')).runCheck(cli, {});
