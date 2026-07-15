@@ -78,24 +78,45 @@ async function runTurn(built: BuiltAgent, input: string, threadId: string, out: 
     memory: { thread: threadId, resource: AGENT_RESOURCE_ID },
     maxSteps: 16,
     abortSignal: abort.signal,
+    // Ask Gemini to stream its thought summaries so the model's reasoning shows
+    // live as dim text instead of leaving a dead pause before the answer.
+    // Namespaced under `google`, so non-Google providers simply ignore it.
+    providerOptions: { google: { thinkingConfig: { includeThoughts: true } } },
   });
+
+  let thinking = false; // currently rendering a dim reasoning block
+  const endThinking = (): void => { if (thinking) { out.line(''); thinking = false; } };
 
   for await (const chunk of res.fullStream as AsyncIterable<{ type: string; payload: any }>) {
     switch (chunk.type) {
+      case 'reasoning-delta': {
+        const t: string = chunk.payload?.text ?? '';
+        if (!t) break;
+        if (!thinking) { out.line(pc.dim(pc.italic('  💭 thinking…'))); thinking = true; }
+        out.text(pc.dim(t));
+        break;
+      }
+      case 'reasoning-end':
+        endThinking();
+        break;
       case 'text-delta':
+        endThinking();
         out.text(chunk.payload.text);
         break;
       case 'tool-call':
+        endThinking();
         out.line(pc.dim(`  ⚙ ${chunk.payload.toolName} ${compactArgs(chunk.payload.args)}`));
         break;
       case 'tool-result':
         out.line(pc.dim(`  ✓ ${chunk.payload.toolName}${chunk.payload.isError ? pc.red(' (error)') : ''}`));
         break;
       case 'error':
+        endThinking();
         out.line(ui.fail(String(chunk.payload?.error?.message ?? chunk.payload?.error ?? chunk.payload)));
         break;
     }
   }
+  endThinking();
   out.line('');
 }
 
