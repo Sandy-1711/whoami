@@ -188,7 +188,8 @@ export interface LinkedinData {
 }
 
 // The per-source outcome the refresh orchestrator reports back to the CLI.
-export type ScrapeStatus = 'fresh' | 'created' | 'updated' | 'unchanged' | 'error';
+// 'skipped' — the source was deliberately not touched (e.g. LinkedIn's opt-in gate).
+export type ScrapeStatus = 'fresh' | 'created' | 'updated' | 'unchanged' | 'error' | 'skipped';
 
 export interface RefreshResult {
   source: string;

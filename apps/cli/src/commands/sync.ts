@@ -9,8 +9,12 @@ import type { Cli } from '../container.js';
 
 const LABEL: Record<string, string> = { github: 'GitHub', linkedin: 'LinkedIn' };
 
-export async function runSync(cli: Cli, { force = false }: { force?: boolean } = {}): Promise<RefreshResult[]> {
-  console.log(ui.banner('Sync Sources', force ? 'force re-scrape · GitHub + LinkedIn' : 'refresh what is stale · GitHub + LinkedIn'));
+export async function runSync(
+  cli: Cli,
+  { force = false, linkedin = false }: { force?: boolean; linkedin?: boolean } = {},
+): Promise<RefreshResult[]> {
+  const scope = linkedin ? 'GitHub + LinkedIn' : 'GitHub · LinkedIn opt-in (--linkedin)';
+  console.log(ui.banner('Sync Sources', `${force ? 'force re-scrape' : 'refresh what is stale'} · ${scope}`));
   console.log();
 
   // A provider is only needed to structure LinkedIn; resolve it soft so a
@@ -22,6 +26,7 @@ export async function runSync(cli: Cli, { force = false }: { force?: boolean } =
     githubToken: cli.config.githubToken,
     linkedinCookie: cli.config.linkedinCookie,
     ttlHours: cli.config.scrapeTtlHours,
+    liveLinkedin: linkedin,
     llm,
   });
 
@@ -36,6 +41,7 @@ export async function runSync(cli: Cli, { force = false }: { force?: boolean } =
   for (const r of results) {
     const name = LABEL[r.source] || r.source;
     if (r.status === 'error') { console.log(ui.fail(`${name}: ${r.error}`)); continue; }
+    if (r.status === 'skipped') { console.log(ui.info(`${name}: ${pc.dim('skipped — opt-in scrape; pass --linkedin to include it')}`)); continue; }
     if (r.status === 'fresh') { console.log(ui.ok(`${name}: still fresh ${pc.dim(`(last ${timeAgo(r.at)})`)}`)); continue; }
     const t = r.source === 'github' ? (r.data as GithubData | undefined)?.totals : undefined;
     const detail = r.source === 'github' && t
