@@ -17,6 +17,7 @@
     "@ai-sdk/google": "^4.0.12",
     "@mastra/core": "^1.50.1",
     "@mastra/libsql": "^1.15.1",
+    "@mastra/mcp": "^1.13.1",
     "@mastra/memory": "^1.22.2",
     "@resume/core": "workspace:*",
     "zod": "^4.4.3"
