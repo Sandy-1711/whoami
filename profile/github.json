@@ -1,6 +1,6 @@
 {
   "_comment": "Auto-scraped from GitHub. Edit freely — the tailor treats this as an editable source of truth. Re-scrape with `npm run sync`.",
-  "scrapedAt": "2026-07-14T16:47:27.337Z",
+  "scrapedAt": "2026-07-15T14:13:23.708Z",
   "username": "Sandy-1711",
   "profileUrl": "https://github.com/Sandy-1711",
   "totals": {
@@ -71,7 +71,7 @@
       "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-14T16:08:43Z",
+      "pushedAt": "2026-07-15T13:48:10Z",
       "fork": false,
       "readmeSize": 17919
     },
@@ -84,7 +84,7 @@
       "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-14T08:06:13Z",
+      "pushedAt": "2026-07-15T11:12:44Z",
       "fork": true,
       "readmeSize": 0
     },
@@ -848,9 +848,15 @@
       "repo": "mastra-ai/mastra",
       "url": "https://github.com/mastra-ai/mastra",
       "merged": 12,
-      "open": 5,
+      "open": 6,
       "closedUnmerged": 4,
       "samplePRs": [
+        {
+          "number": 19486,
+          "title": "fix(core): don't mutate persisted assistant message when resuming tool approval",
+          "state": "open",
+          "url": "https://github.com/mastra-ai/mastra/pull/19486"
+        },
         {
           "number": 19299,
           "title": "fix: preserve Cloudflare execution context through the custom-route bridge",
@@ -880,15 +886,9 @@
           "title": "fix(daytona): pass --only-dir to gcsfuse when GCS prefix is set",
           "state": "merged",
           "url": "https://github.com/mastra-ai/mastra/pull/18963"
-        },
-        {
-          "number": 18059,
-          "title": "fix(playground): respect editor config locks for code-agent instructions",
-          "state": "open",
-          "url": "https://github.com/mastra-ai/mastra/pull/18059"
         }
       ],
-      "stars": 26163
+      "stars": 26187
     },
     {
       "repo": "TejasMishr/ERP_Client",
@@ -1154,7 +1154,7 @@
           "url": "https://github.com/formbricks/formbricks/pull/1467"
         }
       ],
-      "stars": 12545
+      "stars": 12552
     },
     {
       "repo": "calcom/cal.diy",
@@ -1182,7 +1182,7 @@
           "url": "https://github.com/calcom/cal.diy/pull/29355"
         }
       ],
-      "stars": 46403
+      "stars": 46434
     },
     {
       "repo": "therealanshuman/hwce-sandeep",
@@ -1242,7 +1242,7 @@
           "url": "https://github.com/n8n-io/n8n/pull/20329"
         }
       ],
-      "stars": 196425
+      "stars": 196539
     }
   ]
 }
