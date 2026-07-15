@@ -9,6 +9,7 @@
   "scripts": {
     "resume": "tsx src/main.ts",
     "chat": "tsx src/main.ts chat",
+    "mcp": "tsx src/main.ts mcp",
     "tailor": "tsx src/main.ts tailor",
     "email": "tsx src/main.ts email",
     "wellfound": "tsx src/main.ts wellfound",

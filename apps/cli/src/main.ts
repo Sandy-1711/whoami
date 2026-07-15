@@ -84,6 +84,7 @@ async function directWellfoundProfile(cli: Cli): Promise<void> {
 function commands(cli: Cli): Record<string, () => Promise<unknown>> {
   return {
     chat: async () => (await import('./commands/chat.js')).runChat(cli, { fresh: has('--new') }),
+    mcp: async () => (await import('./commands/mcp.js')).runMcp(cli),
     tailor: () => directTailor(cli),
     email: () => directEmail(cli),
     wellfound: () => directWellfound(cli),
@@ -104,6 +105,7 @@ function printHelp(): void {
   console.log(`
   ${pc.bold('Commands')}
     ${pc.cyan('chat')} [--new]                                              chat with the job-search agent (all tools)
+    ${pc.cyan('mcp')}                                                       serve the tools over MCP (stdio) for Claude Code / Cursor
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
     ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
@@ -355,6 +357,10 @@ async function pasteJd(): Promise<string> {
 
 // ---- dispatch --------------------------------------------------------------
 async function main(): Promise<unknown> {
+  // MCP mode speaks JSON-RPC on stdout — silence console.* to stderr BEFORE we
+  // build anything, so no adapter/library banner can corrupt the protocol stream.
+  // (The stdio transport writes via process.stdout.write directly, untouched.)
+  if (cmd === 'mcp') { const e = console.error.bind(console); console.log = e; console.info = e; console.debug = e; }
   const cli = buildCli();
   if (!cmd) return interactive(cli);
   const run = commands(cli)[cmd];

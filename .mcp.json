@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "resume": {
+      "command": "pnpm",
+      "args": ["mcp"]
+    }
+  }
+}

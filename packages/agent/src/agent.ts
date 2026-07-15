@@ -30,11 +30,12 @@ export interface BuildAgentOptions {
   memory?: AgentMemory;
 }
 
-export function buildAgent(deps: AgentDeps, opts: BuildAgentOptions = {}): BuiltAgent {
-  const resolved = resolveAgentModel(deps.config, opts.modelOverride);
-  const mem = opts.memory ?? buildMemory(deps.root, deps.config);
-
-  const tools = {
+// Every capability the toolkit exposes, as one Mastra tool map keyed by tool id.
+// The single source of truth for "what tools exist" — the chat agent (buildAgent)
+// and the MCP server (buildMcpServer) both wire exactly this set over the same
+// injected deps, so the two front ends never drift apart.
+export function assembleTools(deps: AgentDeps) {
+  return {
     ...readOnlyTools(deps),
     ...pipelineTools(deps),
     ...wellfoundTools(deps),
@@ -45,6 +46,13 @@ export function buildAgent(deps: AgentDeps, opts: BuildAgentOptions = {}): Built
     ...outreachTools(deps),
     ...trackerTools(deps),
   };
+}
+
+export function buildAgent(deps: AgentDeps, opts: BuildAgentOptions = {}): BuiltAgent {
+  const resolved = resolveAgentModel(deps.config, opts.modelOverride);
+  const mem = opts.memory ?? buildMemory(deps.root, deps.config);
+
+  const tools = assembleTools(deps);
 
   const agent = new Agent({
     id: 'resume-agent',
