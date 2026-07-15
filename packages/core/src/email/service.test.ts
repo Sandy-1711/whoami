@@ -160,6 +160,61 @@ describe("EmailService.send", () => {
     });
 });
 
+describe("EmailService.loadFileDraft (send a hand-edited draft verbatim)", () => {
+    it("parses a saved draft file and sends exactly what it contains", async () => {
+        const root = await makeRoot();
+        const svc = new EmailService({ root, presenter: silentPresenter });
+        const file = join(root, "application-email.txt");
+        const body = "Hi again,\n\nQuick follow-up with the specifics.\n\nBest,\nSandeep";
+        await writeFile(file, `To: hire@acme.ai\nFrom: me@gmail.com\nSubject: Edited Subject\n\n${body}\n`);
+
+        const fd = await svc.loadFileDraft(file);
+        expect(fd.to).toBe("hire@acme.ai");
+        expect(fd.from).toBe("me@gmail.com");
+        expect(fd.subject).toBe("Edited Subject");
+        expect(fd.body).toBe(body);
+        expect(fd.attachments).toHaveLength(0);
+
+        const mailer = recordingMailer();
+        await svc.send(fd, { mailer });
+        expect(mailer.sent[0]!.to).toBe("hire@acme.ai");
+        expect(mailer.sent[0]!.subject).toBe("Edited Subject");
+        expect(mailer.sent[0]!.text).toBe(body);   // byte-for-byte, not a re-generated variant
+        expect(mailer.sent[0]!.from).toBe("me@gmail.com");
+    });
+
+    it("attaches an explicit PDF when asked", async () => {
+        const root = await makeRoot();
+        const svc = new EmailService({ root, presenter: silentPresenter });
+        const file = join(root, "d.txt");
+        await writeFile(file, "To: a@b.com\nSubject: Hi\n\nBody here.");
+        const pdf = join(root, "resume.pdf");
+        await writeFile(pdf, "%PDF fake");
+        const fd = await svc.loadFileDraft(file, { attach: pdf });
+        expect(fd.attachments).toHaveLength(1);
+        expect(fd.attachments[0]!.filename).toBe("resume.pdf");
+        expect(fd.resumeRelPath).toBe(pdf);
+    });
+
+    it("rejects a missing file, a missing subject, an empty body, and a missing attachment", async () => {
+        const root = await makeRoot();
+        const svc = new EmailService({ root, presenter: silentPresenter });
+        await expect(svc.loadFileDraft(join(root, "nope.txt"))).rejects.toThrow(/not found/i);
+
+        const noSubj = join(root, "nosubj.txt");
+        await writeFile(noSubj, "To: a@b.com\n\nbody");
+        await expect(svc.loadFileDraft(noSubj)).rejects.toThrow(/subject/i);
+
+        const empty = join(root, "empty.txt");
+        await writeFile(empty, "To: a@b.com\nSubject: Hi\n\n   \n");
+        await expect(svc.loadFileDraft(empty)).rejects.toThrow(/body/i);
+
+        const noAttach = join(root, "ok.txt");
+        await writeFile(noAttach, "To: a@b.com\nSubject: Hi\n\nBody.");
+        await expect(svc.loadFileDraft(noAttach, { attach: join(root, "ghost.pdf") })).rejects.toThrow(/Attachment not found/i);
+    });
+});
+
 describe("findApplyEmail", () => {
     it("prefers an address near an application cue", () => {
         expect(findApplyEmail("Questions? ping ceo@acme.ai. To apply, email jobs@acme.ai today."))
