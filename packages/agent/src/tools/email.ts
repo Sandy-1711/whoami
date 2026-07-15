@@ -7,7 +7,7 @@
 import { relative } from 'node:path';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { EmailService, slugCompany, type EmailDraft } from '@resume/core';
+import { EmailService, slugCompany, type EmailDraft, type EmailAttachment } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { logApplication } from '../tracker.js';
 import { cap } from './shared.js';
@@ -60,34 +60,50 @@ export function emailTools(deps: AgentDeps) {
   const send_application_email = createTool({
     id: 'send_application_email',
     description:
-      'Send the application email PREVIOUSLY drafted for this company (via draft_application_email). ' +
-      'Sends the exact drafted content. Requires Gmail configured and passes through a terminal ' +
-      'confirmation of the recipient — you cannot bypass it. Use only after the user has seen the ' +
-      'draft and asked to send.',
+      'Send an application email. By default sends the exact content PREVIOUSLY drafted for this ' +
+      'company (via draft_application_email). Pass `path` to instead send a saved draft file ' +
+      '(tailored/<company>/application-email.txt) verbatim — the escape hatch when you hand-edited ' +
+      'the draft after drafting. Requires Gmail configured and passes through a terminal confirmation ' +
+      'of the recipient — you cannot bypass it. Use only after the user has seen the draft and asked to send.',
     inputSchema: z.object({
-      company: z.string().describe('Company whose draft to send (must have been drafted this session).'),
+      company: z.string().describe('Company whose draft to send / label under which the send is logged.'),
       to: z.string().optional().describe('Recipient override; else the drafted apply-to address.'),
+      path: z.string().optional().describe('Path to a saved draft .txt (To:/From:/Subject: headers + body) to send verbatim, instead of the session-cached draft. Use after hand-editing the draft file.'),
+      attach: z.string().optional().describe('Explicit PDF path to attach when sending from `path` (a file draft carries no attachment on its own).'),
     }),
-    execute: async ({ company, to }) => {
-      const slug = slugCompany(company);
-      const draft = drafts.get(slug);
-      if (!draft) throw new Error(`No draft for "${company}" this session — call draft_application_email first.`);
+    execute: async ({ company, to, path, attach }) => {
       if (!deps.mailer.available) {
         return { sent: false, reason: 'Gmail not configured — set GMAIL_USER and GMAIL_APP_PASSWORD in .env.' };
       }
-      const recipient = (to || draft.to || '').trim();
-      if (!recipient) return { sent: false, reason: 'No recipient address — pass `to`, or ensure the JD has an apply-to address.' };
 
-      const attachNote = draft.attachments.length ? ` with ${draft.attachments[0]!.filename}` : ' (no résumé attached)';
-      const ok = await deps.confirm(`Send the application email to ${recipient}${attachNote} from ${draft.from || deps.config.gmail?.user}?`);
+      // Source the email either from a saved file (sent byte-for-byte — the fix
+      // for a hand-edited draft diverging from the cache) or the session cache.
+      let src: { from: string; to: string; subject: string; body: string; attachments: EmailAttachment[]; resumeRelPath: string | null; role: string };
+      if (path) {
+        const fd = await service.loadFileDraft(path, { attach });
+        src = { from: fd.from, to: fd.to, subject: fd.subject, body: fd.body, attachments: fd.attachments, resumeRelPath: fd.resumeRelPath, role: '' };
+      } else {
+        const draft = drafts.get(slugCompany(company));
+        if (!draft) throw new Error(`No draft for "${company}" this session — call draft_application_email first, or pass \`path\` to send a saved draft file.`);
+        src = { from: draft.from, to: draft.to, subject: draft.subject, body: draft.body, attachments: draft.attachments, resumeRelPath: draft.resumeRelPath, role: draft.role };
+      }
+
+      const recipient = (to || src.to || '').trim();
+      if (!recipient) return { sent: false, reason: 'No recipient address — pass `to`, or ensure the draft has an apply-to address.' };
+
+      const attachNote = src.attachments.length ? ` with ${src.attachments[0]!.filename}` : ' (no résumé attached)';
+      const ok = await deps.confirm(`Send the application email to ${recipient}${attachNote} from ${src.from || deps.config.gmail?.user}?`);
       if (!ok) return { sent: false, reason: 'Cancelled — not sent.' };
 
-      const res = await service.send(draft, { mailer: deps.mailer, to: recipient });
+      const res = await service.send(
+        { from: src.from, to: src.to, subject: src.subject, body: src.body, attachments: src.attachments },
+        { mailer: deps.mailer, to: recipient },
+      );
       // Auto-log the application so the tracker stays honest without a second step.
       await logApplication(deps.root, {
-        company, role: draft.role, channel: 'email', status: 'sent',
-        notes: `Subject: ${draft.subject}`,
-        artifacts: draft.resumeRelPath ? [draft.resumeRelPath] : [],
+        company, role: src.role, channel: 'email', status: 'sent',
+        notes: `Subject: ${src.subject}`,
+        artifacts: src.resumeRelPath ? [src.resumeRelPath] : [],
       }).catch(() => { /* tracking is best-effort; never fail a successful send */ });
       return { sent: true, to: recipient, messageId: res.messageId, accepted: res.accepted, rejected: res.rejected, logged: true };
     },

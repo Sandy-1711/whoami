@@ -47,6 +47,19 @@ export interface EmailDraft {
   paths: { slug: string; dir: string; relDir: string; file: string };
 }
 
+// The minimal shape send() needs. Both a cached EmailDraft and a draft loaded
+// verbatim from a file satisfy it, so either can be sent without rebuilding the
+// full EmailDraft (score/classification/paths are irrelevant to sending).
+export type SendableDraft = Pick<EmailDraft, 'from' | 'to' | 'subject' | 'body' | 'attachments'>;
+
+// A draft reconstructed from a saved application-email.txt on disk — the escape
+// hatch for sending a hand-edited draft byte-for-byte, instead of the LLM output
+// cached at draft time.
+export interface FileDraft extends SendableDraft {
+  resumeRelPath: string | null;   // repo-relative attachment path, or null
+  path: string;                   // the source file that was read
+}
+
 export interface EmailDraftContext {
   provider: LlmProvider;
   // The sender address, so the written draft shows the real "From". Sending
@@ -149,7 +162,27 @@ export class EmailService {
     };
   }
 
-  async send(draft: EmailDraft, ctx: EmailSendContext): Promise<SendResult> {
+  // Load a saved draft artifact from disk and reconstruct a sendable draft, so a
+  // hand-edited application-email.txt is sent exactly as written (the cached
+  // draft can diverge from the file). Attaches nothing unless an explicit PDF
+  // path is given.
+  async loadFileDraft(path: string, opts: { attach?: string } = {}): Promise<FileDraft> {
+    if (!(await exists(path))) throw new Error(`Draft file not found: ${path}`);
+    const { to, from, subject, body } = parseDraftFile(await readFile(path, 'utf8'));
+    if (!subject.trim()) throw new Error(`No "Subject:" header found in ${path}.`);
+    if (!body.trim()) throw new Error(`No message body found in ${path}.`);
+    let attachments: EmailAttachment[] = [];
+    let resumeRelPath: string | null = null;
+    const attach = opts.attach?.trim();
+    if (attach) {
+      if (!(await exists(attach))) throw new Error(`Attachment not found: ${attach}`);
+      attachments = [{ filename: baseName(attach), path: attach, contentType: pdfType(attach) }];
+      resumeRelPath = attach;
+    }
+    return { from, to, subject, body, attachments, resumeRelPath, path };
+  }
+
+  async send(draft: SendableDraft, ctx: EmailSendContext): Promise<SendResult> {
     const { mailer, to } = ctx;
     const recipient = (to || draft.to || '').trim();
     if (!recipient) throw new Error('No recipient address — pass --to or add one to the JD.');
@@ -218,6 +251,25 @@ function draftFile({ to, from, subject, body }: { to: string; from: string; subj
   if (from) L.push(`From: ${from}`);
   L.push(`Subject: ${subject}`, '', body, '');
   return L.join('\n');
+}
+
+// The inverse of draftFile: read a saved draft artifact back into its parts. The
+// leading contiguous To:/From:/Subject: lines are headers; the first blank line
+// (or first non-header line) starts the body, which is returned verbatim minus
+// trailing whitespace. Missing headers come back as empty strings.
+export function parseDraftFile(content: string): { to: string; from: string; subject: string; body: string } {
+  const lines = content.split(/\r?\n/);
+  const headers: Record<string, string> = {};
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line.trim() === '') { i++; break; }            // blank line ends the header block
+    const m = /^(to|from|subject):\s*(.*)$/i.exec(line);
+    if (!m) break;                                     // first non-header line starts the body
+    headers[m[1]!.toLowerCase()] = m[2]!.trim();
+  }
+  const body = lines.slice(i).join('\n').replace(/\s+$/, '');
+  return { to: headers.to || '', from: headers.from || '', subject: headers.subject || '', body };
 }
 
 async function exists(path: string): Promise<boolean> {
