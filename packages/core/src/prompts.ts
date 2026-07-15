@@ -424,7 +424,6 @@ export const ENHANCE_SCHEMA: JsonSchema = {
     linkedin_about: { type: 'string' },
     linkedin_skills_to_add: { type: 'array', items: { type: 'string' } },
     github_bio: { type: 'string' },
-    github_readme: { type: 'string' },
     stale_or_missing: { type: 'array', items: { type: 'string' } },
     rationale: { type: 'string' },
   },
@@ -436,29 +435,17 @@ export interface EnhanceResponse {
   linkedin_about: string;
   linkedin_skills_to_add: string[];
   github_bio: string;
-  github_readme?: string;
   stale_or_missing: string[];
   rationale?: string;
 }
 
-// A compact evidence unit as fed to the surface generator — the grounded proof
-// the copy must be built from (mirrors the writer prompt's shape).
-export interface EnhanceUnit {
-  claim: string;
-  skills: string[];
-  impact?: { metric: string; value: string; scope?: string };
-  tier: string;
-}
-
 export function enhancePrompt({
   facts,
-  units,
   linkedin,
   github,
   target,
 }: {
   facts: Facts;
-  units: EnhanceUnit[];
   linkedin: LinkedinData | null;
   github: GithubData | null;
   target: string;
@@ -471,24 +458,19 @@ export function enhancePrompt({
     ? { bio: (github as unknown as { bio?: string }).bio ?? null, topRepos: (github.repos || []).filter((r) => !r.fork).slice(0, 8).map((r) => ({ name: r.name, description: r.description })) }
     : null;
 
-  return `You keep a job-seeker's public profiles consistent with their VERIFIED proof. Generate the strongest truthful copy for each surface FROM the evidence units + fact base, then flag what's stale or missing on the live profiles.
+  return `You keep a job-seeker's public profiles consistent with their VERIFIED fact base. Compare the current LinkedIn + GitHub surfaces to the fact base and propose better, truthful copy — plus flag what's stale or missing.
 
 STRICT RULES:
-- Ground everything in the EVIDENCE UNITS and FACT BASE. You may compress or rephrase real proof; NEVER invent employers, numbers, titles, or technologies. Copy any metric VERBATIM from a unit's impact.
-- Prefer units marked "pinned" — they are the user's strongest, forced-forward proof.
+- Ground everything in the FACT BASE. You may compress or rephrase real facts; NEVER invent employers, numbers, titles, or technologies.
 - Refer to the Indigle/Samagra role as "Founding Software Engineer" — never "co-founder" or "CTO".
 - linkedin_headline: one line, <= 220 chars, lead with the strongest positioning${target ? ` (focus: ${target})` : ''}.
 - linkedin_about: 3-5 tight sentences, first person, metric-led, no clichés.
-- linkedin_skills_to_add: skills present in the evidence/fact base but missing from the current LinkedIn skills list.
+- linkedin_skills_to_add: skills that are TRUE (in the fact base) but missing from the current LinkedIn skills list.
 - github_bio: <= 160 chars, punchy, current focus + strongest proof.
-- github_readme: a short Markdown "Highlights" section for the GitHub profile README (3-5 bullets, each one grounded proof point with its metric). Start it with "### Highlights". No headline/intro prose.
-- stale_or_missing: concrete observations where a live surface contradicts or omits the proof (e.g. "LinkedIn headline omits Mastra", "GitHub bio missing"). Each item one short line.
+- stale_or_missing: concrete observations where a live surface contradicts or omits the fact base (e.g. "LinkedIn headline omits Mastra", "GitHub bio missing"). Each item one short line.
 
-EVIDENCE UNITS (grounded proof, strongest first):
-"""${JSON.stringify(units).slice(0, 9000)}"""
-
-FACT BASE (identity + context):
-"""${JSON.stringify(facts).slice(0, 8000)}"""
+FACT BASE (the only truth you may use):
+"""${JSON.stringify(facts).slice(0, 12000)}"""
 
 CURRENT LINKEDIN (scraped):
 """${JSON.stringify(li).slice(0, 4000)}"""
@@ -527,252 +509,6 @@ const OUTREACH_SPEC: Record<OutreachKind, { words: number; subject: boolean; bri
   followup: { words: 90, subject: true, brief: 'A polite follow-up after applying or an earlier message with no reply. Reference the prior touch, add one new proof point, restate the ask lightly. Not pushy.' },
   referral_ask: { words: 100, subject: false, brief: 'A message asking a contact (often a stranger who works there) for a referral. Make it easy: say why you fit in one line, attach nothing, offer your résumé/links.' },
 };
-
-// ---- grounded bullet writer (architecture Layer 6) -------------------------
-
-export const WRITER_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    bullets: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: { unit_id: { type: 'string' }, text: { type: 'string' } },
-        required: ['unit_id', 'text'],
-      },
-    },
-  },
-  required: ['bullets'],
-};
-
-export interface WriterResponse {
-  bullets: { unit_id: string; text: string }[];
-}
-
-// Write résumé bullets from a fixed set of selected evidence units. The model
-// sees ONLY these units — so every bullet is grounded — and tags each bullet with
-// the unit_id it came from, which the deterministic groundedness check verifies.
-export function writerPrompt(input: {
-  section: string;
-  units: { id: string; claim: string; skills: string[]; impact?: { metric: string; value: string; scope?: string } }[];
-  atsKeywords: string[];
-  maxBullets: number;
-}): string {
-  const { section, units, atsKeywords, maxBullets } = input;
-  return `Write concise, high-impact résumé bullets for the section "${section}", using ONLY the evidence units below. Each bullet must be grounded in exactly ONE unit and tagged with that unit's id.
-
-STRICT RULES:
-- Use ONLY facts present in the cited unit. NEVER invent or inflate a number, employer, technology, or outcome. If a figure isn't in the unit, don't state one.
-- Copy metrics VERBATIM from the unit (same digits, %, +, k).
-- Weave in these ATS keywords ONLY where the unit truthfully supports them: ${atsKeywords.slice(0, 40).join(', ') || '(none)'}.
-- One sentence per bullet, active voice, results-first. No first person, no fluff.
-- Return at most ${maxBullets} bullets — the strongest, most JD-relevant units first. Do not merge two units into one bullet.
-- Refer to the Indigle/Samagra role as "Founding Software Engineer" (never co-founder).
-
-EVIDENCE UNITS (the only facts you may use):
-"""${JSON.stringify(units).slice(0, 8000)}"""
-
-Return JSON: { "bullets": [ { "unit_id": the exact id of the cited unit, "text": the bullet } ] }.`;
-}
-
-// ---- JD → requirement graph (architecture Layer 5) -------------------------
-
-export const REQUIREMENTS_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    must_have: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: { req: { type: 'string' }, weight: { type: 'number' } },
-        required: ['req', 'weight'],
-      },
-    },
-    nice_to_have: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: { req: { type: 'string' }, weight: { type: 'number' } },
-        required: ['req'],
-      },
-    },
-    ats_keywords: { type: 'array', items: { type: 'string' } },
-    seniority: { type: 'string' },
-    domain: { type: 'string' },
-  },
-  required: ['must_have', 'nice_to_have', 'ats_keywords', 'seniority', 'domain'],
-};
-
-export interface RequirementResponse {
-  must_have?: { req: string; weight?: number }[];
-  nice_to_have?: { req: string; weight?: number }[];
-  ats_keywords?: string[];
-  seniority?: string;
-  domain?: string;
-}
-
-// Parse a job description into a structured requirement graph. Requirements are
-// the real capabilities the role needs (not raw keywords — those are the separate
-// ats_keywords list, kept for ATS-score continuity). Weights reflect how central
-// each requirement is to the role.
-export function requirementsPrompt(jd: string): string {
-  return `Analyze this JOB DESCRIPTION and extract a structured requirement graph.
-
-- must_have: the core capabilities the role genuinely requires, each with a weight 0..1 (1 = central to the role, 0.5 = expected, lower = minor). Capabilities, not keywords — e.g. "build and operate LLM agent pipelines", not "LLM".
-- nice_to_have: secondary/bonus capabilities (weight optional, default lower).
-- ats_keywords: the concrete terms/technologies an ATS would scan for (React, FastAPI, Kubernetes, RAG…). Flat list, verbatim from the JD where possible.
-- seniority: the level the JD targets (e.g. "junior", "mid", "senior", "staff", or a range).
-- domain: the primary problem domain (e.g. "AI agent infrastructure", "fintech backend", "frontend platform").
-
-Extract only what the JD supports — do not invent requirements it doesn't state.
-
-JOB DESCRIPTION:
-"""${jd.slice(0, 8000)}"""
-
-Return JSON: { "must_have": [{ "req": string, "weight": number }], "nice_to_have": [{ "req": string, "weight"?: number }], "ats_keywords": string[], "seniority": string, "domain": string }.`;
-}
-
-// ---- evidence dedup (merge near-duplicate claims) --------------------------
-
-export const MERGE_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: { claim: { type: 'string' } },
-  required: ['claim'],
-};
-
-export interface MergeResponse {
-  claim: string;
-}
-
-// Fold a cluster of near-duplicate claims into one. The merged claim must keep
-// the most specific, verifiable version — never a superset that asserts more than
-// any single input did. Metrics are copied verbatim; nothing is invented.
-export function mergePrompt(claims: string[]): string {
-  return `These claims describe the SAME accomplishment, extracted from different sources. Merge them into ONE clear, specific claim.
-
-RULES:
-- Keep the most specific, concrete version. Prefer named tech and exact figures.
-- Copy any metric verbatim from the inputs — never invent, round, or inflate.
-- Do NOT combine into a superset that asserts more than the inputs support.
-- One sentence, résumé-bullet style.
-
-CLAIMS:
-${claims.map((c, i) => `${i + 1}. ${c}`).join('\n')}
-
-Return JSON: { "claim": the single merged claim }.`;
-}
-
-// ---- evidence extraction (source text → atomic claims) ---------------------
-
-export const EXTRACT_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    units: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          claim: { type: 'string' },
-          skills: { type: 'array', items: { type: 'string' } },
-          domains: { type: 'array', items: { type: 'string' } },
-          seniority_signal: { type: 'string' },
-          impact: {
-            type: 'object',
-            properties: { metric: { type: 'string' }, value: { type: 'string' }, scope: { type: 'string' } },
-          },
-        },
-        required: ['claim'],
-      },
-    },
-  },
-  required: ['units'],
-};
-
-export interface ExtractedUnitResponse {
-  claim: string;
-  skills?: string[];
-  domains?: string[];
-  seniority_signal?: string;
-  impact?: { metric?: string; value?: string; scope?: string };
-}
-
-export interface ExtractResponse {
-  units: ExtractedUnitResponse[];
-}
-
-// Extract atomic, résumé-worthy claims from ONE source's raw text. Strictly
-// grounded — the model may only restate what the text supports, never invent a
-// metric, employer, or technology. Each claim gets its concrete skills, the
-// problem domains it demonstrates, and (only if a figure appears verbatim) a
-// quantified impact.
-export function extractPrompt(record: { source: string; ref: string; text: string }): string {
-  return `Extract atomic résumé-evidence claims from the SOURCE below. Each claim is one specific, self-contained accomplishment or capability — the kind of thing that could become a single résumé bullet.
-
-STRICT RULES:
-- Use ONLY what the SOURCE states or directly implies. NEVER invent numbers, employers, tech, or outcomes not present in the text.
-- Prefer specific over generic ("built an async agent loop over Email/Calendar tools" beats "worked on AI").
-- skills = concrete technologies/tools named or clearly implied (e.g. "FastAPI", "Redis", "TypeScript").
-- domains = the problem areas it demonstrates (e.g. "agents", "RAG", "backend", "auth", "observability").
-- impact = ONLY when a figure appears verbatim in the source; copy the value exactly (do not round or invent). Otherwise omit it.
-- If the source is too thin to support any real claim, return an empty units array.
-
-SOURCE (${record.source} · ${record.ref}):
-"""${record.text.slice(0, 6000)}"""
-
-Return JSON: { "units": [ { "claim": string, "skills": string[], "domains": string[], "seniority_signal"?: string, "impact"?: { "metric": string, "value": string, "scope"?: string } } ] }.`;
-}
-
-// ---- evidence quality gate (Stage B — LLM judge) ---------------------------
-
-export const GATE_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    repos: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          keep: { type: 'boolean' },
-          quality: { type: 'number' },
-          reason: { type: 'string' },
-        },
-        required: ['name', 'keep', 'quality', 'reason'],
-      },
-    },
-  },
-  required: ['repos'],
-};
-
-export interface GateJudgement {
-  name: string;
-  keep: boolean;
-  quality: number; // 0..1
-  reason: string;
-}
-
-export interface GateResponse {
-  repos: GateJudgement[];
-}
-
-// The judge sees only cheap repo metadata — it decides whether each is
-// résumé-worthy *evidence of engineering skill* (a real, substantive project or
-// tool) vs. noise (coursework, tutorials, toy demos, config/dotfiles, empty
-// scaffolds). It never invents; it ranks what it's given.
-export function gatePrompt(
-  repos: { name: string; description: string; language: string; topics: string[]; stars: number; readmeSize: number; pushedAt: string }[],
-): string {
-  return `You are curating a strong engineer's GitHub repositories for use as résumé evidence. For EACH repo, decide whether it is worth mining for résumé bullet points and score its quality.
-
-KEEP a repo when it looks like real, substantive engineering: a working tool/library/app, non-trivial code, a real README, relevant topics. DROP coursework, tutorial follow-alongs, toy/demo scaffolds, dotfiles/config repos, and empty or abandoned experiments.
-
-Judge on the SIGNALS given (description, README size in bytes, stars, recency, topics, language). Missing description + tiny README + no stars is a strong drop signal; a clear description + substantial README is a strong keep. Do not reward star count alone.
-
-REPOS (JSON):
-"""${JSON.stringify(repos).slice(0, 12000)}"""
-
-Return JSON: { "repos": [ { "name": exact repo name, "keep": boolean, "quality": 0..1 (résumé-evidence value), "reason": one short phrase } ] }. Include EVERY repo exactly once.`;
-}
 
 export function outreachPrompt({
   kind,

@@ -20,7 +20,6 @@
     "wellfound": "pnpm --filter @resume/cli run wellfound",
     "wellfound-profile": "pnpm --filter @resume/cli run wellfound-profile",
     "sync": "pnpm --filter @resume/cli run sync",
-    "ingest": "pnpm --filter @resume/cli run ingest",
     "status": "pnpm --filter @resume/cli run status",
     "build:pdf": "pnpm --filter @resume/cli run build:pdf",
     "verify": "pnpm --filter @resume/cli run verify",
