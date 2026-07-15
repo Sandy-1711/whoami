@@ -80,6 +80,7 @@ external storage to read on each request.
 │   ├── facts.json              # hand-verified fact base — the only truth the tailor may claim
 │   ├── github.json             # scraped repos + PR contributions (editable, committed)
 │   ├── linkedin.json           # scraped LinkedIn profile (editable, committed)
+│   ├── curation.json           # hand-maintained repo pin/ban list (sync never overwrites it)
 │   └── sources.lock.json       # file-drift hashes + scrape freshness/content hashes
 ├── packages/core/              # @resume/core — the domain, ports + adapters (DI)
 │   └── src/
@@ -88,15 +89,25 @@ external storage to read on each request.
 │       ├── tailor/             # TailorService · core.ts (scoring/injection) · report.ts
 │       ├── email/              # EmailService — draft a JD email + send via the Mailer port
 │       ├── wellfound/          # WellfoundService — application-box note + standing profile
+│       ├── enhance/            # EnhanceService — profile copy vs the live scrape (paste-ready)
+│       ├── outreach/           # OutreachService — cold email / DM / follow-up / referral
+│       ├── github/             # GithubProfileService — bio / repo-description / README writes
 │       ├── scrape/             # github.ts · linkedin.ts · refresh.ts (SourceRefresher)
 │       ├── check/              # source.ts · log.ts (width) · pdf.ts (unpdf seam)
-│       ├── profile/sources.ts  # file-drift + scrape freshness
+│       ├── profile/            # sources.ts (file-drift + freshness) · curation.ts · facts-editor.ts
 │       └── prompts.ts naming.ts format.ts types.ts index.ts
+├── packages/agent/             # @resume/agent — the Mastra chat agent (every capability as a tool)
+│   └── src/
+│       ├── agent.ts            # buildAgent — model + memory + tools assembly
+│       ├── model.ts            # AppConfig → AI SDK model (Gemini/DeepSeek); chat-model resolution
+│       ├── memory.ts           # libSQL memory: threads + working memory + semantic recall
+│       ├── instructions.ts     # the copilot system prompt (STRICT grounding in facts.json)
+│       └── tools/              # readonly · pipeline · email · wellfound · facts · enhance · github · outreach · tracker
 ├── apps/cli/                   # @resume/cli — `resume` toolkit shell
 │   └── src/
 │       ├── main.ts             # entrypoint (interactive menu + dispatch)
 │       ├── container.ts        # composition root — wires adapters + registers providers
-│       ├── commands/           # tailor · email · wellfound · sync · status · build · check (thin)
+│       ├── commands/           # chat · tailor · email · wellfound · wellfound-profile · sync · status · build · check
 │       ├── adapters/           # http · latex · config (dotenv) · presenter (clack) · mailer (nodemailer/Gmail)
 │       └── build-pdf.ts check-resume.ts ui.ts args.ts paths.ts
 ├── apps/web/                   # @resume/web — Vercel app (self-contained; deploy root)
@@ -104,7 +115,8 @@ external storage to read on each request.
 │   ├── lib/                    # view-counter.ts (ViewCounter port) · redis.ts · …
 │   ├── apps/web/assets/resume.pdf       # compiled by CI — gitignored, never committed
 │   └── vercel.json
-├── .claude/skills/             # resume-ats · resume-latex · resume-tailor
+├── .agent/                     # chat memory, application tracker — gitignored, machine-local
+├── .claude/skills/             # resume-ats · resume-latex · resume-tailor · resume-facts · resume-outreach …
 ├── build/                      # LaTeX artifacts (.aux/.log/.pdf …) — gitignored
 ├── tailored/                   # per-JD outputs, tailored/<company>/… — gitignored
 ├── .githooks/pre-commit        # runs the source check when resume.tex is committed
@@ -252,23 +264,44 @@ If you do have TeXLive/MiKTeX installed, `pnpm build:pdf` uses it directly.
 
 ---
 
-## Tailoring toolkit — the `resume` CLI
+## Job-search toolkit — the `resume` CLI + chat agent
 
-One CLI turns a JD into an ATS-optimized, company-named PDF — **without** touching your
-canonical `resume.tex`. It keeps your scraped profile sources fresh, scores keyword
-coverage, rewrites the summary/subtitle with **Gemini** from a **verified fact base**
-(`profile/facts.json`, so it never fabricates experience), and runs the same page/width
-guards. Requires `GEMINI_API_KEY` in `.env` — there is no offline mode.
+A companion toolkit turns a JD into an ATS-optimized, company-named PDF — **without**
+touching your canonical `resume.tex` — and helps run the rest of a job search (emails,
+Wellfound notes, outreach, application tracking). Everything is grounded in a **verified
+fact base** (`profile/facts.json`), so it never fabricates experience, and it works with
+**Gemini or DeepSeek** (set at least one key; there's no offline mode for LLM steps).
+
+There are **two ways to drive it**: a conversational **chat agent** that wraps every
+capability as a tool and calls them for you, or the **individual commands** run directly.
 
 ```bash
-cp .env.example .env             # set GEMINI_API_KEY (see the file for optional keys)
+cp .env.example .env             # set GEMINI_API_KEY and/or DEEPSEEK_API_KEY (see the file)
 
-pnpm resume                   # interactive menu (clack) — everything's in here
+pnpm chat                     # ⭐ conversational agent — every capability as a tool
+pnpm resume                   # interactive menu (clack) — the same commands, guided
 pnpm tailor -- jd.txt --company "Inteligen-ai" [--role "AI Dev Engineer"]
-pnpm email -- jd.txt --company "Northwind AI"  # draft + send a Gmail application email
+pnpm email  -- jd.txt --company "Northwind AI"   # draft + send a Gmail application email
+pnpm wellfound -- jd.txt --company "Acme AI"     # the "why this role?" application-box note
 pnpm sync -- --force          # re-scrape GitHub + LinkedIn now
 pnpm status                   # env, sources, toolchain, and outputs at a glance
 ```
+
+### Chat — the agent (`pnpm chat`)
+
+A streaming REPL over a **Mastra** agent (Gemini or DeepSeek) that has the whole toolkit as
+tools — score a JD, tailor, draft/send email, Wellfound notes, outreach messages, sync,
+build, check, edit the fact base, update the GitHub profile, track applications — and calls
+them for you. Text and the model's live **thinking** stream back; tool calls show as dim
+lines; irreversible actions (sending email, GitHub writes) require a terminal confirm.
+
+Conversation **memory persists** across sessions in gitignored `.agent/` (libSQL): past
+threads, a working-memory scratchpad, and semantic recall (with a Gemini key). Slash
+commands include `/model` (switch model), `/usage` (token spend + context window),
+`/threads`, `/paste` and `/jd <file>` (attach a JD), `/status`, `/facts`. The chat model
+defaults to a fast, cheap one (`gemini-2.5-flash`), decoupled from the pipeline's
+`GEMINI_MODEL`; override with `AGENT_PROVIDER` / `AGENT_MODEL`. See [docs/CLI.md](docs/CLI.md)
+for the full command + slash-command reference.
 
 - **Application email** — `pnpm email -- jd.txt --company "Northwind AI"` drafts a
   JD-tailored email from the same fact base, reads the apply-to address and subject
@@ -292,6 +325,13 @@ pnpm status                   # env, sources, toolchain, and outputs at a glance
   fake them).
 - **Anchors** — the tailor only rewrites the `%% >>>TAILOR:…` blocks in `resume.tex`
   (summary, subtitle, skills). `tailored/` is gitignored (personal, regenerated).
+- **Provider choice** — Gemini or DeepSeek, behind a registry. Pick per run with
+  `--provider gemini|deepseek` (and `--model`), or set the default with `LLM_PROVIDER`.
+  The chat agent picks its own via `AGENT_PROVIDER` / `AGENT_MODEL`.
+- **Repo curation** — `profile/curation.json` is a hand-maintained `pin`/`ban` list
+  (`sync` never overwrites it): banned repos are dropped everywhere (and from repo/star
+  totals), pinned ones surface first. Applied on `sync` and whenever a prompt reads the
+  scrape. Own repos match by name, external contributions by full `owner/name`.
 
 ### Profile sources (scraped, tracked, editable)
 

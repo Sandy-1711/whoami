@@ -15,9 +15,13 @@ pnpm resume <command>  # e.g. pnpm resume status
 ## Interactive menu
 
 Running `resume` with no command (`pnpm resume`) opens a menu built with
-`@clack/prompts` that walks you through the same five commands below —
-useful when you don't remember the flags. Each action returns to the menu
-until you choose Exit.
+`@clack/prompts` that walks you through the commands below — useful when you
+don't remember the flags. Each action returns to the menu until you choose Exit.
+
+> **Two ways to drive the toolkit.** `chat` is the conversational front end — it
+> wraps every capability below as a tool and calls them for you. The individual
+> commands (`tailor`, `email`, `wellfound`, …) are the same capabilities run
+> directly, for scripting or when you know exactly what you want.
 
 ## Commands
 
@@ -46,8 +50,12 @@ turn and the session. Prices are approximate public list prices for local displa
 not billing. `/model` only offers providers that have a key; switching keeps the current
 thread and running usage totals.
 
-Configure the agent model with `AGENT_PROVIDER` / `AGENT_MODEL` (see `.env.example`); it defaults
-to the same provider chain as `tailor`. `/model` overrides both for the running session.
+Configure the agent with `AGENT_PROVIDER` / `AGENT_MODEL` (see `.env.example`). The **provider**
+defaults to the same chain as `tailor` (`AGENT_PROVIDER` → `LLM_PROVIDER` → first key set), but the
+**model** is decoupled: it defaults to a fast, cheap chat model (`gemini-2.5-flash`), *not* the
+`GEMINI_MODEL` the pipelines use — so chat stays snappy while `tailor`/`email` keep their model.
+Set `AGENT_MODEL` to override (e.g. `gemini-2.5-pro` for depth, `deepseek-reasoner` to stream
+DeepSeek's reasoning). `/model` overrides both for the running session.
 
 ### `tailor` — JD → ATS-optimized PDF
 
@@ -86,6 +94,48 @@ tailored/<company_slug>/<Full Name> - <Role>.tex
 tailored/<company_slug>/<Full Name> - <Role>.report.md
 ```
 
+### `email` — draft & send a Gmail application email
+
+```
+resume email <path/to/jd.txt> --company "Acme AI" [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]
+```
+
+Drafts a JD-tailored application email from the same verified fact base, reads the
+apply-to address and subject straight from the JD, and auto-attaches the tailored
+résumé PDF from `tailored/<company>/` (override with `--attach <pdf>` or `--no-attach`).
+It **shows the draft and only sends after you confirm the recipient**. Sending goes
+through Gmail with a **Google App Password** (`GMAIL_USER` + `GMAIL_APP_PASSWORD` in
+`.env`); without those it drafts only.
+
+| Flag | Description |
+|---|---|
+| `--to <addr>` | set/override the recipient (else read from the JD) |
+| `--attach <pdf>` / `--no-attach` | attach a specific PDF, or send with no attachment |
+| `--dry-run` (alias `--no-send`) | preview only; never sends, never overwrites an existing draft |
+| `--yes` (alias `-y`) | skip the recipient confirm (for automation) |
+
+On a real run the draft is written to `tailored/<company>/application-email.txt`.
+
+### `wellfound` — application-box note (per JD)
+
+```
+resume wellfound <path/to/jd.txt> --company "Acme AI" [--role "AI Engineer"]
+```
+
+Writes the short "What interests you about this role?" note for Wellfound's
+application box — optimized for a human reply, not ATS keywords — grounded in the
+fact base and the JD. Saved under `tailored/<company>/`.
+
+### `wellfound-profile` — standing Wellfound profile
+
+```
+resume wellfound-profile [--target "remote agent-infra roles"]
+```
+
+Builds your standing Wellfound profile (headline, bio, "looking for", achievements,
+skills, per-role blurbs) from the fact base — one profile for every role, not JD-specific.
+Writes `wellfound-profile.md` in the repo root (gitignored). `--target` steers the focus.
+
 ### `sync` — refresh scraped profile sources
 
 ```
@@ -99,6 +149,14 @@ when stale (see `SCRAPE_TTL_HOURS`), then re-baselines the drift hashes in
 
 Manual edits to `profile/github.json` / `profile/linkedin.json` persist until
 the next scrape changes that specific field.
+
+**Repo curation** — `profile/curation.json` is a hand-maintained file (`sync` never
+overwrites it) with two lists: `pin` (repos to surface first, in order) and `ban`
+(repos to hide everywhere). It's applied when `sync` writes `profile/github.json` —
+banned repos are dropped (and excluded from repo/star totals), pinned ones float to
+the front — and again whenever a prompt reads the scrape, so an edit takes effect even
+before the next sync. Own repos match by name (`Web-Aware-Rag-Engine`); external
+contributions by full `owner/name` (`mastra-ai/mastra`). Case-insensitive.
 
 ### `status` — one-screen health check
 
@@ -144,11 +202,14 @@ Set these in `.env` at the repo root (copy from [.env.example](../.env.example);
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `LLM_PROVIDER` | no | default provider id (`gemini` / `deepseek`); else whichever key is set (Gemini first) |
-| `GEMINI_API_KEY` | one LLM key, for `tailor` | Google Gemini API key |
-| `GEMINI_MODEL` | no | Gemini model override, default `gemini-2.5-flash` |
-| `DEEPSEEK_API_KEY` | one LLM key, for `tailor` | DeepSeek API key (OpenAI-compatible) |
+| `LLM_PROVIDER` | no | default provider id for the pipelines (`gemini` / `deepseek`); else whichever key is set (Gemini first) |
+| `GEMINI_API_KEY` | one LLM key | Google Gemini API key |
+| `GEMINI_MODEL` | no | Gemini model override for the pipelines, default `gemini-2.5-flash` |
+| `DEEPSEEK_API_KEY` | one LLM key | DeepSeek API key (OpenAI-compatible) |
 | `DEEPSEEK_MODEL` | no | DeepSeek model override, default `deepseek-chat` |
+| `AGENT_PROVIDER` | no | provider for the `chat` agent (`gemini` / `deepseek`); blank → same chain as the pipelines |
+| `AGENT_MODEL` | no | chat model override; blank → the fast chat default (`gemini-2.5-flash`), **not** the `GEMINI_MODEL` pipeline model |
+| `AGENT_EMBEDDING_MODEL` | no | embedding model for chat semantic recall (default `gemini-embedding-001`); needs a Gemini key |
 | `GITHUB_TOKEN` | no | raises the GitHub API rate limit for `sync`; public scrape works without it |
 | `SCRAPE_TTL_HOURS` | no | hours before a scraped source is considered stale (default 12) |
 | `LINKEDIN_COOKIE` | no | `li_at` session cookie to enable live LinkedIn scraping via Playwright; without it, `sync` falls back to parsing `Linkedin_Profile.pdf` in the repo root |
