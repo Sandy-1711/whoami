@@ -15,8 +15,13 @@ import type { AppConfig } from '@resume/core';
 const SUPPORTED = ['gemini', 'deepseek'] as const;
 export type AgentProviderId = (typeof SUPPORTED)[number];
 
+// Chat defaults to a FAST, CHEAP model — the conversational loop runs often and
+// wants low latency + low cost, unlike the occasional résumé/email pipelines
+// (which stay on whatever GEMINI_MODEL is set to, typically the pro tier). Set
+// AGENT_MODEL to override (e.g. gemini-2.5-pro for depth, gemini-2.5-flash-lite
+// for the cheapest).
 const DEFAULT_CHAT_MODEL: Record<AgentProviderId, string> = {
-  gemini: 'gemini-2.5-pro',
+  gemini: 'gemini-2.5-flash',
   deepseek: 'deepseek-chat',
 };
 
@@ -69,7 +74,9 @@ export function resolveAgentModel(config: AppConfig): AgentModel {
     const envName = providerId === 'gemini' ? 'GEMINI_API_KEY' : 'DEEPSEEK_API_KEY';
     throw new Error(`${envName} not set — the chat agent needs a Gemini or DeepSeek key in .env.`);
   }
-  const modelId = config.agent?.model || config.llm.models[providerId] || DEFAULT_CHAT_MODEL[providerId];
+  // Chat model is decoupled from the pipeline's GEMINI_MODEL: an explicit
+  // AGENT_MODEL wins, otherwise the fast chat default — NOT the pro pipeline model.
+  const modelId = config.agent?.model || DEFAULT_CHAT_MODEL[providerId];
 
   const model = providerId === 'gemini'
     ? createGoogleGenerativeAI({ apiKey })(modelId)
