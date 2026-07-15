@@ -424,6 +424,7 @@ export const ENHANCE_SCHEMA: JsonSchema = {
     linkedin_about: { type: 'string' },
     linkedin_skills_to_add: { type: 'array', items: { type: 'string' } },
     github_bio: { type: 'string' },
+    github_readme: { type: 'string' },
     stale_or_missing: { type: 'array', items: { type: 'string' } },
     rationale: { type: 'string' },
   },
@@ -435,17 +436,29 @@ export interface EnhanceResponse {
   linkedin_about: string;
   linkedin_skills_to_add: string[];
   github_bio: string;
+  github_readme?: string;
   stale_or_missing: string[];
   rationale?: string;
 }
 
+// A compact evidence unit as fed to the surface generator — the grounded proof
+// the copy must be built from (mirrors the writer prompt's shape).
+export interface EnhanceUnit {
+  claim: string;
+  skills: string[];
+  impact?: { metric: string; value: string; scope?: string };
+  tier: string;
+}
+
 export function enhancePrompt({
   facts,
+  units,
   linkedin,
   github,
   target,
 }: {
   facts: Facts;
+  units: EnhanceUnit[];
   linkedin: LinkedinData | null;
   github: GithubData | null;
   target: string;
@@ -458,19 +471,24 @@ export function enhancePrompt({
     ? { bio: (github as unknown as { bio?: string }).bio ?? null, topRepos: (github.repos || []).filter((r) => !r.fork).slice(0, 8).map((r) => ({ name: r.name, description: r.description })) }
     : null;
 
-  return `You keep a job-seeker's public profiles consistent with their VERIFIED fact base. Compare the current LinkedIn + GitHub surfaces to the fact base and propose better, truthful copy — plus flag what's stale or missing.
+  return `You keep a job-seeker's public profiles consistent with their VERIFIED proof. Generate the strongest truthful copy for each surface FROM the evidence units + fact base, then flag what's stale or missing on the live profiles.
 
 STRICT RULES:
-- Ground everything in the FACT BASE. You may compress or rephrase real facts; NEVER invent employers, numbers, titles, or technologies.
+- Ground everything in the EVIDENCE UNITS and FACT BASE. You may compress or rephrase real proof; NEVER invent employers, numbers, titles, or technologies. Copy any metric VERBATIM from a unit's impact.
+- Prefer units marked "pinned" — they are the user's strongest, forced-forward proof.
 - Refer to the Indigle/Samagra role as "Founding Software Engineer" — never "co-founder" or "CTO".
 - linkedin_headline: one line, <= 220 chars, lead with the strongest positioning${target ? ` (focus: ${target})` : ''}.
 - linkedin_about: 3-5 tight sentences, first person, metric-led, no clichés.
-- linkedin_skills_to_add: skills that are TRUE (in the fact base) but missing from the current LinkedIn skills list.
+- linkedin_skills_to_add: skills present in the evidence/fact base but missing from the current LinkedIn skills list.
 - github_bio: <= 160 chars, punchy, current focus + strongest proof.
-- stale_or_missing: concrete observations where a live surface contradicts or omits the fact base (e.g. "LinkedIn headline omits Mastra", "GitHub bio missing"). Each item one short line.
+- github_readme: a short Markdown "Highlights" section for the GitHub profile README (3-5 bullets, each one grounded proof point with its metric). Start it with "### Highlights". No headline/intro prose.
+- stale_or_missing: concrete observations where a live surface contradicts or omits the proof (e.g. "LinkedIn headline omits Mastra", "GitHub bio missing"). Each item one short line.
 
-FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 12000)}"""
+EVIDENCE UNITS (grounded proof, strongest first):
+"""${JSON.stringify(units).slice(0, 9000)}"""
+
+FACT BASE (identity + context):
+"""${JSON.stringify(facts).slice(0, 8000)}"""
 
 CURRENT LINKEDIN (scraped):
 """${JSON.stringify(li).slice(0, 4000)}"""
