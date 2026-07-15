@@ -1,9 +1,0 @@
-{
-  "_comment": "Relevance + coverage weights for the evidence-based tailor (see resume-system-architecture.md, Layer 6). rel(e,r) = alpha*cosine + beta*tagOverlap + gamma*llmRerank + delta*quality + epsilon*recency; the coverage selector subtracts lambda*redundancy. Tune here — the tailor reads this file and records its hash in each build lockfile.",
-  "alpha_cosine": 0.4,
-  "beta_tag": 0.2,
-  "gamma_rerank": 0.15,
-  "delta_quality": 0.15,
-  "epsilon_recency": 0.1,
-  "lambda_redundancy": 0.5
-}

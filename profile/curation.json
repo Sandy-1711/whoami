@@ -1,7 +1,0 @@
-{
-  "_comment": "Repo-level tier overrides for the evidence store (see resume-system-architecture.md, Layer 1-3). Set a repo to \"banned\" to keep its units out of the résumé, or \"pinned\" to force them in. Applied on top of each unit's own tier by effectiveTier() — bans always win. Keyed by GitHub repo name.",
-  "repos": {
-    "SWAN_CIRCUIT_LLM_BACKEND": "banned",
-    "SWAN-Circuit-LLM-Frontend": "banned"
-  }
-}
