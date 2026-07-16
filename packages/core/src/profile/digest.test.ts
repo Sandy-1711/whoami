@@ -140,6 +140,18 @@ describe("buildProfileDigest — repo selection", () => {
         expect(d.github!.repos).toHaveLength(DIGEST_REPO_CAP);
     });
 
+    it("never drops a pinned repo, even past the cap", () => {
+        const many = Array.from({ length: 12 }, (_, i) => repo(`r${i}`, { stars: i }));
+        const pin = many.map((r) => r.name);
+        const d = buildProfileDigest(github({ repos: many }), null, { pin, ban: [] }, NOW);
+        expect(d.github!.repos).toHaveLength(12);
+        expect(d.github!.repos.every((r) => r.pinned)).toBe(true);
+        // Pins fill the cap first; unpinned repos only get the leftover slots.
+        const some = buildProfileDigest(github({ repos: many }), null, { pin: pin.slice(0, 3), ban: [] }, NOW);
+        expect(some.github!.repos).toHaveLength(DIGEST_REPO_CAP);
+        expect(some.github!.repos.slice(0, 3).map((r) => r.name)).toEqual(pin.slice(0, 3));
+    });
+
     it("clamps long descriptions", () => {
         const d = buildProfileDigest(
             github({ repos: [repo("wordy", { stars: 1, description: "x".repeat(300) })] }),
@@ -172,10 +184,13 @@ describe("buildProfileDigest — contributions", () => {
 
         const withPrs = buildProfileDigest(github(), null, EMPTY_CURATION, NOW);
         const titles = withPrs.github!.contributions[0].topPrTitles;
-        expect(titles).toHaveLength(DIGEST_PR_TITLE_CAP);
-        // Both merged PRs beat the open one.
+        // Every sample PR surfaces (the scrape keeps ≤ DIGEST_PR_TITLE_CAP),
+        // merged first, non-merged states flagged.
+        expect(titles.length).toBeLessThanOrEqual(DIGEST_PR_TITLE_CAP);
+        expect(titles).toHaveLength(3);
         expect(titles[0]).toContain("memory leak");
         expect(titles[1]).toContain("thread ordering");
+        expect(titles[2]).toBe("feat: add tool timeout option [open]");
     });
 });
 
@@ -208,7 +223,7 @@ describe("renderProfileDigest", () => {
         expect(text).toContain("- Founding Software Engineer, Indigle (2025 – present)");
     });
 
-    it("stays under ~2.5 KB even for a large profile", () => {
+    it("stays under ~4 KB even for a large profile", () => {
         const many = Array.from({ length: 64 }, (_, i) =>
             repo(`repo-${i}`, { stars: i, description: "A realistic description of the project ".repeat(4) }),
         );
@@ -223,6 +238,6 @@ describe("renderProfileDigest", () => {
         const text = renderProfileDigest(
             buildProfileDigest(github({ repos: many, contributions: contribs }), linkedin(), EMPTY_CURATION, NOW),
         );
-        expect(text.length).toBeLessThanOrEqual(2500);
+        expect(text.length).toBeLessThanOrEqual(4096);
     });
 });

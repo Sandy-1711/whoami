@@ -1,5 +1,30 @@
 {
   "_comment": "Manual repo curation — yours to edit; sync never overwrites this file. `pin`: repos to always surface first, in this order (own repos by name, e.g. \"Web-Aware-Rag-Engine\"; external contribution repos by full \"owner/name\", e.g. \"mastra-ai/mastra\"). `ban`: repos to hide everywhere — dropped from github.json on sync, excluded from LLM prompts, and excluded from repo/star totals. Matching is case-insensitive. Applied on `resume sync` and whenever the enhancer reads github.json.",
-  "pin": [],
-  "ban": []
+  "pin": [
+    "Sandy-1711/whoami",
+    "mastra-ai/mastra",
+    "Sandy-1711/EmailPartner",
+    "Sandy-1711/Web-Aware-Rag-Engine",
+    "Sandy-1711/IntelliCommerce",
+    "Sandy-1711/DualOnline"
+  ],
+  "ban": [
+    "Sandy-1711/React_Native_Starter",
+    "Sandy-1711/Portfolio",
+    "Sandy-1711/Sandy-1711",
+    "TejasMishr/ERP_Client",
+    "TejasMishr/MMMUTRESO",
+    "Sandy-1711/studio-instructions-lock-repro",
+    "Sandy-1711/mastra-tools-vanish-repro",
+    "Sandy-1711/SWAN_CIRCUIT_LLM_BACKEND",
+    "Sandy-1711/SWAN-Circuit-LLM-Frontend",
+    "TejasMishr/MMMUT_Erp",
+    "A-P-Singh-27/GDG-MMMUT-Website",
+    "mmmut-xyz/server.mmmut.xyz",
+    "TejasMishr/erp.mmmut.xyz",
+    "Taransh121/Travel-Startup",
+    "TejasMishr/ERP_FRONT",
+    "Vatsalmadhur/gdsc23",
+    "madhurgaur/abhyudayafest"
+  ]
 }

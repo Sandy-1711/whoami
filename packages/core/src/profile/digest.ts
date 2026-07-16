@@ -1,10 +1,11 @@
 // The profile digest: a deterministic, LLM-free distillation of the scraped
-// GitHub + LinkedIn sources into the ~2 KB of evidence actually worth showing
+// GitHub + LinkedIn sources into the ~4 KB of evidence actually worth showing
 // a model. github.json holds 60+ repos, most of them forks and zero-star
 // experiments; feeding it raw would bury the handful that matter. The digest
 // selects and ranks:
-//   - top repos: curation pins first (in pin order), then non-fork,
-//     non-archived repos by a transparent score (stars, recency, description),
+//   - top repos: every curation pin (in pin order, never dropped by the cap),
+//     then non-fork, non-archived repos by a transparent score (stars,
+//     recency, description) filling the remaining capped slots,
 //   - external contributions with merged PRs (the "12 merged PRs into
 //     mastra-ai/mastra" evidence), with sample PR titles,
 //   - one line per LinkedIn role plus the headline.
@@ -15,7 +16,8 @@ import { type Curation, EMPTY_CURATION, applyCuration } from './curation.js';
 
 export const DIGEST_REPO_CAP = 8;
 export const DIGEST_CONTRIBUTION_CAP = 5;
-export const DIGEST_PR_TITLE_CAP = 2;
+// Matches the scraper's samplePRs bound — every PR the scrape kept surfaces.
+export const DIGEST_PR_TITLE_CAP = 6;
 const DESCRIPTION_CLAMP = 110;
 const PR_TITLE_CLAMP = 80;
 const ROLE_LINE_CLAMP = 140;
@@ -98,7 +100,10 @@ export function buildProfileDigest(
       )
       .map((x) => x.repo);
 
-    const repos = [...pinned, ...rest].slice(0, DIGEST_REPO_CAP).map((r): DigestRepo => ({
+    // Pins are a deliberate user signal — include every one of them. The cap
+    // only limits how many score-ranked unpinned repos fill the leftover slots.
+    const unpinnedSlots = Math.max(0, DIGEST_REPO_CAP - pinned.length);
+    const repos = [...pinned, ...rest.slice(0, unpinnedSlots)].map((r): DigestRepo => ({
       name: r.name,
       description: clamp(r.description?.trim() ?? '', DESCRIPTION_CLAMP),
       url: r.url,
@@ -121,7 +126,8 @@ export function buildProfileDigest(
         topPrTitles: [...c.samplePRs]
           .sort((a, b) => Number(b.state === 'merged') - Number(a.state === 'merged'))
           .slice(0, DIGEST_PR_TITLE_CAP)
-          .map((pr) => clamp(pr.title, PR_TITLE_CLAMP)),
+          // Flag non-merged states so a prompt can't claim an open PR as merged.
+          .map((pr) => clamp(pr.title, PR_TITLE_CLAMP) + (pr.state === 'merged' ? '' : ` [${pr.state}]`)),
       }));
 
     gh = { username: curated.username, totals: curated.totals, repos, contributions };
@@ -144,7 +150,8 @@ export function buildProfileDigest(
 }
 
 // Compact plain-text rendering for prompt injection and `resume digest`.
-// Target ≤ ~2 KB; returns '' when there is no scrape data at all.
+// Target ≤ ~4 KB (unbounded pins can exceed it — pinning is an explicit user
+// signal); returns '' when there is no scrape data at all.
 export function renderProfileDigest(digest: ProfileDigest): string {
   const lines: string[] = [];
 
