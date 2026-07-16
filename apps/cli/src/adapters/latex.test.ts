@@ -3,13 +3,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 const { mockSpawnSync } = vi.hoisted(() => ({ mockSpawnSync: vi.fn() }));
 vi.mock("node:child_process", () => ({ spawnSync: mockSpawnSync }));
 
-import { haveCmd, dockerDaemonUp, compileLatex } from "./latex.js";
+import { haveCmd, dockerDaemonUp, compileLatex, renderEngineReason, resetEngineProbeCache } from "./latex.js";
 
 // A spawnSync return where only the exit status matters here.
 const exit = (status: number) => ({ status, stdout: "", stderr: "" });
 
 describe("latex helpers", () => {
-    beforeEach(() => vi.resetAllMocks());
+    beforeEach(() => { vi.resetAllMocks(); resetEngineProbeCache(); });
     afterEach(() => vi.resetAllMocks());
 
     describe("haveCmd", () => {
@@ -55,6 +55,29 @@ describe("latex helpers", () => {
             const res = compileLatex("/root", "resume.tex");
             expect(res.engine).toBeNull();
             expect(res.reason).toBe("no-engine");
+        });
+    });
+
+    describe("renderEngineReason", () => {
+        it("memoizes the probe — repeat calls spawn nothing new until reset", () => {
+            mockSpawnSync.mockReturnValue(exit(0)); // latexmk present
+            expect(renderEngineReason()).toBeNull();
+            const spawnsAfterFirst = mockSpawnSync.mock.calls.length;
+            expect(renderEngineReason()).toBeNull();
+            expect(renderEngineReason()).toBeNull();
+            expect(mockSpawnSync.mock.calls.length).toBe(spawnsAfterFirst);
+
+            resetEngineProbeCache();
+            renderEngineReason();
+            expect(mockSpawnSync.mock.calls.length).toBeGreaterThan(spawnsAfterFirst);
+        });
+
+        it("caches a negative probe too (no-engine)", () => {
+            mockSpawnSync.mockReturnValue(exit(1));
+            expect(renderEngineReason()).toBe("no-engine");
+            const spawnsAfterFirst = mockSpawnSync.mock.calls.length;
+            expect(renderEngineReason()).toBe("no-engine");
+            expect(mockSpawnSync.mock.calls.length).toBe(spawnsAfterFirst);
         });
     });
 });
