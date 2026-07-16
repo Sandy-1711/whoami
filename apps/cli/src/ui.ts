@@ -105,6 +105,12 @@ export function kv(label: string, value: string): string {
   return `  ${pc.dim(label.padEnd(13))} ${value}`;
 }
 
+// A dim horizontal rule — used to separate chat turns so each exchange reads
+// as a unit instead of one undifferentiated stream.
+export function rule(width = 46): string {
+  return pc.dim('─'.repeat(width));
+}
+
 export const ok = (s: string): string => `${sym.success} ${s}`;
 export const warn = (s: string): string => `${sym.warning} ${pc.yellow(s)}`;
 export const fail = (s: string): string => `${sym.error} ${pc.red(s)}`;
@@ -135,5 +141,32 @@ export function spinner(initial = ''): Spinner {
     fail(msg = '') { stop(pc.red(msg), 2); },
     warn(msg = '') { stop(pc.yellow(msg), 2); },
     stop(msg = '') { stop(msg, 0); },
+  };
+}
+
+// A minimal self-clearing inline spinner for the chat's wait-for-first-token
+// gap. Unlike spinner() (clack, which leaves a persistent status line), this
+// erases itself completely on stop — the answer starts on a clean line.
+// No-op when stdout isn't a TTY (piped output must stay clean).
+const INLINE_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+export interface InlineSpinner { stop(): void }
+
+export function inlineSpinner(label = 'thinking…'): InlineSpinner {
+  if (!process.stdout.isTTY) return { stop() {} };
+  let i = 0;
+  const draw = (): void => {
+    process.stdout.write(`\r${pc.cyan(INLINE_FRAMES[i = (i + 1) % INLINE_FRAMES.length]!)} ${pc.dim(label)}`);
+  };
+  draw();
+  const timer = setInterval(draw, 80);
+  let stopped = false;
+  return {
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      clearInterval(timer);
+      process.stdout.write('\r\x1b[K');
+    },
   };
 }

@@ -17,6 +17,7 @@ import {
 } from '@resume/agent';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
+import { createStreamRenderer } from '../markdown.js';
 import type { Cli } from '../container.js';
 import { runStatus } from './status.js';
 
@@ -103,56 +104,91 @@ async function mostRecentThreadId(built: BuiltAgent): Promise<string | null> {
 }
 
 async function runTurn(built: BuiltAgent, input: string, threadId: string, out: Out, abort: AbortController): Promise<TurnUsage> {
-  const res = await built.agent.stream(input, {
-    memory: { thread: threadId, resource: AGENT_RESOURCE_ID },
-    maxSteps: 16,
-    abortSignal: abort.signal,
-    // Ask Gemini to stream its thought summaries so the model's reasoning shows
-    // live as dim text instead of leaving a dead pause before the answer.
-    // Namespaced under `google`, so non-Google providers simply ignore it.
-    providerOptions: { google: { thinkingConfig: { includeThoughts: true } } },
-  });
+  // Instant feedback: a spinner from the moment of submit until the first
+  // stream chunk. Without it, a provider that streams no reasoning leaves a
+  // silent dead screen for the whole time-to-first-token.
+  const spin = ui.inlineSpinner('thinking…');
+
+  let res;
+  try {
+    res = await built.agent.stream(input, {
+      memory: { thread: threadId, resource: AGENT_RESOURCE_ID },
+      maxSteps: 16,
+      abortSignal: abort.signal,
+      // Ask Gemini to stream its thought summaries so the model's reasoning shows
+      // live as dim text instead of leaving a dead pause before the answer.
+      // Namespaced under `google`, so non-Google providers simply ignore it.
+      providerOptions: { google: { thinkingConfig: { includeThoughts: true } } },
+    });
+  } catch (err) {
+    spin.stop();
+    throw err;
+  }
+
+  // Answer text renders through the markdown-lite styler; everything else
+  // (reasoning, tool notices) stays raw. md.flush() must run before any full
+  // line prints, or a buffered partial line would appear after the notice.
+  const md = createStreamRenderer((s) => out.text(s));
+  // tool-call → tool-result elapsed time, keyed by call id (name as fallback).
+  const toolStarts = new Map<string, number>();
 
   let thinking = false; // currently rendering a dim reasoning block
   const endThinking = (): void => { if (thinking) { out.line(''); thinking = false; } };
   // Aggregate token usage, reported once on the terminal 'finish' chunk.
   const usage: TurnUsage = { inputTokens: 0, outputTokens: 0 };
 
-  for await (const chunk of res.fullStream as AsyncIterable<{ type: string; payload: any }>) {
-    switch (chunk.type) {
-      case 'reasoning-delta': {
-        const t: string = chunk.payload?.text ?? '';
-        if (!t) break;
-        if (!thinking) { out.line(pc.dim(pc.italic('  💭 thinking…'))); thinking = true; }
-        out.text(pc.dim(t));
-        break;
+  try {
+    for await (const chunk of res.fullStream as AsyncIterable<{ type: string; payload: any }>) {
+      spin.stop(); // idempotent — the first chunk of any kind clears the wait
+      switch (chunk.type) {
+        case 'reasoning-delta': {
+          const t: string = chunk.payload?.text ?? '';
+          if (!t) break;
+          if (!thinking) { out.line(pc.dim(pc.italic('  💭 thinking…'))); thinking = true; }
+          out.text(pc.dim(t));
+          break;
+        }
+        case 'reasoning-end':
+          endThinking();
+          break;
+        case 'text-delta':
+          endThinking();
+          md.push(chunk.payload.text);
+          break;
+        case 'tool-call': {
+          md.flush();
+          endThinking();
+          const key: string = chunk.payload.toolCallId ?? chunk.payload.toolName;
+          toolStarts.set(key, Date.now());
+          out.line(`  ${pc.cyan('⚙')} ${pc.cyan(chunk.payload.toolName)} ${pc.dim(compactArgs(chunk.payload.args))}`);
+          break;
+        }
+        case 'tool-result': {
+          md.flush();
+          const key: string = chunk.payload.toolCallId ?? chunk.payload.toolName;
+          const started = toolStarts.get(key);
+          const elapsed = started ? pc.dim(` ${((Date.now() - started) / 1000).toFixed(1)}s`) : '';
+          const glyph = chunk.payload.isError ? pc.red('✗') : pc.green('✓');
+          out.line(`  ${glyph} ${pc.dim(chunk.payload.toolName)}${elapsed}${chunk.payload.isError ? pc.red(' (error)') : ''}`);
+          break;
+        }
+        case 'finish': {
+          // FinishPayload.output.usage carries the turn's aggregate token counts.
+          const u = chunk.payload?.output?.usage;
+          if (u) { usage.inputTokens = u.inputTokens ?? 0; usage.outputTokens = u.outputTokens ?? 0; }
+          break;
+        }
+        case 'error':
+          md.flush();
+          endThinking();
+          out.line(ui.fail(String(chunk.payload?.error?.message ?? chunk.payload?.error ?? chunk.payload)));
+          break;
       }
-      case 'reasoning-end':
-        endThinking();
-        break;
-      case 'text-delta':
-        endThinking();
-        out.text(chunk.payload.text);
-        break;
-      case 'tool-call':
-        endThinking();
-        out.line(pc.dim(`  ⚙ ${chunk.payload.toolName} ${compactArgs(chunk.payload.args)}`));
-        break;
-      case 'tool-result':
-        out.line(pc.dim(`  ✓ ${chunk.payload.toolName}${chunk.payload.isError ? pc.red(' (error)') : ''}`));
-        break;
-      case 'finish': {
-        // FinishPayload.output.usage carries the turn's aggregate token counts.
-        const u = chunk.payload?.output?.usage;
-        if (u) { usage.inputTokens = u.inputTokens ?? 0; usage.outputTokens = u.outputTokens ?? 0; }
-        break;
-      }
-      case 'error':
-        endThinking();
-        out.line(ui.fail(String(chunk.payload?.error?.message ?? chunk.payload?.error ?? chunk.payload)));
-        break;
     }
+  } finally {
+    spin.stop(); // covers an abort/throw before the first chunk arrived
   }
+  md.flush();
   endThinking();
   out.line('');
   return usage;
@@ -357,6 +393,8 @@ export async function runChat(cli: Cli, args: RunChatArgs = {}): Promise<void> {
       session.cost += turnCost;
       session.lastContextTokens = u.inputTokens;
       if (u.inputTokens || u.outputTokens) out.line(usageLine(info, u, turnCost, session));
+      // Close the exchange visually so the next prompt starts a fresh unit.
+      out.line(ui.rule());
     } catch (err) {
       if (active?.signal.aborted) out.line(pc.dim('  (cancelled)'));
       else out.line('\n' + ui.fail((err as Error).message));
