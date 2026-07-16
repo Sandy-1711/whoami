@@ -5,6 +5,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import {
   extractJdKeywords, classify, scoreResume, collectStatus, listTailoredOutputs,
+  loadProfileDigest, renderProfileDigest,
 } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { loadFacts, loadResumeText, cap } from './shared.js';
@@ -107,5 +108,26 @@ export function readOnlyTools(deps: AgentDeps) {
     },
   });
 
-  return { score_jd, profile_status, read_facts, list_outputs };
+  const read_profile_digest = createTool({
+    id: 'read_profile_digest',
+    description:
+      'FREE, read-only, no LLM. A compact ranked digest of the candidate\'s verified public ' +
+      'evidence: top GitHub repos (curation pins first; forks, archived, and banned repos ' +
+      'excluded), external PR contributions with merged counts and sample PR titles, and ' +
+      'LinkedIn role one-liners. Call this alongside read_facts before drafting or curating — ' +
+      'it tells you which TRUE facts to emphasize and lets you cite real repos/PRs. The fact ' +
+      'base remains the only source of allowed claims.',
+    inputSchema: z.object({
+      format: z.enum(['text', 'json']).optional()
+        .describe("'json' for the structured digest; default 'text' returns the compact prompt-ready rendering."),
+    }),
+    execute: async ({ format }) => {
+      const digest = await loadProfileDigest(deps.root);
+      if (format === 'json') return digest;
+      const text = renderProfileDigest(digest);
+      return { digest: text || '(no scrape data — run sync_profiles first)' };
+    },
+  });
+
+  return { score_jd, profile_status, read_facts, list_outputs, read_profile_digest };
 }
