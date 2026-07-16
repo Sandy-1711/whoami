@@ -5,35 +5,56 @@ description: Run the JD-tailoring pipeline and keep the profile sources fresh �
 
 # Tailoring pipeline & profile sources
 
-One CLI drives everything: `npm run resume` (interactive menu) or the direct
-commands below. Gemini is **required** (`GEMINI_API_KEY` in `.env`); there is no
-offline mode.
+One CLI drives everything: `pnpm resume` (interactive menu) or the direct
+commands below. The tailor needs a Gemini or DeepSeek key in `.env`.
+
+> **POLICY (see `job-copilot`):** `pnpm tailor` is the PAID path — 1–3 LLM
+> calls per run. When Claude Code or an MCP client is doing the tailoring,
+> write the summary/subtitle/skills yourself (edit `resume.tex` between the
+> TAILOR anchors, see `resume-latex`), grounded in `pnpm score` + `pnpm digest`,
+> and only run the paid pipeline when the user explicitly asks for it.
 
 ## Commands
 ```
-npm run resume                 # interactive menu (clack)
-npm run tailor -- jd.txt --company "Inteligen-ai" [--role "AI Dev Engineer"]
-npm run sync -- --force        # re-scrape GitHub + LinkedIn now
-npm run status                 # env, sources, toolchain, outputs at a glance
+pnpm resume                 # interactive menu (clack)
+pnpm tailor -- jd.txt --company "Acme-AI" [--role "AI Dev Engineer"]   # PAID (LLM)
+pnpm score -- jd.txt        # deterministic JD fit score — free, no LLM
+pnpm digest                 # ranked GitHub/LinkedIn evidence — free, no LLM
+pnpm sync -- --force        # re-scrape GitHub now (LinkedIn ONLY with --linkedin)
+pnpm status                 # env, sources, toolchain, outputs at a glance
 ```
 
+The toolkit is also an MCP server (`pnpm mcp`) exposing 19 tools to Claude
+Code/Cursor/Claude Desktop — same free/paid split, listed in `job-copilot`.
+
 ## Output naming (company + role)
-`--company "Inteligen-ai"` + a role read from the JD →
-`tailored/inteligen_ai/Sandeep Singh - AI Dev Engineer.pdf`
+`--company "Acme-AI"` + a role read from the JD →
+`tailored/acme_ai/Sandeep Singh - AI Dev Engineer.pdf`
 - Company → folder slug (lowercase, non-alnum → `_`).
 - Role comes from Gemini reading the JD; falls back to a regex, then
   "Software Engineer". Override with `--role`.
-- Logic lives in `scripts/lib/naming.ts`. The PDF compiles under a safe
+- Logic lives in `packages/core/src/naming.ts`. The PDF compiles under a safe
   `build/` jobname, then is copied to the pretty spaced path.
 
 ## Sources of truth (order of authority)
 1. `profile/facts.json` — hand-verified. The **only** thing the tailor may claim
    from. Never let the model invent beyond it.
 2. `profile/github.json` — scraped repos + PR contributions (merged/open/closed,
-   stars). Editable.
-3. `profile/linkedin.json` — scraped from the live profile (Playwright + the
-   `LINKEDIN_COOKIE`) or, by default, parsed from `Linkedin_Profile.pdf`; then
-   structured by Gemini. Editable.
+   stars). Editable. Refreshed by `pnpm sync` (GitHub API).
+3. `profile/linkedin.json` — **opt-in**: refreshed only by `pnpm sync --linkedin`
+   (live scrape via Playwright + `LINKEDIN_COOKIE`, or parsed from
+   `Linkedin_Profile.pdf`; the structuring step uses Gemini). Editable. Scraping
+   LinkedIn is against its ToS — hence the explicit opt-in.
+
+## The digest — how the scrapes reach the LLM
+The pipeline no longer ignores the scrapes: every drafting prompt (tailor,
+email, outreach, wellfound) gets a deterministic ~2 KB **profile digest** —
+top repos (curation pins first, forks/archived/banned excluded, ranked by
+stars/recency/description), external contributions with merged-PR counts and
+sample titles, and LinkedIn role one-liners — as *evidence for what to
+emphasize*. facts.json remains the only source of claims. Inspect it with
+`pnpm digest` (`--json` for structured); curate it via `profile/curation.json`
+(see `resume-facts`). Implementation: `packages/core/src/profile/digest.ts`.
 
 Scraped JSON is **committed and hand-editable** — your edits persist until a
 scrape changes that field. Freshness + content hashes live in
@@ -45,11 +66,11 @@ run (fail-soft: a scrape error falls back to cached data).
 ## Adding a new true fact
 Verify it in `profile/github.json` / `profile/linkedin.json`, add it to
 `profile/facts.json` (allowed_keywords / skills / experience / projects), then
-`npm run sync` to re-baseline drift. Only then will the tailor surface it.
+`pnpm sync` to re-baseline drift. Only then will the tailor surface it.
 
 ## Setup notes
 - Copy `.env.example` → `.env`, set `GEMINI_API_KEY`. Optional: `GITHUB_TOKEN`
-  (higher rate limit), `LINKEDIN_COOKIE` + `npm i -D playwright && npx playwright
-  install chromium` (live LinkedIn scrape).
+  (higher rate limit), `LINKEDIN_COOKIE` + `pnpm add -D playwright && pnpm exec
+  playwright install chromium` (live LinkedIn scrape, opt-in via `--linkedin`).
 - The raw `Linkedin_Profile.pdf` and `linkedin-updates.md` are gitignored — the
   repo is public; never commit them.

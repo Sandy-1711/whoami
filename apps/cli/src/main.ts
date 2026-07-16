@@ -179,7 +179,7 @@ async function interactive(cli: Cli): Promise<void> {
 async function interactiveTailor(cli: Cli): Promise<void> {
   const company = await p.text({
     message: 'Company name',
-    placeholder: 'Inteligen-ai',
+    placeholder: 'Acme-AI',
     validate: (v) => (v && v.trim() ? undefined : 'Required — the résumé is filed + named by company.'),
   });
   if (p.isCancel(company)) return;
@@ -230,7 +230,7 @@ async function interactiveTailor(cli: Cli): Promise<void> {
 async function interactiveEmail(cli: Cli): Promise<void> {
   const company = await p.text({
     message: 'Company name',
-    placeholder: 'Inteligen-ai',
+    placeholder: 'Acme-AI',
     validate: (v) => (v && v.trim() ? undefined : 'Required — the draft is filed by company.'),
   });
   if (p.isCancel(company)) return;
@@ -272,7 +272,7 @@ async function interactiveEmail(cli: Cli): Promise<void> {
 async function interactiveWellfound(cli: Cli): Promise<void> {
   const company = await p.text({
     message: 'Company name',
-    placeholder: 'Inteligen-ai',
+    placeholder: 'Acme-AI',
     validate: (v) => (v && v.trim() ? undefined : 'Required — the note is filed by company.'),
   });
   if (p.isCancel(company)) return;

@@ -3,7 +3,7 @@ import { slugCompany, sanitizeRole, safeStem, outputPaths, extractRoleFromJd } f
 
 describe("slugCompany", () => {
     it("should lowercase and collapse non-alphanumerics into single underscores", () => {
-        expect(slugCompany("Inteligen-ai")).toBe("inteligen_ai");
+        expect(slugCompany("Acme-AI")).toBe("acme_ai");
         expect(slugCompany("Acme  AI, Inc.")).toBe("acme_ai_inc");
     });
     it("should trim leading and trailing underscores", () => {
@@ -28,7 +28,7 @@ describe("sanitizeRole", () => {
 
 describe("safeStem", () => {
     it("should join slug and role into a plain lowercase jobname", () => {
-        expect(safeStem("inteligen_ai", "AI Dev Engineer")).toBe("inteligen_ai__ai_dev_engineer");
+        expect(safeStem("acme_ai", "AI Dev Engineer")).toBe("acme_ai__ai_dev_engineer");
     });
     it("should cap the length at 80 characters", () => {
         expect(safeStem("x".repeat(60), "y".repeat(60)).length).toBe(80);
@@ -37,13 +37,13 @@ describe("safeStem", () => {
 
 describe("outputPaths", () => {
     it("should build the pretty and build paths from company, name and role", () => {
-        const p = outputPaths("/root", { company: "Inteligen-ai", fullName: "Sandeep Singh", role: "AI Dev Engineer" });
-        expect(p.slug).toBe("inteligen_ai");
+        const p = outputPaths("/root", { company: "Acme-AI", fullName: "Sandeep Singh", role: "AI Dev Engineer" });
+        expect(p.slug).toBe("acme_ai");
         expect(p.role).toBe("AI Dev Engineer");
         expect(p.base).toBe("Sandeep Singh - AI Dev Engineer");
-        expect(p.relDir).toBe("tailored/inteligen_ai");
-        expect(p.tex.replace(/\\/g, "/")).toContain("tailored/inteligen_ai/Sandeep Singh - AI Dev Engineer.tex");
-        expect(p.buildTexRel).toBe("build/inteligen_ai__ai_dev_engineer.tex");
+        expect(p.relDir).toBe("tailored/acme_ai");
+        expect(p.tex.replace(/\\/g, "/")).toContain("tailored/acme_ai/Sandeep Singh - AI Dev Engineer.tex");
+        expect(p.buildTexRel).toBe("build/acme_ai__ai_dev_engineer.tex");
     });
 });
 
