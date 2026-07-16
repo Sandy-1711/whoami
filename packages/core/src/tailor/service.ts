@@ -13,6 +13,7 @@ import {
   boldify, latexEscape, replaceBlock, latexToPlainText,
 } from './core.js';
 import { drift } from '../profile/sources.js';
+import { loadProfileDigestText } from '../profile/loaders.js';
 import { checkLog } from '../check/log.js';
 import { outputPaths, extractRoleFromJd } from '../naming.js';
 import { buildReportMarkdown, type TailorReportData } from './report.js';
@@ -129,12 +130,16 @@ export class TailorService {
     const cls = classify(jdKeywords, resumeText, facts);
     const score = scoreResume(cls);
 
+    // Ranked GitHub/LinkedIn evidence (just refreshed above) so the model
+    // emphasizes the strongest true facts. Empty when never synced.
+    const digest = await loadProfileDigestText(root);
+
     // ---- tailor content (LLM) --------------------------------------------
     const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to tailor from your fact base…`);
     let roleTitle: string, summaryText: string, subtitle: string, boldTerms: string[], rationale: string;
     try {
       const parsed = await provider.generateJson<TailorResponse>({
-        prompt: tailorPrompt({ jd, facts, classification: cls }),
+        prompt: tailorPrompt({ jd, facts, classification: cls, digest }),
         schema: TAILOR_SCHEMA,
       });
       ({ roleTitle, summaryText, subtitle, boldTerms, rationale } = mapTailorResponse(parsed));

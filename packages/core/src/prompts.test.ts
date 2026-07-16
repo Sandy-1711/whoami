@@ -3,6 +3,7 @@ import {
     tailorPrompt, mapTailorResponse, linkedinPrompt, TAILOR_SCHEMA, type TailorResponse,
     wellfoundMessagePrompt, wellfoundProfilePrompt, mapWellfoundProfile, clampBio, WELLFOUND_BIO_MAX,
     WELLFOUND_MESSAGE_SCHEMA, WELLFOUND_PROFILE_SCHEMA, type WellfoundProfileResponse,
+    emailPrompt, outreachPrompt,
 } from "./prompts.js";
 import type { Facts, Classification } from "./types.js";
 
@@ -138,6 +139,31 @@ describe("clampBio", () => {
     });
     it("never exceeds the limit", () => {
         expect(clampBio("x".repeat(500)).length).toBeLessThanOrEqual(WELLFOUND_BIO_MAX);
+    });
+});
+
+describe("evidence digest injection", () => {
+    const digest = "GitHub (sandy): 24 repos · 56★\n- mastra-ai/mastra — 12 merged";
+
+    it("appears in all five copy prompts when passed", () => {
+        expect(tailorPrompt({ jd: "x", facts, classification, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
+        expect(tailorPrompt({ jd: "x", facts, classification, digest })).toContain("12 merged");
+        expect(wellfoundMessagePrompt({ jd: "x", company: "A", role: "", facts, classification, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
+        expect(emailPrompt({ jd: "x", company: "A", role: "", facts, classification, candidateName: "S", hasResume: false, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
+        expect(wellfoundProfilePrompt({ facts, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
+        expect(outreachPrompt({ kind: "cold_email", facts, company: "A", role: "", jd: "", context: "", digest })).toContain("VERIFIED PUBLIC EVIDENCE");
+    });
+
+    it("is absent when the digest is omitted or empty", () => {
+        expect(tailorPrompt({ jd: "x", facts, classification })).not.toContain("VERIFIED PUBLIC EVIDENCE");
+        expect(tailorPrompt({ jd: "x", facts, classification, digest: "  " })).not.toContain("VERIFIED PUBLIC EVIDENCE");
+    });
+
+    it("slices an over-long digest to 3000 chars", () => {
+        const long = "y".repeat(5000);
+        const prompt = tailorPrompt({ jd: "x", facts, classification, digest: long });
+        expect(prompt).toContain("y".repeat(3000));
+        expect(prompt).not.toContain("y".repeat(3001));
     });
 });
 

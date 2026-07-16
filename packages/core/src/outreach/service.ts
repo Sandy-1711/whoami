@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import type { LlmProvider } from '../ports/llm.js';
 import type { Presenter } from '../ports/logger.js';
 import { slugCompany, extractRoleFromJd } from '../naming.js';
+import { loadProfileDigestText } from '../profile/loaders.js';
 import {
   outreachPrompt, OUTREACH_SCHEMA, type OutreachResponse, type OutreachKind,
 } from '../prompts.js';
@@ -53,12 +54,14 @@ export class OutreachService {
 
     const facts: Facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
     const role = roleOverride || (jd ? extractRoleFromJd(jd) : '') || '';
+    // Ranked GitHub/LinkedIn evidence so the message cites real repos/PRs.
+    const digest = await loadProfileDigestText(root);
 
     const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to write a ${kind.replace('_', ' ')}…`);
     let parsed: OutreachResponse;
     try {
       parsed = await provider.generateJson<OutreachResponse>({
-        prompt: outreachPrompt({ kind, facts, company, role, jd, context }),
+        prompt: outreachPrompt({ kind, facts, company, role, jd, context, digest }),
         schema: OUTREACH_SCHEMA,
       });
       if (!parsed?.message?.trim()) throw new Error('empty message');
