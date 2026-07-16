@@ -90,6 +90,12 @@ function commands(cli: Cli): Record<string, () => Promise<unknown>> {
     wellfound: () => directWellfound(cli),
     'wellfound-profile': () => directWellfoundProfile(cli),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force'), linkedin: has('--linkedin') }),
+    score: async () => {
+      const { runScore } = await import('./commands/score.js');
+      const jd = opt('--jd') || (await fileJd(positionals()[0]));
+      return runScore(cli, { jd });
+    },
+    digest: async () => (await import('./commands/digest.js')).runDigest(cli, { json: has('--json') }),
     status: async () => (await import('./commands/status.js')).runStatus(cli),
     build: async () => (await import('./commands/build.js')).runBuild(cli),
     check: async () => {
@@ -111,6 +117,8 @@ function printHelp(): void {
     ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
     ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
     ${pc.cyan('sync')} [--force] [--linkedin]                                refresh GitHub (LinkedIn opt-in via --linkedin)
+    ${pc.cyan('score')} <jd-file> | --jd "text…"                             deterministic JD fit score — free, no LLM
+    ${pc.cyan('digest')} [--json]                                            ranked GitHub/LinkedIn evidence digest — free, no LLM
     ${pc.cyan('status')}                                                    env, sources, outputs
     ${pc.cyan('build')}                                                     compile the canonical PDF
     ${pc.cyan('check')} [--source|--pdf|--width]                            run the guards
