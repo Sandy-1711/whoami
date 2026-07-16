@@ -23,12 +23,18 @@ export interface GmailSettings {
 // conversation loop and its embeddings. All optional overrides — blank falls
 // back to the same provider chain the pipelines use.
 export interface AgentSettings {
-  // Provider id for the agent loop (AGENT_PROVIDER); '' → reuse llm.provider / first key.
+  // Provider id for the agent loop (AGENT_PROVIDER); '' → prefer Gemini when
+  // keyed (fast chat), else llm.provider / first key.
   provider: string;
   // Chat model override (AGENT_MODEL); '' → provider default.
   model: string;
   // Embedding model for semantic recall (AGENT_EMBEDDING_MODEL); '' → provider default.
   embeddingModel: string;
+  // Semantic recall is opt-in (AGENT_RECALL=1): it adds an embedding round-trip
+  // before every turn, so it's off by default to keep chat latency down.
+  recall: boolean;
+  // Model for thread-title generation (AGENT_TITLE_MODEL); '' → cheap default.
+  titleModel: string;
 }
 
 export interface AppConfig {

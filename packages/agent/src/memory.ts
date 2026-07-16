@@ -5,13 +5,15 @@
 //  - working memory: a structured scratchpad of active applications, pending
 //    manual actions, and preferences the agent keeps current,
 //  - semantic recall: embeddings of past messages for "what did we decide about
-//    X?" — enabled only when a Gemini key is present (embeddings need it).
+//    X?" — OPT-IN via AGENT_RECALL=1 (and needs a Gemini key for embeddings).
+//    It embeds every user message via Gemini's API *before* the chat model is
+//    even called, so it costs a network round-trip per turn; off by default.
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import type { AppConfig } from '@resume/core';
-import { resolveAgentEmbedder } from './model.js';
+import { resolveAgentEmbedder, resolveTitleModel } from './model.js';
 
 // Everything memory-related is filed under one user id.
 export const AGENT_RESOURCE_ID = 'sandeep';
@@ -50,7 +52,8 @@ export function buildMemory(root: string, config: AppConfig): AgentMemory {
   const url = `file:${dbPath.replace(/\\/g, '/')}`;
 
   const storage = new LibSQLStore({ id: 'agent-memory', url });
-  const embedder = resolveAgentEmbedder(config);
+  const embedder = config.agent?.recall ? resolveAgentEmbedder(config) : null;
+  const titleModel = resolveTitleModel(config);
 
   const memory = new Memory({
     storage,
@@ -63,7 +66,14 @@ export function buildMemory(root: string, config: AppConfig): AgentMemory {
       lastMessages: 20,
       semanticRecall: embedder ? { topK: 4, messageRange: 2, scope: 'resource' } : false,
       workingMemory: { enabled: true, scope: 'resource', template: WORKING_MEMORY_TEMPLATE },
-      generateTitle: true,
+      // Titles are an extra LLM call — route it to the cheapest fast model
+      // instead of the main chat model (same type bridge as the embedder).
+      generateTitle: titleModel
+        ? {
+            model: titleModel as unknown as string,
+            instructions: 'A concise 3-6 word title for this conversation. No quotes, no punctuation at the end.',
+          }
+        : true,
     },
   });
 

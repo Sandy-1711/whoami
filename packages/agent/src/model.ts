@@ -52,17 +52,26 @@ function firstKeyedProvider(config: AppConfig): AgentProviderId | '' {
   return '';
 }
 
-// Decide which provider the agent loop uses: an explicit AGENT_PROVIDER wins (if
-// supported + keyed), else the pipeline's LLM_PROVIDER, else the first supported
-// provider that has a key.
+// Decide which provider the agent loop uses: an explicit AGENT_PROVIDER wins
+// (if supported + keyed), else Gemini whenever a Gemini key exists — the chat
+// loop wants low time-to-first-token and Gemini Flash delivers it, whereas an
+// LLM_PROVIDER=deepseek set for the *pipelines* used to silently drag chat onto
+// DeepSeek's slower API — else the pipeline's LLM_PROVIDER, else the first
+// supported provider that has a key.
 export function resolveAgentProviderId(config: AppConfig): AgentProviderId {
-  const wanted = (config.agent?.provider || config.llm.provider || '').toLowerCase();
-  if ((SUPPORTED as readonly string[]).includes(wanted) && config.llm.keys[wanted]) {
-    return wanted as AgentProviderId;
+  const agentWanted = (config.agent?.provider || '').toLowerCase();
+  if ((SUPPORTED as readonly string[]).includes(agentWanted) && config.llm.keys[agentWanted]) {
+    return agentWanted as AgentProviderId;
+  }
+  if (config.llm.keys.gemini) return 'gemini';
+  const pipeline = (config.llm.provider || '').toLowerCase();
+  if ((SUPPORTED as readonly string[]).includes(pipeline) && config.llm.keys[pipeline]) {
+    return pipeline as AgentProviderId;
   }
   const keyed = firstKeyedProvider(config);
   if (keyed) return keyed;
   // Nothing has a key — surface the wanted/first provider so the error names it.
+  const wanted = agentWanted || pipeline;
   return (SUPPORTED as readonly string[]).includes(wanted) ? (wanted as AgentProviderId) : 'gemini';
 }
 
@@ -109,4 +118,23 @@ export function resolveAgentEmbedder(config: AppConfig): AgentEmbedder | null {
   if (!apiKey) return null;
   const modelId = config.agent?.embeddingModel || DEFAULT_EMBEDDING_MODEL;
   return { modelId, model: createGoogleGenerativeAI({ apiKey }).embeddingModel(modelId) };
+}
+
+// Thread titles don't need the main chat model — a one-line summary is a job
+// for the cheapest fast model available. AGENT_TITLE_MODEL overrides.
+const DEFAULT_TITLE_MODEL: Record<AgentProviderId, string> = {
+  gemini: 'gemini-2.5-flash-lite',
+  deepseek: 'deepseek-chat',
+};
+
+export function resolveTitleModel(config: AppConfig): AgentModel['model'] | null {
+  const providerId: AgentProviderId | '' = config.llm.keys.gemini
+    ? 'gemini'
+    : config.llm.keys.deepseek ? 'deepseek' : '';
+  if (!providerId) return null;
+  const apiKey = config.llm.keys[providerId]!;
+  const modelId = config.agent?.titleModel || DEFAULT_TITLE_MODEL[providerId];
+  return providerId === 'gemini'
+    ? createGoogleGenerativeAI({ apiKey })(modelId)
+    : (createDeepSeek({ apiKey })(modelId) as unknown as AgentModel['model']);
 }
