@@ -159,11 +159,11 @@ describe("evidence digest injection", () => {
         expect(tailorPrompt({ jd: "x", facts, classification, digest: "  " })).not.toContain("VERIFIED PUBLIC EVIDENCE");
     });
 
-    it("slices an over-long digest to 3000 chars", () => {
-        const long = "y".repeat(5000);
+    it("slices a runaway digest to 6000 chars", () => {
+        const long = "y".repeat(8000);
         const prompt = tailorPrompt({ jd: "x", facts, classification, digest: long });
-        expect(prompt).toContain("y".repeat(3000));
-        expect(prompt).not.toContain("y".repeat(3001));
+        expect(prompt).toContain("y".repeat(6000));
+        expect(prompt).not.toContain("y".repeat(6001));
     });
 });
 

@@ -9,11 +9,15 @@ import type { Facts, Classification, TailorContent, LinkedinProfile, WellfoundPr
 // prompts as evidence. It steers WHICH true facts get emphasized — top repos,
 // merged external PRs, role history — but grants no new claims: the FACT BASE
 // stays the only source of truth a prompt may draw on. Empty digest → no block.
+// Sized to the digest's ~4 KB budget (see profile/digest.ts) so pinned repos
+// and PR details survive intact; the slice is only a runaway-input safety net.
+const EVIDENCE_CAP = 6000;
+
 function evidenceSection(digest?: string): string {
   if (!digest?.trim()) return '';
   return `
 VERIFIED PUBLIC EVIDENCE (auto-digest of the candidate's GitHub/LinkedIn — use ONLY to choose which FACT BASE items to emphasize and to reference real repos/PRs concretely; NEVER claim anything not in the FACT BASE):
-"""${digest.slice(0, 3000)}"""
+"""${digest.slice(0, EVIDENCE_CAP)}"""
 `;
 }
 
@@ -55,8 +59,11 @@ export function tailorPrompt({
 
 STRICT RULES:
 - Use ONLY facts, skills, metrics, and keywords present in the FACT BASE. Never invent employers, numbers, or technologies.
-- Prefer surfacing the "addable" keywords (things the candidate truly has but the current summary omits) that are relevant to this JD.
-- Keep the summary to ONE sentence, ~<=320 characters, punchy, metric-led. Plain text only (no markdown, no LaTeX).
+- ${classification.addable.length
+    ? 'Prefer surfacing the "addable" keywords (things the candidate truly has but the current summary omits) that are relevant to this JD.'
+    : 'No "addable" keywords were detected for this JD — lead with the highest-impact metrics and the FACT BASE items most relevant to the JD instead.'}
+- Keep the summary to exactly ONE sentence, at most 40 words (~320 characters), punchy, metric-led. Plain text only (no markdown, no LaTeX).
+- Tone: grounded, direct, objective — write like a serious engineer. No marketing fluff, no personality adjectives ("passionate", "visionary", "dynamic"), no buzzwords; only concrete achievements, technologies, and metrics.
 - The subtitle is a short " | "-separated tagline of 3 role/skill phrases matched to the JD.
 - bold_terms: 3-6 exact substrings from your summary to bold (metrics and top keywords).
 - role_title: the exact job title this JD is hiring for (e.g. "AI Dev Engineer", "Senior Backend Engineer"), copied/normalized from the JD. If the JD states no clear title, use "Software Engineer". Keep it under 50 characters, no company name, no location.
@@ -101,7 +108,8 @@ The résumé MUST fit on exactly one page. Your previous draft was too long. Sho
 
 STRICT RULES:
 - Use ONLY facts, skills, metrics, and keywords present in the FACT BASE. Never invent employers, numbers, or technologies.
-- Keep the summary to ONE sentence, <= ${summaryBudget} characters (shorter is better). Plain text only (no markdown, no LaTeX).
+- Keep the summary to exactly ONE sentence, at most ${Math.max(20, Math.round(summaryBudget / 8))} words (~${summaryBudget} characters — shorter is better). Plain text only (no markdown, no LaTeX).
+- Tone: grounded, direct, objective. No marketing fluff, no personality adjectives, no buzzwords — cutting those first is the easiest way to get shorter.
 - The subtitle is a short " | "-separated tagline of AT MOST 3 short role/skill phrases.
 - bold_terms: 3-5 exact substrings from your summary to bold (metrics and top keywords).
 - role_title: keep the SAME job title as the previous draft.
