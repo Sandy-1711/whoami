@@ -1,5 +1,5 @@
 {
-  "_comment": "Verified fact base for the JD tailoring pipeline (scripts/tailor.mjs). The tailor may ONLY use keywords/claims present here — it must never invent experience. Keep this in sync with resume.tex + LinkedIn; `npm run tailor -- --sync` hashes the sources and warns when they drift.",
+  "_comment": "Verified fact base for the JD tailoring pipeline (packages/core/src/tailor/). The tailor may ONLY use keywords/claims present here — it must never invent experience. Keep this in sync with resume.tex + LinkedIn; `pnpm sync` re-baselines the drift hashes and `pnpm status` warns when sources drift.",
   "identity": {
     "name": "Sandeep Singh",
     "location": "Bengaluru, India",
