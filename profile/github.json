@@ -1,6 +1,6 @@
 {
   "_comment": "Auto-scraped from GitHub. Edit freely — the tailor treats this as an editable source of truth. Re-scrape with `npm run sync`.",
-  "scrapedAt": "2026-07-15T14:13:23.708Z",
+  "scrapedAt": "2026-07-16T11:37:16.953Z",
   "username": "Sandy-1711",
   "profileUrl": "https://github.com/Sandy-1711",
   "totals": {
@@ -71,9 +71,9 @@
       "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-15T13:48:10Z",
+      "pushedAt": "2026-07-16T11:24:04Z",
       "fork": false,
-      "readmeSize": 17919
+      "readmeSize": 23624
     },
     {
       "name": "mastra",
@@ -85,19 +85,6 @@
       "topics": [],
       "archived": false,
       "pushedAt": "2026-07-15T11:12:44Z",
-      "fork": true,
-      "readmeSize": 0
-    },
-    {
-      "name": "screenpipe",
-      "description": "YC (S26) | AI that knows what you've seen, said, or heard. Records everything you do, say, hear 24/7, local, private, secure. Connect to OpenClaw, Hermes agent and 100+ apps",
-      "url": "https://github.com/Sandy-1711/screenpipe",
-      "homepage": "https://screenpipe.com",
-      "stars": 1,
-      "language": "",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-07-11T18:24:40Z",
       "fork": true,
       "readmeSize": 0
     },
@@ -888,7 +875,7 @@
           "url": "https://github.com/mastra-ai/mastra/pull/18963"
         }
       ],
-      "stars": 26187
+      "stars": 26214
     },
     {
       "repo": "TejasMishr/ERP_Client",
@@ -1154,7 +1141,7 @@
           "url": "https://github.com/formbricks/formbricks/pull/1467"
         }
       ],
-      "stars": 12552
+      "stars": 12555
     },
     {
       "repo": "calcom/cal.diy",
@@ -1182,7 +1169,7 @@
           "url": "https://github.com/calcom/cal.diy/pull/29355"
         }
       ],
-      "stars": 46434
+      "stars": 46475
     },
     {
       "repo": "therealanshuman/hwce-sandeep",
@@ -1242,7 +1229,7 @@
           "url": "https://github.com/n8n-io/n8n/pull/20329"
         }
       ],
-      "stars": 196539
+      "stars": 196648
     }
   ]
 }

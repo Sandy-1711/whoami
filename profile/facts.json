@@ -38,10 +38,13 @@
     "rate limiting", "security", "CASA", "token denylist", "encryption",
     "Next.js", "React", "React.js", "React Native", "Expo", "Tailwind CSS", "Shadcn/UI", "responsive design", "server-side rendering",
     "open source", "Mastra", "cal.com", "n8n", "code review", "performance optimization", "latency optimization",
-    "real-time", "uptime", "scalability", "production reliability", "high ownership", "end-to-end ownership"
+    "real-time", "uptime", "scalability", "production reliability", "high ownership", "end-to-end ownership",
+    "voice AI", "voice agents", "Cartesia", "text-to-speech", "audio streaming", "parallel tool calling",
+    "retry logic", "webhooks", "Exa AI", "OpenRouter", "OTP verification", "Apple Sign In",
+    "WhatsApp automation", "Weights & Biases"
   ],
   "skills": {
-    "AI/ML & LLM": ["Claude Code", "Hugging Face (PEFT/LoRA)", "LangChain", "Langfuse", "LlamaIndex", "Mastra", "OpenAI/Anthropic/Gemini API", "Pinecone", "promptfoo", "PyTorch", "Qdrant"],
+    "AI/ML & LLM": ["Cartesia (voice AI)", "Claude Code", "Exa AI", "Hugging Face (PEFT/LoRA)", "LangChain", "Langfuse", "LlamaIndex", "Mastra", "OpenAI/Anthropic/Gemini API", "OpenRouter", "Pinecone", "promptfoo", "PyTorch", "Qdrant", "Weights & Biases"],
     "Backend & Ops": ["asyncio", "AWS (Lambda, S3)", "CI/CD (GitHub Actions)", "Docker", "FastAPI", "MongoDB", "PostgreSQL", "Redis", "REST APIs", "WebSockets"],
     "Frontend & Mobile": ["Next.js", "React Native (Expo)", "React.js", "Shadcn/UI", "Tailwind CSS"],
     "Languages": ["JavaScript", "Python", "SQL", "TypeScript"]
@@ -50,24 +53,39 @@
     {
       "org": "AiRA", "role": "AI Engineer (Agent Orchestration, Memory, RAG & Systems)",
       "dates": "Nov 2025 - Mar 2026",
-      "keywords": ["agent orchestration", "agentic workflows", "FastAPI", "asyncio", "RAG", "memory systems", "Redis", "MongoDB", "LLM evaluation", "promptfoo", "Langfuse", "observability", "CASA", "authentication", "token denylist", "prompt engineering", "Anthropic", "Claude", "model selection"],
+      "keywords": ["agent orchestration", "agentic workflows", "FastAPI", "asyncio", "RAG", "memory systems", "Redis", "MongoDB", "LLM evaluation", "promptfoo", "Langfuse", "observability", "CASA", "authentication", "token denylist", "prompt engineering", "Anthropic", "Claude", "model selection", "voice AI", "Cartesia", "streaming", "tool calling", "parallel tool calling", "retry logic", "webhooks", "Exa AI", "OpenRouter", "WhatsApp automation", "OTP verification", "rate limiting", "concurrency", "Next.js"],
       "highlights": [
         "Built the flagship Daily Brief agent (Python/FastAPI) — an agentic orchestration loop over Email, Calendar, and Exa AI web-search tools via asyncio.",
         "Architected a multi-tier memory system (working/medium/long-term) on MongoDB and Redis.",
-        "Built an LLM evaluation pipeline with promptfoo benchmarking 8+ models (Anthropic Claude, OpenAI, Grok) on tool-calling, memory, and latency.",
-        "Cut routing-LLM token usage by 82% via artifact-based prompting and context deduplication.",
+        "Built an LLM evaluation pipeline with promptfoo benchmarking 8+ models (Anthropic Claude, OpenAI, Grok, GLM, Kimi, Nemotron) on tool-calling, memory retrieval, latency, and conversation quality; adopted it into the dev cycle.",
+        "Cut routing-LLM token usage by 82% via artifact-based prompting and context deduplication — optimized 3 prompts while raising accuracy over the few-shot baseline.",
         "Implemented Langfuse observability for LLM traces, latency, and cost.",
-        "Worked on CASA security standards: Redis token denylists and injection sanitization."
+        "Worked on CASA security standards: logout token invalidation via a Redis token_denylists collection (TTL matched to the token's own expiry), email-header injection sanitization, and MongoDB collection-name normalization.",
+        "Built voice AI streaming with the Cartesia provider — audio packets with emotion tags and word timestamps, regex-parsed to stay in sync with the text channel.",
+        "Parallelized the orchestrator's tool calling, significantly cutting execution time and token usage; added retry semantics so the agentic loop recovers from empty OpenRouter responses instead of stalling.",
+        "Implemented live task updates — the main LLM can amend an ongoing task without stopping the Orchestrator's running execution loop.",
+        "Shipped the WhatsApp moderation agent: natural-language rule/group management via dedicated agents with their own memory files, a send/delete-message tool, reply-context memory for WhatsApp replies, and a Periskope→WAHA provider migration.",
+        "Made task scheduling timezone-correct: moved system time to UTC and handled per-user local timezones, so relative ('in 10 minutes') and absolute ('at 2 pm') reminders execute at the right time.",
+        "Added user style adaptation: a storage LLM summarizes each user's talking style per conversation turn into a preferences collection the conversation LLM uses to mirror the user.",
+        "Built proactive morning/evening check-ins that run asynchronously over conversation history and medium/long-term memories to surface things the user may have missed.",
+        "Built the canvas tool — persistent, per-user websites/docs/PPTs generated by the agentic loop, with data-shape versioning and automatic migration across updates.",
+        "Hardened auth: OTP phone verification (hashed OTPs, rate limiting, token expiry) and Apple Sign In; fixed a lost-webhook concurrency bug by moving active working memory into Redis with TTL.",
+        "Built the Next.js dashboard for WhatsApp group-rule automation, monitoring, auth routes, and account deletion.",
+        "Wrote a project reset script that cut development and testing iteration time by 20%."
       ]
     },
     {
       "org": "IIT Kharagpur", "role": "Research Intern (Multimodal AI)",
       "dates": "May 2025 - Aug 2025",
-      "keywords": ["fine-tuning", "LoRA", "QLoRA", "PEFT", "Qwen", "multimodal", "RAG", "GGUF", "quantization", "edge deployment", "transformers"],
+      "keywords": ["fine-tuning", "LoRA", "QLoRA", "PEFT", "Qwen", "multimodal", "RAG", "GGUF", "quantization", "edge deployment", "transformers", "Weights & Biases", "dataset creation", "llama.cpp", "FastAPI", "PostgreSQL", "Next.js"],
       "highlights": [
         "Developed CircuitSynth, fine-tuning Qwen 4B/8B with LoRA/QLoRA to generate executable Arduino circuit JSONs.",
         "Achieved 75% accuracy (vs ~0% for base GPT models) via a multi-stage RAG pipeline with automated validation.",
-        "Ran quantized GGUF models on Raspberry Pi for edge deployment."
+        "Ran quantized GGUF models on Raspberry Pi for edge deployment.",
+        "Built a drag-and-drop circuit-diagram dataset tool (Wokwi component library, HTML-element pins with hidden pseudo-pins) and authored a 777-example fine-tuning dataset with multiple review passes.",
+        "Tracked fine-tuning runs (temperature, RAM/GPU usage) with Weights & Biases for the research paper.",
+        "Shipped the full deployment app — Next.js frontend, FastAPI backend, PostgreSQL, self-built auth — with a side-by-side evaluation UI comparing outputs against OpenAI GPT-5 and Gemini Pro.",
+        "Contributed to the project's research paper, copyright, and patent filings."
       ]
     }
   ],

@@ -1,14 +1,14 @@
 {
-  "updatedAt": "2026-07-15T14:13:35.262Z",
+  "updatedAt": "2026-07-16T11:37:16.974Z",
   "files": {
     "resume.tex": "8dadc190528ce76c",
-    "facts.json": "537b9f454523e338",
+    "facts.json": "b9caa29f29eec8e0",
     "linkedin.pdf": "998c22d6f113a273"
   },
   "scrape": {
     "github": {
-      "at": "2026-07-15T14:13:23.715Z",
-      "hash": "876eb213779ae02b"
+      "at": "2026-07-16T11:37:16.963Z",
+      "hash": "de8a0ce1eaf1075d"
     },
     "linkedin": {
       "at": "2026-07-15T14:13:35.256Z",
