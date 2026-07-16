@@ -37,8 +37,15 @@ syncing, building, updating facts, and more — and calls them for you. Text str
 calls and progress show as dim lines; `Ctrl+C` cancels the current turn without quitting.
 
 Memory persists across sessions (libSQL under `.agent/`, gitignored): past threads, a
-working-memory scratchpad (active applications, preferences), and semantic recall when a Gemini
-key is set. By default it resumes your most recent thread; `--new` starts fresh.
+working-memory scratchpad (active applications, preferences), and — **opt-in** — semantic
+recall (`AGENT_RECALL=1` + a Gemini key; it embeds every message before the chat model is
+called, so it's off by default to keep turns snappy). Thread titles generate on a cheap
+model (`gemini-2.5-flash-lite`; override with `AGENT_TITLE_MODEL`). By default it resumes
+your most recent thread; `--new` starts fresh.
+
+Answers render markdown in the terminal — headers, **bold**, bullets, inline code, fenced
+blocks — and tool calls show a glyph plus elapsed time (`✓ score_jd 0.8s`). Set
+`RESUME_PLAIN=1` (or pipe the output) for raw unstyled text.
 
 Slash commands: `/help`, `/new`, `/threads` (list + switch), `/model` (switch the chat model
 for this session), `/usage` (token usage, est. spend, context-window status), `/paste`
@@ -51,11 +58,13 @@ not billing. `/model` only offers providers that have a key; switching keeps the
 thread and running usage totals.
 
 Configure the agent with `AGENT_PROVIDER` / `AGENT_MODEL` (see `.env.example`). The **provider**
-defaults to the same chain as `tailor` (`AGENT_PROVIDER` → `LLM_PROVIDER` → first key set), but the
-**model** is decoupled: it defaults to a fast, cheap chat model (`gemini-2.5-flash`), *not* the
-`GEMINI_MODEL` the pipelines use — so chat stays snappy while `tailor`/`email` keep their model.
-Set `AGENT_MODEL` to override (e.g. `gemini-2.5-pro` for depth, `deepseek-reasoner` to stream
-DeepSeek's reasoning). `/model` overrides both for the running session.
+resolves `AGENT_PROVIDER` → **Gemini whenever a Gemini key is set** → `LLM_PROVIDER` → first key.
+Chat wants low time-to-first-token, so it no longer inherits an `LLM_PROVIDER=deepseek` meant
+for the pipelines — set `AGENT_PROVIDER=deepseek` explicitly to chat on DeepSeek. The **model**
+is decoupled too: it defaults to a fast, cheap chat model (`gemini-2.5-flash`), *not* the
+`GEMINI_MODEL` the pipelines use. Set `AGENT_MODEL` to override (e.g. `gemini-2.5-pro` for
+depth, `deepseek-reasoner` to stream DeepSeek's reasoning). `/model` overrides both for the
+running session.
 
 ### `mcp` — serve the tools over MCP (for Claude Code / Cursor / Claude Desktop)
 
@@ -81,7 +90,11 @@ is read from `.env` at the repo root exactly like the CLI — nothing to configu
   Approve sends/pushes deliberately; declining the client's prompt is how you say no.
 - **Cost:** the pipeline/draft tools call the LLM (Gemini/DeepSeek) and spend credits when invoked,
   just as they do from the CLI. The read-only tools (`score_jd`, `profile_status`, `read_facts`,
-  `list_outputs`) are free.
+  `read_profile_digest`, `list_outputs`, `list_applications`) are free.
+- **Policy for agents:** if the deliverable is *text* (résumé content, emails, notes), the
+  MCP client should draft it itself — grounded in `read_facts` + `read_profile_digest` — and
+  use the free/local tools to apply, build, check, and send. Reserve the paid drafting tools
+  for when the user explicitly asks. (The `.claude/skills/job-copilot` skill spells this out.)
 
 ### `tailor` — JD → ATS-optimized PDF
 
@@ -162,16 +175,46 @@ Builds your standing Wellfound profile (headline, bio, "looking for", achievemen
 skills, per-role blurbs) from the fact base — one profile for every role, not JD-specific.
 Writes `wellfound-profile.md` in the repo root (gitignored). `--target` steers the focus.
 
+### `score` — deterministic JD fit check (free)
+
+```
+resume score <path/to/jd.txt>
+resume score --jd "paste JD text…"
+```
+
+The same scorer the tailor pipeline uses, unbundled: extracts JD keywords from the
+lexicon, classifies them against `resume.tex` + `profile/facts.json`, and prints the
+before/after ATS score with the matched/addable/missing chips. **No LLM, no PDF, no
+network, no cost** — use it to decide whether a role is worth a full tailor run.
+Same check over MCP: the `score_jd` tool.
+
+### `digest` — ranked profile evidence (free)
+
+```
+resume digest [--json]
+```
+
+Prints the deterministic **profile digest**: top GitHub repos (curation pins first;
+forks, archived, and banned repos excluded; ranked by stars/recency/description, cap 8),
+external contributions with merged-PR counts and sample titles (cap 5), and one line per
+LinkedIn role. This is exactly the evidence block injected into the drafting prompts
+(tailor/email/outreach/wellfound) — `facts.json` remains the only source of claims.
+`--json` emits the structured form. Output is plain (no banner) so agents can consume it.
+Same data over MCP: the `read_profile_digest` tool.
+
 ### `sync` — refresh scraped profile sources
 
 ```
-resume sync [--force]
+resume sync [--force] [--linkedin]
 ```
 
-Re-scrapes GitHub and LinkedIn into `profile/github.json` / `profile/linkedin.json`
-when stale (see `SCRAPE_TTL_HOURS`), then re-baselines the drift hashes in
-`profile/sources.lock.json` so `tailor` won't nag about stale facts afterward.
-`--force` ignores the freshness TTL and re-scrapes unconditionally.
+Re-scrapes GitHub into `profile/github.json` when stale (see `SCRAPE_TTL_HOURS`), then
+re-baselines the drift hashes in `profile/sources.lock.json` so `tailor` won't nag about
+stale facts afterward. `--force` ignores the freshness TTL and re-scrapes unconditionally.
+
+**LinkedIn is opt-in:** `profile/linkedin.json` is refreshed only when you pass
+`--linkedin` (scraping LinkedIn is against its ToS, so it never runs implicitly).
+Its structuring step calls Gemini; GitHub-only sync is LLM-free.
 
 Manual edits to `profile/github.json` / `profile/linkedin.json` persist until
 the next scrape changes that specific field.
@@ -233,9 +276,12 @@ Set these in `.env` at the repo root (copy from [.env.example](../.env.example);
 | `GEMINI_MODEL` | no | Gemini model override for the pipelines, default `gemini-2.5-flash` |
 | `DEEPSEEK_API_KEY` | one LLM key | DeepSeek API key (OpenAI-compatible) |
 | `DEEPSEEK_MODEL` | no | DeepSeek model override, default `deepseek-chat` |
-| `AGENT_PROVIDER` | no | provider for the `chat` agent (`gemini` / `deepseek`); blank → same chain as the pipelines |
+| `AGENT_PROVIDER` | no | provider for the `chat` agent (`gemini` / `deepseek`); blank → Gemini when keyed, else `LLM_PROVIDER`, else first key |
 | `AGENT_MODEL` | no | chat model override; blank → the fast chat default (`gemini-2.5-flash`), **not** the `GEMINI_MODEL` pipeline model |
 | `AGENT_EMBEDDING_MODEL` | no | embedding model for chat semantic recall (default `gemini-embedding-001`); needs a Gemini key |
+| `AGENT_RECALL` | no | `1`/`true` enables chat semantic recall (an embedding round-trip per turn); off by default |
+| `AGENT_TITLE_MODEL` | no | model for thread-title generation; blank → `gemini-2.5-flash-lite` (or `deepseek-chat` on a DeepSeek-only setup) |
+| `RESUME_PLAIN` | no | `1` disables the chat's terminal markdown rendering (raw text) |
 | `GITHUB_TOKEN` | no | raises the GitHub API rate limit for `sync`; public scrape works without it |
 | `SCRAPE_TTL_HOURS` | no | hours before a scraped source is considered stale (default 12) |
 | `LINKEDIN_COOKIE` | no | `li_at` session cookie to enable live LinkedIn scraping via Playwright; without it, `sync` falls back to parsing `Linkedin_Profile.pdf` in the repo root |
@@ -247,9 +293,9 @@ Set these in `.env` at the repo root (copy from [.env.example](../.env.example);
 ```
 pnpm build:pdf     # apps/cli/src/build-pdf.ts
 pnpm check         # apps/cli/src/check-resume.ts (all guards)
-pnpm --filter @resume/cli check:source  # --source
-pnpm --filter @resume/cli check:pdf     # --pdf
-pnpm --filter @resume/cli check:width   # --log
+pnpm check:source  # --source (structure only, no LaTeX needed)
+pnpm check:pdf     # --pdf
+pnpm check:width   # --log
 pnpm verify        # build:pdf then check
 ```
 

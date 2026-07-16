@@ -285,7 +285,9 @@ pnpm resume                   # interactive menu (clack) — the same commands, 
 pnpm tailor -- jd.txt --company "Acme-AI" [--role "AI Dev Engineer"]
 pnpm email  -- jd.txt --company "Northwind AI"   # draft + send a Gmail application email
 pnpm wellfound -- jd.txt --company "Acme AI"     # the "why this role?" application-box note
-pnpm sync -- --force          # re-scrape GitHub + LinkedIn now
+pnpm score -- jd.txt          # deterministic JD fit score — free, no LLM
+pnpm digest                   # ranked GitHub/LinkedIn evidence digest — free, no LLM
+pnpm sync -- --force          # re-scrape GitHub now (LinkedIn is opt-in: --linkedin)
 pnpm status                   # env, sources, toolchain, and outputs at a glance
 ```
 
@@ -298,19 +300,26 @@ them for you. Text and the model's live **thinking** stream back; tool calls sho
 lines; irreversible actions (sending email, GitHub writes) require a terminal confirm.
 
 Conversation **memory persists** across sessions in gitignored `.agent/` (libSQL): past
-threads, a working-memory scratchpad, and semantic recall (with a Gemini key). Slash
-commands include `/model` (switch model), `/usage` (token spend + context window),
-`/threads`, `/paste` and `/jd <file>` (attach a JD), `/status`, `/facts`. The chat model
-defaults to a fast, cheap one (`gemini-2.5-flash`), decoupled from the pipeline's
-`GEMINI_MODEL`; override with `AGENT_PROVIDER` / `AGENT_MODEL`. See [docs/CLI.md](docs/CLI.md)
-for the full command + slash-command reference.
+threads, a working-memory scratchpad, and — opt-in via `AGENT_RECALL=1` — semantic recall
+(it costs an embedding round-trip per turn, so it's off by default). Slash commands
+include `/model` (switch model), `/usage` (token spend + context window), `/threads`,
+`/paste` and `/jd <file>` (attach a JD), `/status`, `/facts`. The chat **prefers Gemini**
+whenever a Gemini key is set (fast time-to-first-token) and defaults to `gemini-2.5-flash`,
+decoupled from the pipeline's `GEMINI_MODEL`/`LLM_PROVIDER`; steer it explicitly with
+`AGENT_PROVIDER` / `AGENT_MODEL`. Answers render markdown (headers, bold, code) in the
+terminal; set `RESUME_PLAIN=1` for raw text. See [docs/CLI.md](docs/CLI.md) for the full
+command + slash-command reference.
 
 ### MCP — serve the tools to Claude Code / Cursor (`pnpm mcp`)
 
 The same tools, exposed over the [Model Context Protocol](https://modelcontextprotocol.io) on
-stdio, so an **external agent drives them** — `score_jd`, `tailor_resume`, `build_resume`,
-`draft_application_email`, `outreach_message`, `read_facts`/`update_facts`, `sync_profiles`,
-`log_application`, and the rest. It's a pure tool provider (no model, no chat memory): the
+stdio, so an **external agent drives them** — 19 tools in all. Free/read-only:
+`score_jd`, `read_facts`, `read_profile_digest`, `profile_status`, `list_outputs`,
+`list_applications`; local ops: `build_resume`, `check_resume`, `sync_profiles`,
+`update_facts`, `log_application`; **paid (LLM)**: `tailor_resume`,
+`draft_application_email`, `outreach_message`, `wellfound_note`, `wellfound_profile`,
+`profile_enhancer`; confirm-gated outward actions: `send_application_email`,
+`update_github_profile`. It's a pure tool provider (no model, no chat memory): the
 connecting client brings the model and decides what to call. The repo ships a project-scoped
 [`.mcp.json`](.mcp.json), so **Claude Code auto-discovers it** when you open this repo — approve
 it and run `/mcp` to check status. Env is read from `.env` at the repo root, same as the CLI.
@@ -350,15 +359,23 @@ for details.
 
 ### Profile sources (scraped, tracked, editable)
 
-`pnpm sync` refreshes two committed, hand-editable sources of truth; the tailor also
+`pnpm sync` refreshes the committed, hand-editable sources of truth; the tailor also
 refreshes them automatically before each run (fail-soft — a scrape error falls back to
 cached data):
 
 - **`profile/github.json`** — your public repos + PR contributions (merged/open/closed
   tallies, stars) from the GitHub REST API. Set `GITHUB_TOKEN` for a higher rate limit.
-- **`profile/linkedin.json`** — your LinkedIn profile. Prefers a **live** scrape
-  (Playwright + your `LINKEDIN_COOKIE`); falls back to parsing `Linkedin_Profile.pdf` in
-  the repo root. Either way Gemini structures it into clean JSON (extract-only).
+- **`profile/linkedin.json`** — your LinkedIn profile. **Opt-in**: refreshed only with
+  `pnpm sync -- --linkedin` (scraping LinkedIn is against its ToS, so it never runs
+  implicitly). Prefers a **live** scrape (Playwright + your `LINKEDIN_COOKIE`); falls
+  back to parsing `Linkedin_Profile.pdf` in the repo root. Either way Gemini structures
+  it into clean JSON (extract-only).
+
+The scrapes reach the LLM through the **profile digest** — a deterministic ~2 KB
+distillation (top repos with curation pins first, external merged-PR contributions with
+sample titles, LinkedIn role one-liners) injected into every drafting prompt as evidence
+for what to emphasize; `facts.json` remains the only source of claims. Inspect it with
+`pnpm digest` (`--json` for the structured form).
 
 `profile/sources.lock.json` records each source's last-scrape time and a **content
 hash**: a source re-scrapes only when older than `SCRAPE_TTL_HOURS` (default 12) or
