@@ -282,7 +282,7 @@ cp .env.example .env             # set GEMINI_API_KEY and/or DEEPSEEK_API_KEY (s
 pnpm chat                     # ⭐ conversational agent — every capability as a tool
 pnpm mcp                      # serve the tools over MCP (stdio) to Claude Code / Cursor
 pnpm resume                   # interactive menu (clack) — the same commands, guided
-pnpm tailor -- jd.txt --company "Inteligen-ai" [--role "AI Dev Engineer"]
+pnpm tailor -- jd.txt --company "Acme-AI" [--role "AI Dev Engineer"]
 pnpm email  -- jd.txt --company "Northwind AI"   # draft + send a Gmail application email
 pnpm wellfound -- jd.txt --company "Acme AI"     # the "why this role?" application-box note
 pnpm sync -- --force          # re-scrape GitHub + LinkedIn now
@@ -330,7 +330,7 @@ for details.
   a `--dry-run` is a read-only preview that never overwrites an existing draft.
 
 - **Output naming** — the résumé is filed and named by company + the role read from the
-  JD: `--company "Inteligen-ai"` → `tailored/inteligen_ai/Sandeep Singh - AI Dev
+  JD: `--company "Acme-AI"` → `tailored/acme_ai/Sandeep Singh - AI Dev
   Engineer.pdf` (with matching `.tex` and `.report.md`). Gemini reads the role from the
   JD; a regex is the fallback, then `Software Engineer`. Override with `--role`.
 - **Score** — 20 pts structure + 80 pts weighted JD-keyword coverage (deterministic, in

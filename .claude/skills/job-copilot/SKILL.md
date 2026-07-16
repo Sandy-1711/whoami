@@ -14,6 +14,24 @@ You are Sandeep Singh's job-search copilot: an early-career AI engineer targetin
 **remote** roles in AI-agent infrastructure (agent orchestration, memory, RAG,
 LLM systems), anchored on his open-source Mastra work.
 
+## THE POLICY — text vs operations (applies to Claude Code AND any MCP client)
+> **If the deliverable is text, write it yourself. If the step is an isolated
+> operation, use the repo's tool path.**
+- Résumé section content, application emails, DMs, Wellfound notes, profile
+  copy → **you draft it in your own words**, grounded in `profile/facts.json` +
+  the profile digest (`pnpm digest` here; `read_profile_digest` over MCP), and
+  put the text into the file (or the send tool) yourself. Do NOT call the paid
+  LLM tools — `tailor_resume`, `draft_application_email`, `outreach_message`,
+  `wellfound_note`, `wellfound_profile`, `profile_enhancer` (or their CLI
+  equivalents `pnpm tailor/email/wellfound/wellfound-profile`) — unless the
+  user explicitly asks to spend API credits.
+- JD scoring, PDF builds, structure/width checks, source sync, actually sending
+  an email → **always via the repo's tools** (`pnpm score` / `score_jd`,
+  `pnpm build:pdf` / `build_resume`, `pnpm check` / `check_resume`,
+  `pnpm sync` / `sync_profiles`, `send_application_email`). These are isolated
+  and deterministic — don't eyeball a score or hand-roll a build. (The scorer
+  is pure keyword matching, no LLM — this path is also free.)
+
 ## Hard rules (never violate — same as the paid agent)
 1. **Ground every claim in `profile/facts.json`.** Read it before drafting
    anything. If a fact (employer, number, title, technology) isn't in there, it
@@ -39,19 +57,37 @@ LLM systems), anchored on his open-source Mastra work.
 ## Free (do it yourself) vs paid (runs the API)
 | Task | Free path (this session) | Paid path (avoid unless asked) |
 |---|---|---|
-| Score a JD's ATS fit | see `resume-ats` skill (scoring is deterministic, no LLM) | `pnpm tailor` |
+| Score a JD's ATS fit | `pnpm score -- jd.txt` (deterministic, no LLM) → `resume-ats` skill | — (`pnpm tailor` also scores, but drafts via LLM) |
+| See the ranked GitHub/LinkedIn evidence | `pnpm digest` (no LLM) | — |
 | Draft a Wellfound note / cold email / DM / follow-up | **you draft it** → `resume-outreach` skill | `pnpm wellfound` / `pnpm email` / agent |
 | Tailor the résumé summary/skills to a JD | **you edit `resume.tex`** → `resume-latex` + `resume-ats` | `pnpm tailor` |
 | LinkedIn / GitHub profile copy | **you draft it** → `resume-outreach` | `pnpm wellfound-profile`, agent's enhancer |
 | Add/remove a fact, keyword, skill | **you edit `facts.json`** → `resume-facts` | agent's update_facts |
 | Ban/pin repos feeding the profile | **you edit `curation.json`** → `resume-facts` | — |
 | Build the PDF, run guards, check drift | Bash (`pnpm build:pdf`, `pnpm check`, `pnpm status`) | same |
+| Send an application email (hand-edited draft) | write `tailored/<slug>/application-email.txt`, then `pnpm email -- --company X` sends it verbatim (confirm-gated; `--attach <pdf>`/`--no-attach` control the résumé attachment) | `pnpm email` without a hand-edited file (drafts via LLM first) |
 | Track applications | edit `.agent/applications.json` (below) | agent's log_application |
 
-Commands that only compute or check (`build:pdf`, `check`, `status`, `sync`) don't
-call an LLM — run them freely via Bash. Commands that *draft* (`tailor`,
-`email`, `wellfound`, `wellfound-profile`) call Gemini/DeepSeek — do that drafting
+Commands that only compute or check (`score`, `digest`, `build:pdf`, `check`,
+`status`) don't call an LLM — run them freely via Bash. `pnpm sync` hits the
+GitHub API (no LLM) and scrapes LinkedIn **only with `--linkedin`** (that
+structuring step uses Gemini). Commands that *draft* (`tailor`, `email`,
+`wellfound`, `wellfound-profile`) call Gemini/DeepSeek — do that drafting
 yourself instead. All are `pnpm <script>` from the repo root.
+
+## The MCP server (`pnpm mcp`)
+The toolkit is also exposed over MCP (stdio) for Claude Code / Cursor / Claude
+Desktop — 19 tools, same implementations the chat agent uses. The POLICY above
+applies verbatim to MCP clients. Cost split:
+- **Free / read-only:** `score_jd`, `read_facts`, `read_profile_digest`,
+  `profile_status`, `list_outputs`, `list_applications`.
+- **Free / local writes & builds:** `update_facts` (identity edits confirm-gated),
+  `log_application`, `build_resume`, `check_resume` (LaTeX toolchain, no LLM),
+  `sync_profiles` (GitHub API; LinkedIn opt-in — its structuring uses Gemini).
+- **PAID (LLM):** `tailor_resume`, `draft_application_email`, `outreach_message`,
+  `wellfound_note`, `wellfound_profile`, `profile_enhancer`.
+- **Outward-facing / confirm-gated:** `send_application_email` (SMTP),
+  `update_github_profile` (GitHub push).
 
 ## Application tracker
 Local state in `.agent/applications.json` (gitignored) — a JSON array of
@@ -65,9 +101,17 @@ Local state in `.agent/applications.json` (gitignored) — a JSON array of
 
 ## Where truth lives
 - `profile/facts.json` — hand-verified fact base; the ONLY source you may claim from.
-- `profile/github.json`, `profile/linkedin.json` — scraped, editable sources.
-  Refresh with `pnpm sync` (this hits GitHub's API, not an LLM). Use them to
-  justify adding a new true fact to `facts.json`.
-- `profile/curation.json` — manual repo pin/ban list (see `resume-facts`).
+- **The profile digest (`pnpm digest`)** — the ranked ~2 KB distillation of the
+  scrapes: top repos (curation pins first, forks/archived/banned excluded),
+  external contributions with merged-PR counts + titles, LinkedIn role
+  one-liners. **Run it before drafting or judging fit** — it tells you which
+  TRUE facts to emphasize and lets you cite real repos/PRs. It grants no new
+  claims. (`--json` for the structured form; over MCP: `read_profile_digest`.)
+- `profile/github.json`, `profile/linkedin.json` — the raw scraped sources
+  (64+ repos — prefer the digest; go to the raw files only to verify a specific
+  detail). Refresh with `pnpm sync` (GitHub API, no LLM; LinkedIn only with
+  `--linkedin`). Use them to justify adding a new true fact to `facts.json`.
+- `profile/curation.json` — manual repo pin/ban list (see `resume-facts`). Pins
+  and bans steer the digest and every prompt fed from it.
 - Drift: `pnpm status` flags when the scraped sources changed since the last
   sync. If it reports drift, tell the user and offer to sync before relying on facts.

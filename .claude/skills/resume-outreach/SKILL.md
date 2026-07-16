@@ -9,13 +9,17 @@ The paid CLI/agent generate these with Gemini/DeepSeek (`pnpm wellfound`,
 `pnpm email`, `pnpm wellfound-profile`). Draft them yourself here instead — same
 grounding rules, same output files, no API spend.
 
-**Always first:** read `profile/facts.json`. Every claim (employer, metric,
-project, skill) must come from it. Never invent. Refer to the Indigle/Samagra
-role as **"Founding Software Engineer"** — never "co-founder"/"CTO". Plain text,
-first person, confident, specific to THIS company/role. No clichés, no "I am
+**Always first:** read `profile/facts.json` AND run `pnpm digest` (free, no
+LLM). Every claim (employer, metric, project, skill) must come from facts.json;
+the digest ranks the public evidence — top repos, merged external PRs with
+titles, LinkedIn roles — so you lead with the strongest real proof point and
+cite actual repos/PRs. Never invent. Refer to the Indigle/Samagra role as
+**"Founding Software Engineer"** — never "co-founder"/"CTO". Plain text, first
+person, confident, specific to THIS company/role. No clichés, no "I am
 passionate about". One sharp hook beats three adjectives.
 
-For a JD, also skim `resume.tex` so you lean on real matched keywords, not gaps.
+For a JD, also run `pnpm score -- jd.txt` so you lean on real matched keywords,
+not gaps (the "missing" bucket is off-limits).
 
 ## Message specs (match these exactly)
 | Kind | Length | Subject? | Brief |
@@ -32,10 +36,18 @@ stack, reviewed by maintainers" — do not apologize.
 ## Output file conventions (write to the same paths the CLI uses)
 - **Wellfound note:** `tailored/<company-slug>/wellfound-message.txt` — just the
   message text + trailing newline. Slug = company lowercased, non-alphanumeric → `_`
-  (e.g. "Tax Pilot" → `tax_pilot`, "Inteligen-ai" → `inteligen_ai`).
+  (e.g. "Tax Pilot" → `tax_pilot`, "Acme-AI" → `acme_ai`).
 - **Cold email / DM / follow-up / referral:** show it in chat. If the user wants
   it saved, put it under `tailored/<company-slug>/` with a descriptive name
   (`cold-email.txt`, `linkedin-dm.txt`). These are drafts — don't send.
+- **Application email you want SENT:** write it to
+  `tailored/<company-slug>/application-email.txt` in this exact shape —
+  optional `To: <addr>` line, a `Subject: <line>`, a blank line, then the body.
+  `pnpm email -- --company X` then sends that file **verbatim** (no LLM call —
+  the file-draft is detected and used instead of drafting). It confirms the
+  recipient before sending; `--attach <pdf>` / `--no-attach` control the résumé
+  attachment (default: auto-attach the newest tailored PDF for that company).
+  Sending is outward-facing — the user confirms; never auto-send.
 - **Standing Wellfound profile:** `wellfound-profile.md` at repo root (gitignored).
 - **LinkedIn/GitHub suggestions:** `linkedin-updates.md` at repo root (gitignored).
 
@@ -44,7 +56,8 @@ and mention the timezone overlap if the role lists collaboration hours (he's IST
 
 ## Standing Wellfound profile (`wellfound-profile.md`)
 One doc for every role (like LinkedIn), grounded in facts.json. Sections:
-headline; bio (**≤300 chars**); "What I'm looking for"; achievements (bullets);
+headline (≤60 chars); bio (**≤160 chars — Wellfound's hard cap**, metric-led,
+one line); "What I'm looking for"; achievements (4–6 bullets, each ≤120 chars);
 skills (tags, most important first); a short blurb per experience role. Note it's
 gitignored — paste-ready copy, safe to keep verbatim.
 

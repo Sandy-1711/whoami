@@ -20,6 +20,7 @@ before adding. Structure and the safe edits:
 | `skills` | `{ [category]: string[] }` | add/remove a skill under a category (e.g. "AI/ML & LLM", "Backend & Ops", "Languages"). Keep each category's list sorted. |
 | `headline_metrics` | `string[]` | add/remove a headline metric. |
 | `title_variants` | `string[]` | add/remove a role-title variant. |
+| `seniority` | `string` | one-line seniority framing (e.g. "early-career, graduating Aug 2026 — …"). Keep it honest; it steers how drafts frame experience. |
 | `identity` | `{ name, location, email, github, linkedin, portfolio, graduation }` | **identity edits are outward-facing — SHOW the from→to and get explicit confirmation before writing.** |
 | `experience`, `projects` | arrays of objects | structured; edit carefully, preserving existing shape. |
 
@@ -49,9 +50,11 @@ totals. **You edit it; `resume sync` never overwrites it.** Two lists:
   name — use the full `owner/name` for those.
 
 It's applied at scrape time (`resume sync` writes a curated `github.json`) and
-again whenever the enhancer reads `github.json`, so a curation edit takes effect
-immediately for profile copy without re-syncing. Implementation:
-`packages/core/src/profile/curation.ts`.
+again at read time by the **profile digest** (`pnpm digest` / the evidence block
+in every drafting prompt) and the enhancer — so a curation edit takes effect
+immediately, without re-syncing. Pin your strongest repos: the digest surfaces
+only the top 8, pins first. Implementation:
+`packages/core/src/profile/curation.ts` + `profile/digest.ts`.
 
 ## After editing
 - Facts that change résumé wording → edit `resume.tex`, rebuild, run guards.

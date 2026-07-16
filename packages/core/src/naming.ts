@@ -3,8 +3,8 @@
 // Given a company name and a role, produce the folder + file layout the user
 // wants:  tailored/<company_slug>/<Full Name> - <Role>.{pdf,tex,report.md}
 //
-//   company "Inteligen-ai" + role "AI Dev Engineer"
-//     → tailored/inteligen_ai/Sandeep Singh - AI Dev Engineer.pdf
+//   company "Acme-AI" + role "AI Dev Engineer"
+//     → tailored/acme_ai/Sandeep Singh - AI Dev Engineer.pdf
 //
 // Spaces/dashes in the final filename are fine for the user, but pdflatex is
 // happier with a plain jobname, so the compile uses a separate safe name (see
@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import type { OutputPaths } from './types.js';
 
 // Company → folder slug: lowercase, runs of non-alphanumerics collapse to a
-// single underscore, trimmed.  "Inteligen-ai" → "inteligen_ai".
+// single underscore, trimmed.  "Acme-AI" → "acme_ai".
 export function slugCompany(name: string): string {
   const s = String(name || '')
     .trim()
@@ -33,7 +33,7 @@ export function sanitizeRole(role: string): string {
   return cleaned || 'Software Engineer';
 }
 
-// Safe stem for the LaTeX jobname (no spaces/specials): "inteligen_ai__ai_dev_engineer".
+// Safe stem for the LaTeX jobname (no spaces/specials): "acme_ai__ai_dev_engineer".
 export function safeStem(slug: string, role: string): string {
   const r = sanitizeRole(role).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   return `${slug}__${r}`.slice(0, 80);
