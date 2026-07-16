@@ -197,8 +197,9 @@ export async function runChat(cli: Cli, args: RunChatArgs = {}): Promise<void> {
   // Running usage totals for the session (survive /model switches; reset by nothing).
   const session: Session = { turns: 0, inputTokens: 0, outputTokens: 0, cost: 0, lastContextTokens: 0 };
 
-  let threadId = args.fresh ? randomUUID() : (await mostRecentThreadId(built)) ?? randomUUID();
-  const resumed = !args.fresh && (await mostRecentThreadId(built)) === threadId;
+  const recent = args.fresh ? null : await mostRecentThreadId(built);
+  let threadId = recent ?? randomUUID();
+  const resumed = Boolean(recent);
 
   const modelLine = (): string => {
     const info = chatModelInfo(built.model.modelId, built.model.providerId as AgentProviderId);
@@ -207,7 +208,7 @@ export async function runChat(cli: Cli, args: RunChatArgs = {}): Promise<void> {
   console.log(ui.kv('model', modelLine()));
   console.log(ui.kv('memory', built.memory.semanticRecall
     ? pc.dim('threads + working memory + semantic recall')
-    : pc.dim('threads + working memory (no recall — set a Gemini key)')));
+    : pc.dim('threads + working memory (recall off — AGENT_RECALL=1 + a Gemini key enables it)')));
   console.log(ui.kv('thread', resumed ? pc.dim(`resumed ${threadId.slice(0, 8)}`) : pc.dim(`new ${threadId.slice(0, 8)}`)));
   console.log(pc.dim(`  Type a message, or ${pc.bold('/help')} for commands. ${pc.bold('/exit')} to quit.\n`));
 
