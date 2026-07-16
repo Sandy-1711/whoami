@@ -18,6 +18,7 @@ import {
 } from '../tailor/core.js';
 import { slugCompany, sanitizeRole, extractRoleFromJd } from '../naming.js';
 import { drift } from '../profile/sources.js';
+import { loadProfileDigestText } from '../profile/loaders.js';
 import {
   emailPrompt, EMAIL_SCHEMA, type EmailResponse,
 } from '../prompts.js';
@@ -124,13 +125,16 @@ export class EmailService {
     const dir = join(root, 'tailored', slug);
     const attachment = await this.resolveAttachment(dir, slug, candidateName, role, attach);
 
+    // Ranked GitHub/LinkedIn evidence so the email cites real repos/PRs.
+    const digest = await loadProfileDigestText(root);
+
     const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to draft the application email…`);
     let parsed: EmailResponse;
     try {
       parsed = await provider.generateJson<EmailResponse>({
         prompt: emailPrompt({
           jd, company, role: roleOverride, facts, classification: cls,
-          candidateName, hasResume: Boolean(attachment),
+          candidateName, hasResume: Boolean(attachment), digest,
         }),
         schema: EMAIL_SCHEMA,
       });

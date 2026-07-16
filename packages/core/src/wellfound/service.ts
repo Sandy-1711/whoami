@@ -19,6 +19,7 @@ import {
 } from '../tailor/core.js';
 import { slugCompany } from '../naming.js';
 import { drift } from '../profile/sources.js';
+import { loadProfileDigestText } from '../profile/loaders.js';
 import {
   wellfoundMessagePrompt, WELLFOUND_MESSAGE_SCHEMA, type WellfoundMessageResponse,
   wellfoundProfilePrompt, WELLFOUND_PROFILE_SCHEMA, mapWellfoundProfile, WELLFOUND_BIO_MAX,
@@ -93,11 +94,14 @@ export class WellfoundService {
     const { extractRoleFromJd } = await import('../naming.js');
     const role = roleOverride || extractRoleFromJd(jd) || 'Software Engineer';
 
+    // Ranked GitHub/LinkedIn evidence so the note cites real repos/PRs.
+    const digest = await loadProfileDigestText(root);
+
     const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to draft the Wellfound note…`);
     let message: string, rationale: string;
     try {
       const parsed = await provider.generateJson<WellfoundMessageResponse>({
-        prompt: wellfoundMessagePrompt({ jd, company, role: roleOverride, facts, classification: cls }),
+        prompt: wellfoundMessagePrompt({ jd, company, role: roleOverride, facts, classification: cls, digest }),
         schema: WELLFOUND_MESSAGE_SCHEMA,
       });
       message = (parsed.message || '').trim();
@@ -130,12 +134,13 @@ export class WellfoundService {
 
     const facts = await this.facts();
     await this.warnDrift();
+    const digest = await loadProfileDigestText(root);
 
     const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to build your Wellfound profile…`);
     let profile: WellfoundProfile, rationale: string;
     try {
       const parsed = await provider.generateJson<WellfoundProfileResponse>({
-        prompt: wellfoundProfilePrompt({ facts, target }),
+        prompt: wellfoundProfilePrompt({ facts, target, digest }),
         schema: WELLFOUND_PROFILE_SCHEMA,
       });
       profile = mapWellfoundProfile(parsed);

@@ -5,6 +5,18 @@
 import type { JsonSchema } from './ports/llm.js';
 import type { Facts, Classification, TailorContent, LinkedinProfile, WellfoundProfile, GithubData, LinkedinData } from './types.js';
 
+// The rendered profile digest (see profile/digest.ts) injected into the copy
+// prompts as evidence. It steers WHICH true facts get emphasized — top repos,
+// merged external PRs, role history — but grants no new claims: the FACT BASE
+// stays the only source of truth a prompt may draw on. Empty digest → no block.
+function evidenceSection(digest?: string): string {
+  if (!digest?.trim()) return '';
+  return `
+VERIFIED PUBLIC EVIDENCE (auto-digest of the candidate's GitHub/LinkedIn — use ONLY to choose which FACT BASE items to emphasize and to reference real repos/PRs concretely; NEVER claim anything not in the FACT BASE):
+"""${digest.slice(0, 3000)}"""
+`;
+}
+
 // ---- résumé tailoring -------------------------------------------------------
 
 export const TAILOR_SCHEMA: JsonSchema = {
@@ -32,10 +44,12 @@ export function tailorPrompt({
   jd,
   facts,
   classification,
+  digest,
 }: {
   jd: string;
   facts: Facts;
   classification: Classification;
+  digest?: string;
 }): string {
   return `You are an expert technical resume writer optimizing a resume for a specific job description (JD) and ATS keyword matching.
 
@@ -52,7 +66,7 @@ JOB DESCRIPTION:
 
 FACT BASE (the only truth you may use):
 """${JSON.stringify(facts).slice(0, 12000)}"""
-
+${evidenceSection(digest)}
 KEYWORD ANALYSIS (already computed):
 - JD keywords the resume already covers: ${classification.matched.join(', ') || '(none)'}
 - TRUE keywords to surface (addable): ${classification.addable.join(', ') || '(none)'}
@@ -146,12 +160,14 @@ export function wellfoundMessagePrompt({
   role,
   facts,
   classification,
+  digest,
 }: {
   jd: string;
   company: string;
   role: string;
   facts: Facts;
   classification: Classification;
+  digest?: string;
 }): string {
   return `You are helping a strong early-career engineer write the short intro note that goes in Wellfound's "What interests you about this role?" application box. A startup founder or hiring manager reads it directly — this is NOT parsed by an ATS, so optimize for a human reply, not keyword density.
 
@@ -174,7 +190,7 @@ JOB DESCRIPTION:
 
 FACT BASE (the only truth you may use):
 """${JSON.stringify(facts).slice(0, 12000)}"""
-
+${evidenceSection(digest)}
 KEYWORD ANALYSIS (already computed):
 - Proven on the résumé (matched): ${classification.matched.join(', ') || '(none)'}
 - TRUE & JD-relevant to emphasize (surface): ${classification.addable.join(', ') || '(none)'}
@@ -218,6 +234,7 @@ export function emailPrompt({
   classification,
   candidateName,
   hasResume,
+  digest,
 }: {
   jd: string;
   company: string;
@@ -228,6 +245,7 @@ export function emailPrompt({
   // Whether a tailored résumé PDF is attached — changes whether the body may
   // reference "my attached résumé".
   hasResume: boolean;
+  digest?: string;
 }): string {
   return `You are helping a strong early-career engineer write a job-application email to a company's hiring inbox. A recruiter or founder reads it directly — optimize for a reply, not ATS keyword density.
 
@@ -252,7 +270,7 @@ JOB DESCRIPTION:
 
 FACT BASE (the only truth you may use):
 """${JSON.stringify(facts).slice(0, 12000)}"""
-
+${evidenceSection(digest)}
 KEYWORD ANALYSIS (already computed):
 - Proven on the résumé (matched): ${classification.matched.join(', ') || '(none)'}
 - TRUE & JD-relevant to emphasize (surface): ${classification.addable.join(', ') || '(none)'}
@@ -308,9 +326,11 @@ export interface WellfoundProfileResponse {
 export function wellfoundProfilePrompt({
   facts,
   target = '',
+  digest,
 }: {
   facts: Facts;
   target?: string;
+  digest?: string;
 }): string {
   return `You are writing a candidate's STANDING Wellfound (AngelList Talent) profile — the single profile a startup founder sees for every role, like a LinkedIn profile. It is NOT tailored to one job. Optimize it to maximize relevant inbound: founders filter by role + skill tags and skim the headline and "what I'm looking for" line, so those must earn the click; then they read the about and experience.
 
@@ -329,7 +349,7 @@ TARGET FOCUS (optional — may be empty):
 
 FACT BASE (the only truth you may use):
 """${JSON.stringify(facts).slice(0, 14000)}"""
-
+${evidenceSection(digest)}
 Return JSON matching the schema. "rationale" is 1-2 lines for the candidate on the positioning choices — not pasted into the profile.`;
 }
 
@@ -517,6 +537,7 @@ export function outreachPrompt({
   role,
   jd,
   context,
+  digest,
 }: {
   kind: OutreachKind;
   facts: Facts;
@@ -524,6 +545,7 @@ export function outreachPrompt({
   role: string;
   jd: string;
   context: string;
+  digest?: string;
 }): string {
   const spec = OUTREACH_SPEC[kind];
   return `You write short, effective outreach messages for a strong early-career engineer's job search. A real person reads this — optimize for a reply, not keyword density.
@@ -544,6 +566,6 @@ TARGET ROLE: ${role || '(unspecified)'}
 ${context ? `EXTRA CONTEXT (from the user): ${context}\n` : ''}${jd ? `JOB DESCRIPTION:\n"""${jd.slice(0, 4000)}"""\n` : ''}
 FACT BASE (the only truth you may use):
 """${JSON.stringify(facts).slice(0, 12000)}"""
-
+${evidenceSection(digest)}
 Return JSON: { ${spec.subject ? '"subject": the subject line, ' : ''}"message": the message to send, "rationale": 1-2 lines on why this framing works (for the candidate, not sent) }.`;
 }
