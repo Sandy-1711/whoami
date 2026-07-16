@@ -22,10 +22,24 @@ export function dockerDaemonUp(): boolean {
 
 // Cheap up-front probe mirroring compileLatex's engine selection, so callers can
 // bail before doing expensive work (e.g. an LLM call) when nothing can render.
+// The probes spawn latexmk/docker synchronously, so the result is memoized for a
+// minute — repeat /status or profile_status calls in a chat session shouldn't
+// each block on Docker. compileLatex keeps probing live (it only runs when a
+// build was actually requested, and must see a just-started daemon).
+const ENGINE_PROBE_TTL_MS = 60_000;
+let engineProbe: { at: number; reason: EngineReason | null } | null = null;
+
 export function renderEngineReason(): EngineReason | null {
-  if (haveCmd('latexmk')) return null;
-  if (haveCmd('docker')) return dockerDaemonUp() ? null : 'docker-daemon-down';
-  return 'no-engine';
+  if (engineProbe && Date.now() - engineProbe.at < ENGINE_PROBE_TTL_MS) return engineProbe.reason;
+  const reason = haveCmd('latexmk')
+    ? null
+    : haveCmd('docker') ? (dockerDaemonUp() ? null : 'docker-daemon-down') : 'no-engine';
+  engineProbe = { at: Date.now(), reason };
+  return reason;
+}
+
+export function resetEngineProbeCache(): void {
+  engineProbe = null;
 }
 
 // Returns { engine, status, output }. Caller should verify the PDF exists rather
