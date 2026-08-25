@@ -6,7 +6,6 @@ import { WellfoundService } from "./service.js";
 import { silentPresenter } from "../ports/logger.js";
 import { createFakeLlm } from '@resume/llm/testing';
 
-const MESSAGE = { message: "I shipped RAG agents on FastAPI at AiRA.", rationale: "leads with proof" };
 const PROFILE = {
     headline: "AI Engineer — Agent Infra",
     bio: "AI engineer with 12 merged PRs into Mastra's agent runtime; shipped production agents at AiRA.",
@@ -29,35 +28,6 @@ async function makeRoot(): Promise<string> {
     return root;
 }
 afterEach(async () => { await Promise.all(roots.splice(0).map((r) => rm(r, { recursive: true, force: true }))); });
-
-const JD = "We are hiring an AI Engineer to build RAG agents with FastAPI. Remote, Kubernetes a plus.";
-
-describe("WellfoundService.message", () => {
-    it("writes the per-JD note under tailored/<slug> and grounds it in real keywords", async () => {
-        const root = await makeRoot();
-        const svc = new WellfoundService({ root, presenter: silentPresenter });
-        const res = await svc.message({ jd: JD, company: "Acme AI" }, { llm: createFakeLlm({ responses: [MESSAGE] }) });
-
-        expect(res.paths.slug).toBe("acme_ai");
-        expect(res.paths.file).toContain(join("tailored", "acme_ai", "wellfound-message.txt"));
-        expect(res.message).toContain("RAG");
-        expect(res.wordCount).toBeGreaterThan(0);
-        // Deterministic keyword read backs the note and flags the gap it must not claim.
-        expect([...res.cls.matched, ...res.cls.addable]).toContain("RAG");
-        expect(res.cls.missing).toContain("Kubernetes");
-
-        expect(await readFile(res.paths.file, "utf8")).toContain("RAG agents");
-    });
-
-    it("rejects a too-short JD and a missing company", async () => {
-        const root = await makeRoot();
-        const svc = new WellfoundService({ root, presenter: silentPresenter });
-        await expect(svc.message({ jd: "short", company: "Acme" }, { llm: createFakeLlm({ responses: [MESSAGE] }) }))
-            .rejects.toThrow(/too short/i);
-        await expect(svc.message({ jd: JD, company: "" }, { llm: createFakeLlm({ responses: [MESSAGE] }) }))
-            .rejects.toThrow(/No company/i);
-    });
-});
 
 describe("WellfoundService.profile", () => {
     it("writes ONE standing profile at the repo root (not per-company)", async () => {

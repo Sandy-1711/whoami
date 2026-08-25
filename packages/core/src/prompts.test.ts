@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
     tailorPrompt, mapTailorResponse, linkedinPrompt, TAILOR_SCHEMA, type TailorResponse,
-    wellfoundMessagePrompt, wellfoundProfilePrompt, mapWellfoundProfile, clampBio, WELLFOUND_BIO_MAX,
-    WELLFOUND_MESSAGE_SCHEMA, WELLFOUND_PROFILE_SCHEMA, type WellfoundProfileResponse,
+    applicationNotePrompt, wellfoundProfilePrompt, mapWellfoundProfile, clampBio, WELLFOUND_BIO_MAX,
+    APPLICATION_NOTE_SCHEMA, WELLFOUND_PROFILE_SCHEMA, type WellfoundProfileResponse,
     emailPrompt, outreachPrompt,
 } from "./prompts.js";
 import type { Facts, Classification } from "./types.js";
@@ -70,9 +70,9 @@ describe("TAILOR_SCHEMA", () => {
     });
 });
 
-describe("wellfoundMessagePrompt", () => {
+describe("applicationNotePrompt", () => {
     it("should embed the company, role, JD, fact base and keyword buckets", () => {
-        const prompt = wellfoundMessagePrompt({
+        const prompt = applicationNotePrompt({
             jd: "Build RAG agents", company: "Acme AI", role: "AI Engineer", facts, classification,
         });
         expect(prompt).toContain("Acme AI");
@@ -84,7 +84,7 @@ describe("wellfoundMessagePrompt", () => {
         expect(prompt).toContain("Kubernetes"); // missing (never claim)
     });
     it("should tell the model to skip greeting/signature and avoid ATS framing", () => {
-        const prompt = wellfoundMessagePrompt({ jd: "x".repeat(30), company: "Acme", role: "", facts, classification });
+        const prompt = applicationNotePrompt({ jd: "x".repeat(30), company: "Acme", role: "", facts, classification });
         expect(prompt).toMatch(/NO greeting/i);
         expect(prompt).toMatch(/NOT parsed by an ATS/i);
     });
@@ -155,7 +155,7 @@ describe("evidence digest injection", () => {
     it("appears in all five copy prompts when passed", () => {
         expect(tailorPrompt({ jd: "x", facts, classification, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
         expect(tailorPrompt({ jd: "x", facts, classification, digest })).toContain("12 merged");
-        expect(wellfoundMessagePrompt({ jd: "x", company: "A", role: "", facts, classification, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
+        expect(applicationNotePrompt({ jd: "x", company: "A", role: "", facts, classification, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
         expect(emailPrompt({ jd: "x", company: "A", role: "", facts, classification, candidateName: "S", hasResume: false, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
         expect(wellfoundProfilePrompt({ facts, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
         expect(outreachPrompt({ kind: "cold_email", facts, company: "A", role: "", jd: "", context: "", digest })).toContain("VERIFIED PUBLIC EVIDENCE");
@@ -174,10 +174,10 @@ describe("evidence digest injection", () => {
     });
 });
 
-describe("Wellfound schemas", () => {
-    it("message schema requires a message and defaults the rationale", () => {
-        expect(WELLFOUND_MESSAGE_SCHEMA.safeParse({ rationale: "r" }).success).toBe(false);
-        expect(WELLFOUND_MESSAGE_SCHEMA.parse({ message: "m" }).rationale).toBe("");
+describe("note & profile schemas", () => {
+    it("note schema requires a message and defaults the rationale", () => {
+        expect(APPLICATION_NOTE_SCHEMA.safeParse({ rationale: "r" }).success).toBe(false);
+        expect(APPLICATION_NOTE_SCHEMA.parse({ message: "m" }).rationale).toBe("");
     });
 
     it("profile schema requires the fields a founder actually reads", () => {
