@@ -6,6 +6,8 @@ export interface LlmConfig {
   keys: Record<string, string>;
   /** Provider id to model override. Empty falls back to the provider's default. */
   models: Record<string, string>;
+  /** Per-call timeout override (LLM_TIMEOUT_MS); 0 or absent uses the default. */
+  timeoutMs?: number;
 }
 
 /** How long a single model call may run before it is aborted, in milliseconds. */
