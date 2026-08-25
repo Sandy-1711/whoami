@@ -227,3 +227,41 @@ describe('TailorService.run', () => {
     expect(llm.calls).toHaveLength(0);
   });
 });
+
+describe('TailorService.plan and .render as separate calls', () => {
+  it('plans without a LaTeX toolchain, and renders from the saved plan later', async () => {
+    const root = await makeRoot();
+    const pdf = fakePdfInspector({ pages: [1] });
+    const llm = createFakeLlm({ responses: [DRAFT] });
+
+    // Planning must survive a machine with no way to render — that is the whole
+    // reason the stages are separate.
+    const planner = new TailorService({
+      root, latex: fakeLatexCompiler({ availability: 'docker-daemon-down' }), pdf, presenter: silentPresenter,
+    });
+    const { plan, planFile } = await planner.plan({ jd: JD, company: 'Acme AI' }, context(llm));
+
+    expect(plan.role).toBe('AI Dev Engineer');
+    expect(plan.summaryText).toBe(DRAFT.tailored_summary_text);
+    expect(existsSync(planFile)).toBe(true);
+
+    // A separate service instance, as a second process would be.
+    const renderer = new TailorService({ root, latex: fakeLatexCompiler(), pdf, presenter: silentPresenter });
+    const loaded = await renderer.loadPlan('Acme AI');
+    const result = await renderer.render(loaded, { llm });
+
+    expect(result.guardsPass).toBe(true);
+    expect(existsSync(result.paths.pdf)).toBe(true);
+    expect(await readFile(result.paths.report, 'utf8')).toContain(DRAFT.tailored_summary_text);
+    // One model call for the plan; the render needed none because it fit.
+    expect(llm.calls.map((c) => c.operation)).toEqual(['tailor']);
+  });
+
+  it('says which step is missing when a company was never planned', async () => {
+    const root = await makeRoot();
+    const svc = new TailorService({
+      root, latex: fakeLatexCompiler(), pdf: fakePdfInspector(), presenter: silentPresenter,
+    });
+    await expect(svc.loadPlan('Never Heard Of')).rejects.toThrow(/planning step first/);
+  });
+});
