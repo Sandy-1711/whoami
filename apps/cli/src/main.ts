@@ -14,6 +14,7 @@ import { createInterface } from 'node:readline';
 import * as p from '@clack/prompts';
 import * as ui from './ui.js';
 import { pc } from './ui.js';
+import { defaultProviderId, listProviders } from '@resume/llm';
 import { parseArgs } from './args.js';
 import { buildCli, type Cli } from './container.js';
 
@@ -210,18 +211,8 @@ async function interactiveTailor(cli: Cli): Promise<void> {
   const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
   if (p.isCancel(role)) return;
 
-  // Ask which model only when more than one provider has a key configured.
-  let provider = '';
-  const withKeys = cli.registry.list().filter((f) => cli.config.llm.keys[f.id]);
-  if (withKeys.length > 1) {
-    const pick = await p.select({
-      message: 'Which model should tailor the résumé?',
-      initialValue: cli.registry.defaultProviderId(cli.config),
-      options: withKeys.map((f) => ({ value: f.id, label: f.label, hint: cli.config.llm.models[f.id] || f.defaultModel })),
-    });
-    if (p.isCancel(pick)) return;
-    provider = pick as string;
-  }
+  const provider = await pickProvider(cli, 'Which model should tailor the résumé?');
+  if (provider === null) return;
 
   const { runTailor } = await import('./commands/tailor.js');
   await runTailor(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
@@ -328,11 +319,11 @@ async function interactiveWellfoundProfile(cli: Cli): Promise<void> {
 // Ask which model to use, but only when more than one provider has a key. Returns
 // '' for the auto-pick (single provider), the chosen id, or null on cancel.
 async function pickProvider(cli: Cli, message: string): Promise<string | null> {
-  const withKeys = cli.registry.list().filter((f) => cli.config.llm.keys[f.id]);
+  const withKeys = listProviders().filter((f) => cli.config.llm.keys[f.id]);
   if (withKeys.length <= 1) return '';
   const pick = await p.select({
     message,
-    initialValue: cli.registry.defaultProviderId(cli.config),
+    initialValue: defaultProviderId(cli.config.llm),
     options: withKeys.map((f) => ({ value: f.id, label: f.label, hint: cli.config.llm.models[f.id] || f.defaultModel })),
   });
   if (p.isCancel(pick)) return null;

@@ -3,6 +3,7 @@
 // this command is the thin CLI seam: it wires config → provider → service and
 // draws the result.
 import { relative } from 'node:path';
+import { createLlm } from '@resume/llm';
 import {
   SourceRefresher, TailorService, type TailorReportData,
 } from '@resume/core';
@@ -22,10 +23,11 @@ export async function runTailor(
   cli: Cli,
   { jd, company, role = '', provider, model }: RunTailorArgs,
 ): Promise<void> {
-  // Resolve provider + key + model (throws if the chosen key is missing).
-  const llm = cli.registry.resolve(cli.config, { provider, model });
+  // Throws when the chosen provider has no key, before any work is done.
+  const llm = createLlm(cli.config.llm, { provider, model });
+  const engine = llm.describe();
 
-  console.log(ui.banner('Résumé Tailor', `JD → ATS-optimized PDF · engine: ${llm.label} ${llm.model}`));
+  console.log(ui.banner('Résumé Tailor', `JD → ATS-optimized PDF · engine: ${engine.label} ${engine.modelId}`));
 
   const refresher = new SourceRefresher({
     githubToken: cli.config.githubToken,
@@ -40,8 +42,8 @@ export async function runTailor(
     presenter: cli.presenter,
   });
 
-  const result = await service.run({ jd, company, role }, { provider: llm, refresher });
-  renderReport(cli, result.report, llm.label);
+  const result = await service.run({ jd, company, role }, { llm, refresher });
+  renderReport(cli, result.report, engine.label);
 }
 
 // The on-screen ATS breakdown — the CLI's view of the run's structured result.

@@ -1,8 +1,13 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createDeepSeek } from '@ai-sdk/deepseek';
-import type { EmbeddingModel, LanguageModel } from 'ai';
+import type { EmbeddingModel } from 'ai';
 import type { LlmConfig } from './config.js';
 import { LlmError } from './errors.js';
+
+// The concrete model instance a provider returns. Deliberately not `ai`'s
+// `LanguageModel` union, which widens to include a plain string and stops
+// Mastra's Agent accepting it.
+export type LanguageModel = ReturnType<ReturnType<typeof createGoogleGenerativeAI>>;
 
 /** Providers this toolkit can talk to, in preference order. */
 export const PROVIDER_IDS = ['gemini', 'deepseek'] as const;
@@ -34,15 +39,22 @@ const PROVIDERS: Record<ProviderId, ProviderSpec> = {
     modelEnv: 'DEEPSEEK_MODEL',
     defaultModel: 'deepseek-chat',
     fastModel: 'deepseek-chat',
-    create: (apiKey, model) => createDeepSeek({ apiKey })(model),
+    // DeepSeek is OpenAI-compatible and shape-compatible with the Gemini
+    // instance for our purposes; both are AI SDK language models.
+    create: (apiKey, model) => createDeepSeek({ apiKey })(model) as unknown as LanguageModel,
   },
 };
 
 /** Gemini's current GA text embedding model. Only Gemini has an embedder here. */
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 
-function isProviderId(id: string): id is ProviderId {
+export function isProviderId(id: string): id is ProviderId {
   return (PROVIDER_IDS as readonly string[]).includes(id);
+}
+
+/** A provider's built-in model, ignoring any config override. */
+export function providerDefaultModel(id: ProviderId, { fast = false } = {}): string {
+  return fast ? PROVIDERS[id].fastModel : PROVIDERS[id].defaultModel;
 }
 
 /** Providers that have an API key configured, in preference order. */
@@ -70,6 +82,25 @@ export function providerLabel(id: ProviderId): string {
 export function providerEnv(id: ProviderId): { apiKeyEnv: string; modelEnv: string } {
   const { apiKeyEnv, modelEnv } = PROVIDERS[id];
   return { apiKeyEnv, modelEnv };
+}
+
+export interface ProviderInfo {
+  id: ProviderId;
+  label: string;
+  defaultModel: string;
+  apiKeyEnv: string;
+  modelEnv: string;
+}
+
+/** Every known provider, for status screens and for loading config from env. */
+export function listProviders(): ProviderInfo[] {
+  return PROVIDER_IDS.map((id) => ({
+    id,
+    label: PROVIDERS[id].label,
+    defaultModel: PROVIDERS[id].defaultModel,
+    apiKeyEnv: PROVIDERS[id].apiKeyEnv,
+    modelEnv: PROVIDERS[id].modelEnv,
+  }));
 }
 
 export interface ModelSelection {
@@ -105,8 +136,11 @@ export function resolveModel(config: LlmConfig, selection: ModelSelection = {}):
 
   const providerId = requested ? (requested as ProviderId) : defaultProviderId(config);
   const spec = PROVIDERS[providerId];
-  const modelId =
-    selection.model || config.models[providerId] || (selection.fast ? spec.fastModel : spec.defaultModel);
+  // An explicit model wins, then an explicit `fast` (asking for cheap is an
+  // intent a config-wide override should not defeat), then the config, then the
+  // provider default.
+  const modelId = selection.model
+    || (selection.fast ? spec.fastModel : config.models[providerId] || spec.defaultModel);
 
   const apiKey = config.keys[providerId] || '';
   if (!apiKey) {

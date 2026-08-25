@@ -5,15 +5,7 @@ import { join } from "node:path";
 import { EmailService, findApplyEmail } from "./service.js";
 import { silentPresenter } from "../ports/logger.js";
 import { nullMailer, type Mailer, type EmailMessage } from "../ports/mailer.js";
-import type { LlmProvider, LlmRequest } from "../ports/llm.js";
-
-// A fake provider returning canned JSON regardless of prompt.
-function fakeProvider(payload: unknown): LlmProvider {
-    return {
-        id: "fake", label: "Fake", model: "test",
-        async generateJson<T>(_req: LlmRequest): Promise<T> { return payload as T; },
-    };
-}
+import { createFakeLlm } from '@resume/llm/testing';
 
 // A Mailer that records the message it was asked to send instead of hitting SMTP.
 function recordingMailer(): Mailer & { sent: EmailMessage[] } {
@@ -52,7 +44,7 @@ describe("EmailService.draft", () => {
     it("drafts an email, appends a contact signature, and writes application-email.txt", async () => {
         const root = await makeRoot();
         const svc = new EmailService({ root, presenter: silentPresenter });
-        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { provider: fakeProvider(EMAIL), from: "me@gmail.com" });
+        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { llm: createFakeLlm({ responses: [EMAIL] }), from: "me@gmail.com" });
 
         expect(d.paths.slug).toBe("acme_ai");
         expect(d.subject).toContain("AI Engineer Application");
@@ -78,7 +70,7 @@ describe("EmailService.draft", () => {
         const svc = new EmailService({ root, presenter: silentPresenter });
         const d = await svc.draft(
             { jd: JD, company: "Acme AI", role: "AI Engineer" },
-            { provider: fakeProvider(EMAIL) },
+            { llm: createFakeLlm({ responses: [EMAIL] }) },
         );
         expect(d.attachments).toHaveLength(1);
         expect(d.attachments[0]!.filename).toBe("Sandeep Singh - AI Engineer.pdf");
@@ -92,7 +84,7 @@ describe("EmailService.draft", () => {
         const existing = join(root, "tailored", "acme_ai", "application-email.txt");
         await writeFile(existing, "MY HAND-WRITTEN DRAFT");
         const svc = new EmailService({ root, presenter: silentPresenter });
-        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { provider: fakeProvider(EMAIL), persist: false });
+        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { llm: createFakeLlm({ responses: [EMAIL] }), persist: false });
 
         expect(d.written).toBe(false);
         expect(await readFile(existing, "utf8")).toBe("MY HAND-WRITTEN DRAFT");
@@ -103,7 +95,7 @@ describe("EmailService.draft", () => {
         await mkdir(join(root, "tailored", "acme_ai"), { recursive: true });
         await writeFile(join(root, "tailored", "acme_ai", "resume.pdf"), "%PDF fake");
         const svc = new EmailService({ root, presenter: silentPresenter });
-        const d = await svc.draft({ jd: JD, company: "Acme AI", attach: false }, { provider: fakeProvider(EMAIL) });
+        const d = await svc.draft({ jd: JD, company: "Acme AI", attach: false }, { llm: createFakeLlm({ responses: [EMAIL] }) });
         expect(d.attachments).toHaveLength(0);
         expect(d.resumeRelPath).toBeNull();
     });
@@ -111,9 +103,9 @@ describe("EmailService.draft", () => {
     it("rejects a too-short JD and a missing company", async () => {
         const root = await makeRoot();
         const svc = new EmailService({ root, presenter: silentPresenter });
-        await expect(svc.draft({ jd: "short", company: "Acme" }, { provider: fakeProvider(EMAIL) }))
+        await expect(svc.draft({ jd: "short", company: "Acme" }, { llm: createFakeLlm({ responses: [EMAIL] }) }))
             .rejects.toThrow(/too short/i);
-        await expect(svc.draft({ jd: JD, company: "" }, { provider: fakeProvider(EMAIL) }))
+        await expect(svc.draft({ jd: JD, company: "" }, { llm: createFakeLlm({ responses: [EMAIL] }) }))
             .rejects.toThrow(/No company/i);
     });
 });
@@ -122,7 +114,7 @@ describe("EmailService.send", () => {
     it("sends the drafted email + attachments through the Mailer port", async () => {
         const root = await makeRoot();
         const svc = new EmailService({ root, presenter: silentPresenter });
-        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { provider: fakeProvider(EMAIL), from: "me@gmail.com" });
+        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { llm: createFakeLlm({ responses: [EMAIL] }), from: "me@gmail.com" });
         const mailer = recordingMailer();
         const res = await svc.send(d, { mailer });
 
@@ -136,7 +128,7 @@ describe("EmailService.send", () => {
     it("honours a recipient override from the CLI's approval step", async () => {
         const root = await makeRoot();
         const svc = new EmailService({ root, presenter: silentPresenter });
-        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { provider: fakeProvider(EMAIL) });
+        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { llm: createFakeLlm({ responses: [EMAIL] }) });
         const mailer = recordingMailer();
         await svc.send(d, { mailer, to: "override@acme.ai" });
         expect(mailer.sent[0]!.to).toBe("override@acme.ai");
@@ -146,7 +138,7 @@ describe("EmailService.send", () => {
         const root = await makeRoot();
         const svc = new EmailService({ root, presenter: silentPresenter });
         // JD without any apply-to address → draft.to is empty.
-        const d = await svc.draft({ jd: JD.replace("Apply to jobs@acme.ai.", ""), company: "Acme AI" }, { provider: fakeProvider(EMAIL) });
+        const d = await svc.draft({ jd: JD.replace("Apply to jobs@acme.ai.", ""), company: "Acme AI" }, { llm: createFakeLlm({ responses: [EMAIL] }) });
         expect(d.to).toBe("");
         await expect(svc.send(d, { mailer: recordingMailer() })).rejects.toThrow(/No recipient/i);
         await expect(svc.send(d, { mailer: recordingMailer(), to: "not-an-email" })).rejects.toThrow(/valid email/i);
@@ -155,7 +147,7 @@ describe("EmailService.send", () => {
     it("refuses to send when the mailer is unconfigured", async () => {
         const root = await makeRoot();
         const svc = new EmailService({ root, presenter: silentPresenter });
-        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { provider: fakeProvider(EMAIL) });
+        const d = await svc.draft({ jd: JD, company: "Acme AI" }, { llm: createFakeLlm({ responses: [EMAIL] }) });
         await expect(svc.send(d, { mailer: nullMailer })).rejects.toThrow(/not configured|GMAIL/i);
     });
 });

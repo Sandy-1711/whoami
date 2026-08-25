@@ -36,10 +36,9 @@ export function emailTools(deps: AgentDeps) {
       noAttach: z.boolean().optional().describe('Attach nothing.'),
     }),
     execute: async ({ jd, company, role, to, attach, noAttach }) => {
-      const llm = deps.registry.resolve(deps.config);
       const draft = await service.draft(
         { jd, company, role: role || '', attach: noAttach ? false : attach || undefined },
-        { provider: llm, from: deps.config.gmail?.user || '', persist: true },
+        { llm: deps.llm, from: deps.config.gmail?.user || '', persist: true },
       );
       drafts.set(draft.paths.slug, draft);
       return {

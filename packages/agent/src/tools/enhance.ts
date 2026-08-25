@@ -21,9 +21,8 @@ export function enhanceTools(deps: AgentDeps) {
       target: z.string().optional().describe('Optional positioning focus, e.g. "remote agent-infrastructure roles".'),
     }),
     execute: async ({ target }) => {
-      const llm = deps.registry.resolve(deps.config);
       const service = new EnhanceService({ root: deps.root, presenter: deps.presenter });
-      const r = await service.suggest({ target: target || '' }, { provider: llm });
+      const r = await service.suggest({ target: target || '' }, { llm: deps.llm });
       return {
         linkedinHeadline: r.linkedin.headline,
         linkedinAbout: r.linkedin.about,

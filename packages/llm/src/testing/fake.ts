@@ -24,13 +24,16 @@ export interface FakeLlm extends Llm {
   readonly calls: FakeCall[];
 }
 
+const FAKE_CONTEXT = { provider: 'fake', model: 'fake-model' };
+
 const DEFAULT_USAGE: TokenUsage = { inputTokens: 100, outputTokens: 50 };
 
 /**
  * An {@link Llm} that answers from a canned list instead of a provider.
  *
- * Responses are returned as-is without schema validation, so a test can hand
- * back a deliberately wrong shape to exercise a caller's own guards.
+ * Responses go through the request's schema exactly as the real gateway's do, so
+ * defaults are applied and a canned response of the wrong shape raises the same
+ * `schema` {@link LlmError} a real model would.
  */
 export function createFakeLlm(options: FakeLlmOptions): FakeLlm {
   const { responses, failFirst = 0, failWith = 'rate_limit', usage = DEFAULT_USAGE } = options;
@@ -41,19 +44,25 @@ export function createFakeLlm(options: FakeLlmOptions): FakeLlm {
 
   return {
     calls,
+    describe() {
+      return { providerId: 'gemini' as const, modelId: 'fake-model', label: 'Fake' };
+    },
+
     async generateJson<T>(request: GenerateJsonRequest<T>): Promise<LlmResult<T>> {
       calls.push({ operation: request.operation, prompt: request.prompt });
 
       if (calls.length <= failFirst) {
-        throw new LlmError(failWith, `Fake ${failWith} failure.`, {
-          provider: 'fake',
-          model: 'fake-model',
-        });
+        throw new LlmError(failWith, `Fake ${failWith} failure.`, FAKE_CONTEXT);
       }
 
-      const object = responses[Math.min(answered, responses.length - 1)] as T;
+      const canned = responses[Math.min(answered, responses.length - 1)];
       answered++;
-      return { object, providerId: 'gemini', modelId: 'fake-model', usage };
+
+      const parsed = request.schema.safeParse(canned);
+      if (!parsed.success) {
+        throw new LlmError('schema', parsed.error.message, FAKE_CONTEXT);
+      }
+      return { object: parsed.data, providerId: 'gemini', modelId: 'fake-model', usage };
     },
   };
 }

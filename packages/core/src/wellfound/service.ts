@@ -12,7 +12,7 @@
 // for the CLI to draw.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { LlmProvider } from '../ports/llm.js';
+import { LlmError, type Llm } from '@resume/llm';
 import type { Presenter } from '../ports/logger.js';
 import {
   extractJdKeywords, classify, scoreResume, latexToPlainText,
@@ -61,7 +61,7 @@ export interface WellfoundProfileResult {
 }
 
 export interface WellfoundRunContext {
-  provider: LlmProvider;
+  llm: Llm;
 }
 
 export interface WellfoundServiceDeps {
@@ -77,7 +77,8 @@ export class WellfoundService {
   // The short note for the application box — specific to one JD.
   async message(request: WellfoundMessageRequest, ctx: WellfoundRunContext): Promise<WellfoundMessageResult> {
     const { root, presenter } = this.deps;
-    const { provider } = ctx;
+    const { llm } = ctx;
+    const model = llm.describe();
     const { jd, company, role: roleOverride = '' } = request;
 
     if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
@@ -97,20 +98,21 @@ export class WellfoundService {
     // Ranked GitHub/LinkedIn evidence so the note cites real repos/PRs.
     const digest = await loadProfileDigestText(root);
 
-    const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to draft the Wellfound note…`);
+    const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to draft the Wellfound note…`);
     let message: string, rationale: string;
     try {
-      const parsed = await provider.generateJson<WellfoundMessageResponse>({
+      const { object: parsed } = await llm.generateJson({
+        operation: 'wellfound-note',
         prompt: wellfoundMessagePrompt({ jd, company, role: roleOverride, facts, classification: cls, digest }),
         schema: WELLFOUND_MESSAGE_SCHEMA,
       });
-      message = (parsed.message || '').trim();
-      rationale = (parsed.rationale || '').trim();
+      message = parsed.message.trim();
+      rationale = parsed.rationale.trim();
       if (!message) throw new Error('empty message');
-      spin.succeed(`${provider.label} drafted the application note (${wordCount(message)} words).`);
+      spin.succeed(`${model.label} drafted the application note (${wordCount(message)} words).`);
     } catch (err) {
-      spin.fail(`${provider.label} failed: ${(err as Error).message}`);
-      throw new Error(`Check the ${provider.label} API key / quota / model name and retry.`);
+      spin.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
+      throw err;
     }
 
     const slug = slugCompany(company);
@@ -129,27 +131,29 @@ export class WellfoundService {
   // master file so it improves as the fact base does.
   async profile(request: WellfoundProfileRequest, ctx: WellfoundRunContext): Promise<WellfoundProfileResult> {
     const { root, presenter } = this.deps;
-    const { provider } = ctx;
+    const { llm } = ctx;
+    const model = llm.describe();
     const target = (request.target || '').trim();
 
     const facts = await this.facts();
     await this.warnDrift();
     const digest = await loadProfileDigestText(root);
 
-    const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to build your Wellfound profile…`);
+    const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to build your Wellfound profile…`);
     let profile: WellfoundProfile, rationale: string;
     try {
-      const parsed = await provider.generateJson<WellfoundProfileResponse>({
+      const { object: parsed } = await llm.generateJson({
+        operation: 'wellfound-profile',
         prompt: wellfoundProfilePrompt({ facts, target, digest }),
         schema: WELLFOUND_PROFILE_SCHEMA,
       });
       profile = mapWellfoundProfile(parsed);
-      rationale = (parsed.rationale || '').trim();
+      rationale = parsed.rationale.trim();
       if (!profile.headline || !profile.bio) throw new Error('incomplete profile');
-      spin.succeed(`${provider.label} built your Wellfound profile.`);
+      spin.succeed(`${model.label} built your Wellfound profile.`);
     } catch (err) {
-      spin.fail(`${provider.label} failed: ${(err as Error).message}`);
-      throw new Error(`Check the ${provider.label} API key / quota / model name and retry.`);
+      spin.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
+      throw err;
     }
 
     const path = join(root, 'wellfound-profile.md');

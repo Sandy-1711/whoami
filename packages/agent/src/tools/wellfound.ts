@@ -24,8 +24,7 @@ export function wellfoundTools(deps: AgentDeps) {
       role: z.string().optional().describe('Role override; omit to infer from the JD.'),
     }),
     execute: async ({ jd, company, role }) => {
-      const llm = deps.registry.resolve(deps.config);
-      const r = await service.message({ jd, company, role: role || '' }, { provider: llm });
+      const r = await service.message({ jd, company, role: role || '' }, { llm: deps.llm });
       return {
         note: r.message,
         wordCount: r.wordCount,
@@ -47,8 +46,7 @@ export function wellfoundTools(deps: AgentDeps) {
       target: z.string().optional().describe('Optional focus, e.g. "remote agent-infrastructure roles".'),
     }),
     execute: async ({ target }) => {
-      const llm = deps.registry.resolve(deps.config);
-      const r = await service.profile({ target: target || '' }, { provider: llm });
+      const r = await service.profile({ target: target || '' }, { llm: deps.llm });
       return {
         headline: r.profile.headline,
         bio: r.profile.bio,

@@ -2,16 +2,10 @@
 
 // Ports (the interfaces consumers implement or depend on).
 export * from './ports/http.js';
-export * from './ports/llm.js';
 export * from './ports/config.js';
 export * from './ports/latex.js';
 export * from './ports/logger.js';
 export * from './ports/mailer.js';
-
-// LLM registry + provider factories.
-export * from './llm/registry.js';
-export { geminiFactory } from './llm/providers/gemini.js';
-export { deepseekFactory } from './llm/providers/deepseek.js';
 
 // Domain types + pure helpers.
 export * from './types.js';

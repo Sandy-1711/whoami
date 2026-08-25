@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { AppConfig } from '@resume/core';
-import { resolveAgentProviderId, resolveAgentModel, resolveAgentEmbedder, resolveTitleModel } from './model.js';
+import { resolveAgentModel, resolveAgentEmbedder, resolveTitleModel } from './model.js';
 
 function config(over: Partial<AppConfig> = {}): AppConfig {
   return {
@@ -18,9 +18,10 @@ function agentSettings(over: Partial<NonNullable<AppConfig['agent']>> = {}): Non
   return { provider: '', model: '', embeddingModel: '', recall: false, titleModel: '', ...over };
 }
 
-describe('resolveAgentProviderId', () => {
+describe('chat provider selection', () => {
   it('auto-picks the first supported provider that has a key', () => {
-    expect(resolveAgentProviderId(config({ llm: { provider: '', keys: { deepseek: 'k' }, models: {} } }))).toBe('deepseek');
+    const m = resolveAgentModel(config({ llm: { provider: '', keys: { deepseek: 'k' }, models: {} } }));
+    expect(m.providerId).toBe('deepseek');
   });
 
   it('honours AGENT_PROVIDER when it is supported and keyed', () => {
@@ -28,18 +29,18 @@ describe('resolveAgentProviderId', () => {
       llm: { provider: 'gemini', keys: { gemini: 'g', deepseek: 'd' }, models: {} },
       agent: agentSettings({ provider: 'deepseek' }),
     });
-    expect(resolveAgentProviderId(c)).toBe('deepseek');
+    expect(resolveAgentModel(c).providerId).toBe('deepseek');
   });
 
   it('prefers Gemini for chat even when the pipeline LLM_PROVIDER is deepseek', () => {
     // Chat wants low TTFT — LLM_PROVIDER steers the pipelines, not the chat loop.
     const c = config({ llm: { provider: 'deepseek', keys: { gemini: 'g', deepseek: 'd' }, models: {} } });
-    expect(resolveAgentProviderId(c)).toBe('gemini');
+    expect(resolveAgentModel(c).providerId).toBe('gemini');
   });
 
   it('follows LLM_PROVIDER when no Gemini key exists', () => {
     const c = config({ llm: { provider: 'deepseek', keys: { deepseek: 'd' }, models: {} } });
-    expect(resolveAgentProviderId(c)).toBe('deepseek');
+    expect(resolveAgentModel(c).providerId).toBe('deepseek');
   });
 
   it('ignores an AGENT_PROVIDER that has no key', () => {
@@ -47,7 +48,7 @@ describe('resolveAgentProviderId', () => {
       llm: { provider: '', keys: { gemini: 'g' }, models: {} },
       agent: agentSettings({ provider: 'deepseek' }),
     });
-    expect(resolveAgentProviderId(c)).toBe('gemini');
+    expect(resolveAgentModel(c).providerId).toBe('gemini');
   });
 });
 

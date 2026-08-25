@@ -1,14 +1,12 @@
-// Composition root. The one place that instantiates concrete adapters, registers
-// the LLM providers, and wires them into a Cli container the commands receive.
-// Adding an LLM provider is a single `.register(...)` line here — nothing else in
-// the CLI or core changes.
+// Composition root. The one place that instantiates concrete adapters and wires
+// them into a Cli container the commands receive.
 import {
-  LlmProviderRegistry, geminiFactory, deepseekFactory, UnpdfInspector,
+  UnpdfInspector,
   type AppConfig, type LatexCompiler, type PdfInspector, type Presenter, type Mailer,
 } from '@resume/core';
+import { createLlm, type Llm } from '@resume/llm';
 import { repoRoot } from './paths.js';
 import { loadConfig } from './adapters/config.js';
-import { NodeFetch } from './adapters/http.js';
 import { DockerLatexCompiler } from './adapters/latex.js';
 import { ClackPresenter } from './adapters/presenter.js';
 import { GmailMailer } from './adapters/mailer.js';
@@ -16,7 +14,7 @@ import { GmailMailer } from './adapters/mailer.js';
 export interface Cli {
   root: string;
   config: AppConfig;
-  registry: LlmProviderRegistry;
+  llm: Llm;
   latex: LatexCompiler;
   pdf: PdfInspector;
   presenter: Presenter;
@@ -24,14 +22,11 @@ export interface Cli {
 }
 
 export function buildCli(): Cli {
-  const registry = new LlmProviderRegistry(new NodeFetch())
-    .register(geminiFactory)
-    .register(deepseekFactory);
-  const config = loadConfig(registry.list());
+  const config = loadConfig();
   return {
     root: repoRoot,
     config,
-    registry,
+    llm: createLlm(config.llm),
     latex: new DockerLatexCompiler(),
     pdf: new UnpdfInspector(),
     presenter: new ClackPresenter(),

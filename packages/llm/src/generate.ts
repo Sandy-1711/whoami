@@ -32,12 +32,25 @@ export interface GenerateJsonRequest<T> {
   signal?: AbortSignal;
 }
 
+export interface ModelIdentity {
+  providerId: ProviderId;
+  modelId: string;
+  label: string;
+}
+
 /**
  * The model gateway domain code depends on. Injected like every other adapter in
  * this repo, so a service can be tested against a fake with no network.
  */
 export interface Llm {
   generateJson<T>(request: GenerateJsonRequest<T>): Promise<LlmResult<T>>;
+  /**
+   * Which provider and model a call would use, without making one — for
+   * progress messages and reports.
+   *
+   * @throws {LlmError} kind `auth` when the chosen provider has no API key.
+   */
+  describe(selection?: ModelSelection): ModelIdentity;
 }
 
 function withTimeout(timeoutMs: number, signal?: AbortSignal): AbortSignal {
@@ -52,8 +65,17 @@ function withTimeout(timeoutMs: number, signal?: AbortSignal): AbortSignal {
  * error classification, and tracing apply in exactly one place. Retries are the
  * AI SDK's — it already backs off and honours `retry-after`.
  */
-export function createLlm(config: LlmConfig): Llm {
+export function createLlm(config: LlmConfig, defaults: ModelSelection = {}): Llm {
+  // A per-run override (the CLI's --provider/--model) applies to every call the
+  // services make, since they select nothing themselves.
+  const select = (selection?: ModelSelection): ModelSelection => ({ ...defaults, ...selection });
+
   return {
+    describe(selection?: ModelSelection): ModelIdentity {
+      const { providerId, modelId, label } = resolveModel(config, select(selection));
+      return { providerId, modelId, label };
+    },
+
     async generateJson<T>(request: GenerateJsonRequest<T>): Promise<LlmResult<T>> {
       const {
         prompt,
@@ -65,7 +87,7 @@ export function createLlm(config: LlmConfig): Llm {
         signal,
       } = request;
 
-      const { providerId, modelId, model } = resolveModel(config, selection);
+      const { providerId, modelId, model } = resolveModel(config, select(selection));
 
       try {
         const result = await generateObject({
