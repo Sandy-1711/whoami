@@ -1,25 +1,26 @@
 # Architecture
 
-The target design. Where it differs from what is on disk today, the difference is marked and the
-phase that closes it is named — see [ROADMAP.md](ROADMAP.md).
+Sections are tagged **[built]** or **[planned — Phase N]**. A planned section describes a design
+that does not exist on disk yet; check [ROADMAP.md](ROADMAP.md) for its current status before
+trusting it.
 
-## Package graph
+## Package graph [built, except apps/studio]
 
 ```
 apps/cli      ── the `resume` command: interactive menu, direct commands, chat REPL, MCP server
-apps/studio   ── local web studio: Hono server + Vite React SPA          (Phase 4)
+apps/studio   ── local web studio: Hono server + Vite React SPA   [planned — Phase 4]
 apps/web      ── deployed Vercel functions serving the published PDF     (untouched)
 
 packages/agent ── Mastra agent: tools, memory, instructions, MCP server
 packages/core  ── the domain: tailoring, email, outreach, scraping, guards, résumé rendering
-packages/llm   ── the only place a model is called                       (Phase 1)
+packages/llm   ── the only place a model is called
 ```
 
 Dependency direction: `apps/*` → `packages/agent` → `packages/core` → `packages/llm`.
 Nothing in `packages/` reads `process.env`; config arrives as a typed `AppConfig` built once in
 `apps/cli/src/adapters/config.ts`.
 
-## Composition root
+## Composition root [built]
 
 `apps/cli/src/container.ts` builds the `Cli` container — config, LaTeX compiler, PDF inspector,
 presenter, mailer. Every front end derives its deps from it:
@@ -34,25 +35,28 @@ presenter, mailer. Every front end derives its deps from it:
 exist. Chat and MCP both wire exactly that set, so the front ends cannot drift apart. The studio
 wires the same.
 
-## The LLM path (Phase 1)
+## The LLM path [built]
 
-Today there are two: hand-rolled `fetch` providers in `packages/core/src/llm/` for the pipelines,
-and the AI SDK via Mastra for chat. They collapse into one.
+One gateway, `packages/llm`. The hand-rolled `fetch` providers and the `LlmProvider` port that
+preceded it are deleted.
 
 ```
 prompts.ts (text + Zod schema)
         │
         ▼
-packages/llm/generate.ts
+packages/llm/generate.ts   createLlm(config, defaults?) -> Llm
   ├── models.ts    Gemini first, DeepSeek secondary
-  ├── timeout      AbortSignal.timeout()
-  ├── retry        backoff on rate_limit | server | timeout, honours Retry-After
+  ├── timeout      AbortSignal.timeout(), LLM_TIMEOUT_MS or 90s
   ├── errors.ts    LlmError { kind, retryable, provider, model, cause }
-  └── tracing.ts   OTel span → Langfuse exporter (no-op when disabled)
+  └── retry        the AI SDK's own — it backs off and honours retry-after
         │
         ▼
   validated, typed object  (generateObject + Zod)
 ```
+
+`Llm` is injected like `LatexCompiler` and `Mailer` are, so any service can be driven end to end
+against `createFakeLlm` from `@resume/llm/testing` with no network and no spend. The fake applies
+the request schema, so it fails the way production does.
 
 `generateObject` validates the model's output against the schema, so a missing field fails loudly
 instead of reaching LaTeX as `undefined`.
@@ -61,7 +65,7 @@ Services surface `LlmError.kind` and the original message. Nothing flattens a pr
 a generic sentence — under MCP that made every failure look identical, because the real message went
 to stderr where the client discards it.
 
-## Tracing
+## Tracing [planned — Phase 1]
 
 One OTel tracer, exported to a self-hosted Langfuse. The Mastra agent attaches observability at the
 `Mastra` container level; `packages/llm` emits spans on the same tracer, so a chat turn that
@@ -70,7 +74,7 @@ triggers a tailor run appears as one trace with nested generations.
 Disabled by default in the absence of `LANGFUSE_ENABLED`. An observability outage must never fail a
 run.
 
-## The résumé (Phase 3)
+## The résumé [planned — Phase 3]
 
 `profile/resume.json` is the source of truth. `resume.tex` becomes a build artifact.
 
@@ -92,7 +96,7 @@ is what makes "the model may rewrite everything" safe.
 The score is measured after render (`classify` + `scoreResume` over `latexToPlainText` of the
 output), not projected before the model runs.
 
-## Grounding
+## Grounding [built]
 
 Two files, different jobs:
 
@@ -104,7 +108,7 @@ Two files, different jobs:
 `profile/curation.json` pins and bans repos before they reach the digest. `profile/sources.lock.json`
 carries scrape freshness and file-drift hashes.
 
-## Guards
+## Guards [built]
 
 `packages/core/src/check/` — source structure (no compile needed), rendered-PDF structure, and
 width (overfull lines from the LaTeX log). CI runs the source check before compiling and the PDF
