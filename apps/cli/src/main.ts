@@ -14,7 +14,7 @@ import { createInterface } from 'node:readline';
 import * as p from '@clack/prompts';
 import * as ui from './ui.js';
 import { pc } from './ui.js';
-import { defaultProviderId, listProviders } from '@resume/llm';
+import { defaultProviderId, listProviders, startTracing } from '@resume/llm';
 import { parseArgs } from './args.js';
 import { buildCli, type Cli } from './container.js';
 
@@ -363,10 +363,16 @@ async function main(): Promise<unknown> {
   // (The stdio transport writes via process.stdout.write directly, untouched.)
   if (cmd === 'mcp') { const e = console.error.bind(console); console.log = e; console.info = e; console.debug = e; }
   const cli = buildCli();
-  if (!cmd) return interactive(cli);
-  const run = commands(cli)[cmd];
-  if (!run) { printHelp(); throw new Error(`Unknown command: ${cmd}`); }
-  return run();
+  // Spans buffer, so the flush has to outlive the command that produced them.
+  const tracing = await startTracing(cli.config.langfuse);
+  try {
+    if (!cmd) return await interactive(cli);
+    const run = commands(cli)[cmd];
+    if (!run) { printHelp(); throw new Error(`Unknown command: ${cmd}`); }
+    return await run();
+  } finally {
+    await tracing?.shutdown();
+  }
 }
 
 main().catch(fail);

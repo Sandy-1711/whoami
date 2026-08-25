@@ -29,6 +29,12 @@ export function loadConfig(): AppConfig {
     githubToken: process.env.GITHUB_TOKEN || '',
     linkedinCookie: process.env.LINKEDIN_COOKIE || '',
     scrapeTtlHours: Number(process.env.SCRAPE_TTL_HOURS) || 12,
+    langfuse: {
+      enabled: /^(1|true|yes)$/i.test(process.env.LANGFUSE_ENABLED || ''),
+      publicKey: process.env.LANGFUSE_PUBLIC_KEY || '',
+      secretKey: process.env.LANGFUSE_SECRET_KEY || '',
+      baseUrl: process.env.LANGFUSE_BASE_URL || '',
+    },
     agent: {
       provider: (process.env.AGENT_PROVIDER || '').toLowerCase(),
       model: process.env.AGENT_MODEL || '',
