@@ -1,7 +1,8 @@
 // The application tracker — machine-local job-application state under
 // .agent/applications.json (gitignored). Upsert-by-company/role so re-logging the
-// same application advances its status instead of duplicating it. The agent keeps
-// this honest: sends auto-log here, and the model updates statuses as things move.
+// same application advances its status instead of duplicating it. The tools feed
+// it themselves (see recording.ts); the model only supplies what a human knows,
+// like an interview being scheduled.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -27,8 +28,22 @@ export interface LogInput {
   notes?: string;
 }
 
+// How far along an application is. Automatic logging may move an entry up this
+// ladder but never down: drafting a second note for a company you already heard
+// back from must not reset it to "drafted".
+const STATUS_RANK: Record<string, number> = {
+  drafted: 1, tailored: 2, applied: 3, sent: 3, interviewing: 4,
+  offer: 5, rejected: 5, ghosted: 5,
+};
+
+export interface LogOptions {
+  // Keep the recorded status when the incoming one is earlier in the ladder.
+  advanceOnly?: boolean;
+}
+
 const file = (root: string): string => join(root, '.agent', 'applications.json');
 const norm = (s: string): string => s.trim().toLowerCase();
+const rank = (status: string): number => STATUS_RANK[norm(status)] ?? 0;
 
 async function readAll(root: string): Promise<Application[]> {
   try {
@@ -44,7 +59,7 @@ async function writeAll(root: string, apps: Application[]): Promise<void> {
 
 // Upsert by company (+ role when given). Advances an existing entry rather than
 // duplicating; merges artifacts. Returns the stored entry.
-export async function logApplication(root: string, input: LogInput): Promise<Application> {
+export async function logApplication(root: string, input: LogInput, opts: LogOptions = {}): Promise<Application> {
   if (!input.company?.trim()) throw new Error('An application needs a company.');
   const apps = await readAll(root);
   const role = (input.role || '').trim();
@@ -56,7 +71,7 @@ export async function logApplication(root: string, input: LogInput): Promise<App
   if (match) {
     if (input.role) match.role = role;
     if (input.channel) match.channel = input.channel;
-    if (input.status) match.status = input.status;
+    if (input.status && !(opts.advanceOnly && rank(input.status) < rank(match.status))) match.status = input.status;
     if (input.notes) match.notes = input.notes;
     if (input.artifacts?.length) match.artifacts = [...new Set([...match.artifacts, ...input.artifacts])];
     match.updatedAt = now;

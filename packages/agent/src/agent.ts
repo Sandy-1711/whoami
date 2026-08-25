@@ -9,6 +9,7 @@ import { resolveAgentModel, type AgentModelOverride } from './model.js';
 import { buildMemory, type AgentMemory } from './memory.js';
 import { buildObservability } from './observability.js';
 import { RESUME_AGENT_INSTRUCTIONS } from './instructions.js';
+import { recordTools } from './recording.js';
 import { readOnlyTools } from './tools/readonly.js';
 import { pipelineTools } from './tools/pipeline.js';
 import { emailTools } from './tools/email.js';
@@ -46,8 +47,11 @@ export interface BuildAgentOptions {
 // The single source of truth for "what tools exist" — the chat agent (buildAgent)
 // and the MCP server (buildMcpServer) both wire exactly this set over the same
 // injected deps, so the two front ends never drift apart.
+//
+// Wrapping the whole set in recordTools is what makes the history self-keeping:
+// both front ends get it, and no tool (or model) has to opt in.
 export function assembleTools(deps: AgentDeps) {
-  return {
+  return recordTools(deps.root, {
     ...readOnlyTools(deps),
     ...pipelineTools(deps),
     ...emailTools(deps),
@@ -55,7 +59,7 @@ export function assembleTools(deps: AgentDeps) {
     ...githubTools(deps),
     ...outreachTools(deps),
     ...trackerTools(deps),
-  };
+  });
 }
 
 export function buildAgent(deps: AgentDeps, opts: BuildAgentOptions = {}): BuiltAgent {
