@@ -34,7 +34,7 @@ export function readOnlyTools(deps: AgentDeps) {
         'fact base cannot back them — these may NEVER be claimed).',
       cost: 'free',
       use: 'judging fit, and always before committing to a paid tailor run.',
-      avoid: 'producing a tailored PDF — that is tailor_resume.',
+      avoid: 'producing a tailored PDF — that is tailor_plan then tailor_render.',
       then: 'tailor_resume if the fit is worth it; otherwise report the gaps and stop.',
     }),
     inputSchema: z.object(JD_INPUT_SHAPE),
@@ -52,7 +52,7 @@ export function readOnlyTools(deps: AgentDeps) {
           cls.missing.length
             ? `${cls.missing.length} JD keyword(s) are not in the fact base — say so plainly; never claim them.`
             : 'Nothing the JD asks for is missing from the fact base.',
-          'tailor_resume renders a PDF for this JD (spends credits, needs Docker or latexmk).',
+          'tailor_plan drafts the copy for this JD; tailor_render then compiles it.',
         ],
       };
     },

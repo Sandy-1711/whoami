@@ -35,8 +35,9 @@ const SERVER_DESCRIPTION = [
   'first and assert nothing it does not carry — a plausible-sounding invention is the worst possible ' +
   'output here.',
   '',
-  'TYPICAL FLOW: read_profile → score_jd (free, decides whether to bother) → tailor_resume (spends ' +
-  'credits, renders the PDF) → draft_application_email or outreach_message → show the user → ' +
+  'TYPICAL FLOW: read_profile → score_jd (free, decides whether to bother) → tailor_plan (spends ' +
+  'credits, proposes the copy) → tailor_render (compiles the PDF) → draft_application_email or ' +
+  'outreach_message → show the user → ' +
   'send_application_email. Every step records itself; log_application is only for what happens ' +
   'off-machine, like a reply.',
   '',
