@@ -33,7 +33,8 @@ export * from './profile/digest.js';
 export * from './profile/loaders.js';
 export * from './profile/serialize.js';
 
-// GitHub profile writes (bio, repo descriptions, profile README).
+// GitHub reads (any account) and profile writes (bio, repo descriptions, README).
+export * from './github/read.js';
 export * from './github/profile.js';
 export * from './scrape/github.js';
 export * from './scrape/linkedin.js';

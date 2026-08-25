@@ -53,6 +53,7 @@ const DETAIL: Record<string, (result: Bag) => string | undefined> = {
   send_application_email: (r) => (r.sent ? `sent to ${r.to}` : `not sent — ${r.reason}`),
   outreach_message: (r) => `${r.kind}, ${r.wordCount} words → ${r.file ?? 'not filed'}`,
   update_facts: (r) => r.summary,
+  read_github: (r) => (r.readme ? `read ${r.repo} README` : r.repos ? `${r.repos.length} repos` : r.fullName || r.login),
   update_github_profile: (r) => (r.pushed ? `pushed ${r.target}` : `not pushed — ${r.reason}`),
 };
 
