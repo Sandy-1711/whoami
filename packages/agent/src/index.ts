@@ -10,6 +10,7 @@ export { buildMemory, AGENT_RESOURCE_ID, type AgentMemory } from './memory.js';
 export { buildAgent, assembleTools, type BuiltAgent, type BuildAgentOptions } from './agent.js';
 export { buildMcpServer } from './mcp.js';
 export { readOnlyTools } from './tools/readonly.js';
+export { askTools } from './tools/ask.js';
 export { pipelineTools } from './tools/pipeline.js';
 export { emailTools } from './tools/email.js';
 export { factsTools } from './tools/facts.js';

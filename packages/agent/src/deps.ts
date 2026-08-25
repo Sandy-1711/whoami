@@ -7,7 +7,7 @@ import type {
   AppConfig, LatexCompiler, PdfInspector, Mailer, Presenter,
 } from '@resume/core';
 import type { Llm } from '@resume/llm';
-import type { ConfirmGate } from './confirm.js';
+import type { ConfirmGate, AskGate } from './confirm.js';
 
 export interface AgentDeps {
   root: string;
@@ -20,6 +20,10 @@ export interface AgentDeps {
   // Human-in-the-loop gate for irreversible/outward-facing actions (sending an
   // email, pushing to GitHub). The model cannot bypass it.
   confirm: ConfirmGate;
+  // Asks the user a question and returns the answer. Absent where no human is
+  // reachable in-process (MCP): there the client is the one holding the
+  // conversation, so ask_user hands the questions to it instead.
+  ask?: AskGate;
   // Whether Playwright is installed (LinkedIn live-scrape readiness) — a
   // node_modules probe the CLI does and passes in, so this package stays CLI-free.
   playwright: boolean;
