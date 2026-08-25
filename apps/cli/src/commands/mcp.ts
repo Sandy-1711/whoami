@@ -30,7 +30,10 @@ export async function runMcp(cli: Cli): Promise<void> {
     // The MCP client (e.g. Claude Code) prompts the user before every tool call,
     // so that prompt IS the human-in-the-loop for this path. Auto-approve the
     // in-tool confirm gate; without it, irreversible tools (send email, push
-    // GitHub) would deadlock waiting on a terminal that isn't there.
+    // GitHub) would deadlock waiting on a terminal that isn't there. What stops
+    // a blanket "always allow" from sending mail unseen is the other layer: those
+    // tools require `confirm: true` in the call itself, so the intent is in the
+    // arguments the client renders.
     confirm: async () => true,
     playwright: havePlaywright(cli.root),
   };
