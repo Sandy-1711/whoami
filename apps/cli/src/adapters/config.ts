@@ -20,6 +20,7 @@ export function loadConfig(): AppConfig {
       provider: (process.env.LLM_PROVIDER || '').toLowerCase(),
       keys,
       models,
+      timeoutMs: Number(process.env.LLM_TIMEOUT_MS) || 0,
     },
     gmail: {
       user: process.env.GMAIL_USER || '',

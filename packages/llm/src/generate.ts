@@ -82,7 +82,7 @@ export function createLlm(config: LlmConfig, defaults: ModelSelection = {}): Llm
         schema,
         selection,
         temperature = 0.3,
-        timeoutMs = DEFAULT_TIMEOUT_MS,
+        timeoutMs = config.timeoutMs || DEFAULT_TIMEOUT_MS,
         maxRetries = DEFAULT_MAX_RETRIES,
         signal,
       } = request;
