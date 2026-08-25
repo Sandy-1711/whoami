@@ -1,8 +1,10 @@
+import { SpanStatusCode, type Span } from '@opentelemetry/api';
 import { generateObject } from 'ai';
 import type { z } from 'zod';
 import { DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_MS, type LlmConfig } from './config.js';
-import { classifyLlmError } from './errors.js';
+import { classifyLlmError, LlmError } from './errors.js';
 import { resolveModel, type ModelSelection, type ProviderId } from './models.js';
+import { getTracer, LANGFUSE_ATTR } from './tracing.js';
 
 export interface TokenUsage {
   inputTokens: number;
@@ -58,6 +60,38 @@ function withTimeout(timeoutMs: number, signal?: AbortSignal): AbortSignal {
   return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }
 
+interface CallDescription {
+  operation: string;
+  providerId: ProviderId;
+  modelId: string;
+  temperature: number;
+  prompt: string;
+}
+
+// The `gen_ai.*` names are load bearing: Langfuse's exporter decides whether a
+// span is a model call by looking for them, and drops the ones without.
+function describeCall(span: Span, call: CallDescription): void {
+  span.setAttributes({
+    'gen_ai.operation.name': 'generate_content',
+    'gen_ai.system': call.providerId,
+    'gen_ai.request.model': call.modelId,
+    'gen_ai.request.temperature': call.temperature,
+    [LANGFUSE_ATTR.observationType]: 'generation',
+    [LANGFUSE_ATTR.traceName]: call.operation,
+    [LANGFUSE_ATTR.input]: call.prompt,
+  });
+}
+
+function recordFailure(span: Span, err: LlmError): void {
+  span.recordException(err);
+  span.setStatus({ code: SpanStatusCode.ERROR, message: err.describe() });
+  span.setAttributes({
+    [LANGFUSE_ATTR.level]: 'ERROR',
+    [LANGFUSE_ATTR.statusMessage]: err.describe(),
+    'error.type': err.kind,
+  });
+}
+
 /**
  * Build the real gateway over a provider config.
  *
@@ -80,6 +114,7 @@ export function createLlm(config: LlmConfig, defaults: ModelSelection = {}): Llm
       const {
         prompt,
         schema,
+        operation,
         selection,
         temperature = 0.3,
         timeoutMs = config.timeoutMs || DEFAULT_TIMEOUT_MS,
@@ -89,28 +124,38 @@ export function createLlm(config: LlmConfig, defaults: ModelSelection = {}): Llm
 
       const { providerId, modelId, model } = resolveModel(config, select(selection));
 
-      try {
-        const result = await generateObject({
-          model,
-          schema,
-          prompt,
-          temperature,
-          maxRetries,
-          abortSignal: withTimeout(timeoutMs, signal),
-        });
+      return getTracer().startActiveSpan(`llm.${operation}`, async (span) => {
+        describeCall(span, { operation, providerId, modelId, temperature, prompt });
 
-        return {
-          object: result.object,
-          providerId,
-          modelId,
-          usage: {
+        try {
+          const result = await generateObject({
+            model,
+            schema,
+            prompt,
+            temperature,
+            maxRetries,
+            abortSignal: withTimeout(timeoutMs, signal),
+          });
+
+          const usage = {
             inputTokens: result.usage?.inputTokens ?? 0,
             outputTokens: result.usage?.outputTokens ?? 0,
-          },
-        };
-      } catch (err) {
-        throw classifyLlmError(err, { provider: providerId, model: modelId });
-      }
+          };
+          span.setAttributes({
+            'gen_ai.usage.input_tokens': usage.inputTokens,
+            'gen_ai.usage.output_tokens': usage.outputTokens,
+            [LANGFUSE_ATTR.output]: JSON.stringify(result.object),
+          });
+
+          return { object: result.object, providerId, modelId, usage };
+        } catch (err) {
+          const failure = classifyLlmError(err, { provider: providerId, model: modelId });
+          recordFailure(span, failure);
+          throw failure;
+        } finally {
+          span.end();
+        }
+      });
     },
   };
 }
