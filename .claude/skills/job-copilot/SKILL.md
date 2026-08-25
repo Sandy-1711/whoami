@@ -22,9 +22,9 @@ LLM systems), anchored on his open-source Mastra work.
   the profile digest (`pnpm digest` here; `read_profile` over MCP), and
   put the text into the file (or the send tool) yourself. Do NOT call the paid
   LLM tools — `tailor_resume`, `draft_application_email`, `outreach_message`,
-  `wellfound_note`, `wellfound_profile`, `profile_enhancer` (or their CLI
-  equivalents `pnpm tailor/email/wellfound/wellfound-profile`) — unless the
-  user explicitly asks to spend API credits.
+  `profile_enhancer` (or their CLI equivalents
+  `pnpm tailor/email/wellfound/wellfound-profile`) — unless the user
+  explicitly asks to spend API credits.
 - JD scoring, PDF builds, structure/width checks, source sync, actually sending
   an email → **always via the repo's tools** (`pnpm score` / `score_jd`,
   `pnpm build:pdf` / `build_resume`, `pnpm check` / `check_resume`,
@@ -84,8 +84,9 @@ applies verbatim to MCP clients. Cost split:
 - **Free / local writes & builds:** `update_facts` (identity edits confirm-gated),
   `log_application`, `build_resume`, `check_resume` (LaTeX toolchain, no LLM),
   `sync_profiles` (GitHub API; LinkedIn opt-in — its structuring uses Gemini).
-- **PAID (LLM):** `tailor_resume`, `draft_application_email`, `outreach_message`,
-  `wellfound_note`, `wellfound_profile`, `profile_enhancer`.
+- **PAID (LLM):** `tailor_resume`, `draft_application_email`, `outreach_message`
+  (kinds: wellfound_note, cold_email, linkedin_dm, followup, referral_ask),
+  `profile_enhancer`.
 - **Outward-facing / confirm-gated:** `send_application_email` (SMTP),
   `update_github_profile` (GitHub push).
 
