@@ -30,9 +30,25 @@ describe('emailTools', () => {
     expect(Object.keys(emailTools(depsFor(root))).sort()).toEqual(['draft_application_email', 'send_application_email']);
   });
 
+  it('send will not run at all without the confirm argument', async () => {
+    // Mastra validates the input schema before execute, so an omitted confirm
+    // never reaches the mailer — it comes back as an error naming the field.
+    const tools = emailTools(depsFor(root));
+    const res: any = await run(tools.send_application_email, { company: 'Acme AI' });
+    expect(res.error).toBe(true);
+    expect(res.message).toMatch(/confirm/);
+  });
+
+  it('send refuses when confirm is explicitly false', async () => {
+    const tools = emailTools(depsFor(root));
+    const res: any = await run(tools.send_application_email, { company: 'Acme AI', confirm: false });
+    expect(res.sent).toBe(false);
+    expect(res.reason).toMatch(/confirm/i);
+  });
+
   it('send names the file it looked for when there is no draft anywhere', async () => {
     const tools = emailTools(depsFor(root));
-    await expect(run(tools.send_application_email, { company: 'Acme AI' }))
+    await expect(run(tools.send_application_email, { company: 'Acme AI', confirm: true }))
       .rejects.toThrow(/tailored\/acme_ai\/application-email\.txt/);
   });
 
@@ -46,7 +62,7 @@ describe('emailTools', () => {
     // The deny gate stands in for the user declining, which is as far as a test
     // may go — reaching it proves the draft was found and read.
     const tools = emailTools(depsFor(root));
-    const res: any = await run(tools.send_application_email, { company: 'Acme AI' });
+    const res: any = await run(tools.send_application_email, { company: 'Acme AI', confirm: true });
     expect(res).toEqual({ sent: false, reason: 'Cancelled — not sent.' });
   });
 });
