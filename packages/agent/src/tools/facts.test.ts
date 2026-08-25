@@ -28,7 +28,7 @@ const readFacts = async () => JSON.parse(await readFile(factsPath(), 'utf8'));
 
 describe('update_facts', () => {
   it('applies a batch of edits in one write', async () => {
-    const res = await run({ confirm: denyGate }, {
+    const res = await run({ confirm: allowGate }, {
       edits: [
         { op: 'add_keyword', value: 'LangGraph' },
         { op: 'add_skill', value: 'Mastra', category: 'AI/ML & LLM' },
@@ -53,17 +53,25 @@ describe('update_facts', () => {
     expect(await readFile(factsPath(), 'utf8')).toBe(before);
   });
 
-  it('gates a batch that touches identity, and writes nothing when declined', async () => {
+  it('writes nothing when the user declines', async () => {
     const before = await readFile(factsPath(), 'utf8');
-    const res = await run({ confirm: denyGate }, {
+    const res = await run({ confirm: denyGate }, { edits: [{ op: 'add_keyword', value: 'LangGraph' }] });
+
+    expect(res.changed).toBe(false);
+    expect(await readFile(factsPath(), 'utf8')).toBe(before);
+  });
+
+  it('warns in the prompt when a batch touches identity', async () => {
+    const requests: any[] = [];
+    await run({ confirm: async (r) => { requests.push(r); return false; } }, {
       edits: [
         { op: 'add_keyword', value: 'LangGraph' },
         { op: 'set_identity', field: 'email', value: 'new@example.com' },
       ],
     });
 
-    expect(res.changed).toBe(false);
-    expect(await readFile(factsPath(), 'utf8')).toBe(before);
+    expect(requests[0].params.identity).toMatch(/verified identity/i);
+    expect(requests[0].preview).toMatch(/new@example\.com/);
   });
 
   it('writes the identity edit once confirmed', async () => {

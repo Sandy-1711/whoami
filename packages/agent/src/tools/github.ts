@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { GithubProfileService, GithubReader, githubUsername } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { loadFacts, cap } from './shared.js';
-import { describeTool, CONFIRM_ARG } from './describe.js';
+import { describeTool } from './describe.js';
 
 export function githubTools(deps: AgentDeps) {
   const read_github = createTool({
@@ -57,24 +57,16 @@ export function githubTools(deps: AgentDeps) {
       cost: 'outward',
       use: 'the user has seen the new copy and asked for it to go live.',
       avoid: 'reading anything — that is read_github. And never push copy the user has not read.',
-      needs: 'GITHUB_TOKEN (the bio needs its `user` scope), `confirm: true`, and a confirmation showing the current→new change that you cannot bypass.',
+      needs: 'GITHUB_TOKEN (the bio needs its `user` scope), and the user\'s approval — they are shown the current value and the new one, and you cannot bypass that.',
     }),
     inputSchema: z.object({
       target: z.enum(['bio', 'repo_description', 'profile_readme']).describe('What to update.'),
-      confirm: z.boolean().describe(CONFIRM_ARG),
       bio: z.string().optional().describe('New bio (for target=bio).'),
       repo: z.string().optional().describe('Repo name (for target=repo_description).'),
       description: z.string().optional().describe('New repo description (for target=repo_description).'),
       readme: z.string().optional().describe('Full new README markdown (for target=profile_readme).'),
     }),
-    execute: async ({ target, confirm, bio, repo, description, readme }) => {
-      if (!confirm) {
-        return {
-          pushed: false,
-          reason: 'Not pushed — `confirm` was not true.',
-          nextSteps: ['Show the user the exact copy you would publish, then call again with confirm: true only if they approve it.'],
-        };
-      }
+    execute: async ({ target, bio, repo, description, readme }) => {
       if (!deps.config.githubToken) return { pushed: false, reason: 'GITHUB_TOKEN not set — add one to .env to push.' };
       const facts = await loadFacts(deps.root);
       const owner = githubUsername(facts.identity?.github || 'Sandy-1711');
@@ -83,7 +75,11 @@ export function githubTools(deps: AgentDeps) {
       if (target === 'bio') {
         if (!bio?.trim()) throw new Error('Provide the new bio text.');
         const cur = await svc.getUser();
-        const ok = await deps.confirm(`Update GitHub bio?\n    from: "${cur.bio}"\n    to:   "${bio.trim()}"`);
+        const ok = await deps.confirm({
+          tool: 'update_github_profile',
+          action: `Replace the bio on github.com/${owner}`,
+          params: { account: owner, now: cur.bio || '(empty)', new: bio.trim() },
+        });
         if (!ok) return { pushed: false, reason: 'Cancelled — bio unchanged.' };
         await svc.setBio(bio.trim());
         return { pushed: true, target, value: bio.trim() };
@@ -92,7 +88,11 @@ export function githubTools(deps: AgentDeps) {
       if (target === 'repo_description') {
         if (!repo?.trim() || !description?.trim()) throw new Error('Provide both repo and description.');
         const cur = await svc.getRepoDescription(owner, repo.trim());
-        const ok = await deps.confirm(`Update ${owner}/${repo.trim()} description?\n    from: "${cur}"\n    to:   "${description.trim()}"`);
+        const ok = await deps.confirm({
+          tool: 'update_github_profile',
+          action: `Replace the description on ${owner}/${repo.trim()}`,
+          params: { repo: `${owner}/${repo.trim()}`, now: cur || '(empty)', new: description.trim() },
+        });
         if (!ok) return { pushed: false, reason: 'Cancelled — description unchanged.' };
         await svc.setRepoDescription(owner, repo.trim(), description.trim());
         return { pushed: true, target, repo: repo.trim(), value: description.trim() };
@@ -101,7 +101,16 @@ export function githubTools(deps: AgentDeps) {
       // profile_readme
       if (!readme?.trim()) throw new Error('Provide the full README markdown.');
       const cur = await svc.getProfileReadme(owner);
-      const ok = await deps.confirm(`Replace ${owner}/${owner} profile README (${cur ? `${cur.text.length} chars now` : 'none yet'}) with ${readme.length} chars?`);
+      const ok = await deps.confirm({
+        tool: 'update_github_profile',
+        action: `Replace the profile README at github.com/${owner}`,
+        params: {
+          repo: `${owner}/${owner}`,
+          now: cur ? `${cur.text.length} chars` : 'none yet',
+          new: `${readme.length} chars, shown below`,
+        },
+        preview: readme,
+      });
       if (!ok) return { pushed: false, reason: 'Cancelled — README unchanged.' };
       await svc.setProfileReadme(owner, readme, cur?.sha, 'chore: update profile README via résumé agent');
       return { pushed: true, target, chars: readme.length };
