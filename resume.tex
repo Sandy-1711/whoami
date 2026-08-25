@@ -63,15 +63,15 @@
 
 \newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.0in, label={}]}
 \newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
-\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[label=$\bullet$]}
 \newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
 
 \begin{document}
 
 \begin{center}
-    {\Huge \scshape SANDEEP SINGH} \\ \vspace{2pt}
+    {\Huge \bfseries Sandeep Singh} \\ \vspace{2pt}
     %% >>>TAILOR:subtitle (the tailor CLI replaces this line per JD; safe to edit)
-    {\large AI Engineer $|$ Agent Infrastructure \& LLM Systems $|$ Full-Stack Engineer} \\ \vspace{4pt}
+    {\large AI Engineer $|$ Agent Infrastructure \& LLM Systems $|$ Full-Stack Software Engineer} \\ \vspace{4pt}
     %% <<<TAILOR:subtitle
     \small
     \href{mailto:sandy1711003@gmail.com}{\underline{sandy1711003@gmail.com}} \,$\bullet$\,
@@ -80,7 +80,7 @@
     +91 8953596712
     \\[6pt]
     %% >>>TAILOR:summary (the tailor CLI replaces this line per JD; safe to edit)
-   \textbf{AI Engineer} building agentic LLM systems, memory, and RAG --- \textbf{12 merged PRs} into Mastra's agent runtime (\textbf{25k+ stars}), shipped production agents at AiRA, and scaled a campus platform to \textbf{10,000+ users}.
+   \textbf{AI Engineer} building agentic LLM systems, memory, and RAG --- \textbf{16 merged PRs} into Mastra's agent runtime (\textbf{27k+ stars}), shipped production agents at AiRA, and scaled a campus platform to \textbf{10,000+ users}.
     %% <<<TAILOR:summary
     \vspace{-8pt}
 \end{center}
@@ -92,26 +92,34 @@
   {AiRA}{Nov 2025 - March 2026}
   {AI Engineer (Agent Orchestration, Memory, RAG \& Systems)}{Bangalore, India}
   \resumeItemListStart
-    \resumeItem{Built the flagship \textbf{Daily Brief} agent (\textbf{Python}/\textbf{FastAPI}) --- an \textbf{agentic orchestration loop} coordinating Email, Calendar, and \textbf{Exa AI} web-search tools via \textbf{asyncio} to deliver each user a personalized morning briefing of priority emails, events, and news.}
+    \resumeItem{Built the flagship \textbf{Daily Brief} agent (\textbf{Python}/\textbf{FastAPI}) --- an \textbf{agentic orchestration loop} coordinating Email, Calendar, and \textbf{Exa AI} web-search tools via \textbf{asyncio} into each user's personalized morning briefing.}
 
-    \resumeItem{Designed a self-maintaining \textbf{Canvas} agent generating persistent, per-user web apps and documents, with automatic \textbf{versioning and data-shape migration} that keeps prior user data compatible across regenerations.}
+    \resumeItem{Architected a multi-tier \textbf{memory system} (working / medium / long-term) on \textbf{MongoDB} and \textbf{Redis} that distills each user's conversations and style into a preferences store for personalization and proactive check-ins.}
 
-    \resumeItem{Architected a multi-tier \textbf{memory system} (working / medium / long-term) on \textbf{MongoDB} and \textbf{Redis} that summarizes each user's conversations and style into a preferences store for personalization and proactive check-ins.}
-
-    \resumeItem{Built an \textbf{LLM evaluation} pipeline with \textbf{promptfoo}, benchmarking 8+ models (Anthropic \textbf{Claude}, OpenAI, Grok) on tool-calling accuracy, memory use, and latency to standardize model selection.}
-
-    \resumeItem{Cut routing-\textbf{LLM} token usage by \textbf{82\%} via artifact-based generalized prompting and context deduplication across 3 core prompts, and parallelized the Orchestrator's tool-calling to reduce execution latency.}
-
-    \resumeItem{Implemented \textbf{Langfuse} observability for LLM traces, latency, and cost, cutting time-to-debug for agent failures in production.}
+    \resumeItem{Cut routing-\textbf{LLM} token usage by \textbf{82\%} via artifact-based prompting and context deduplication, and stood up \textbf{promptfoo} evals across 8+ models with \textbf{Langfuse} traces to standardize model selection, latency, and cost.}
   \resumeItemListEnd
 
     \resumeSubheading
       {IIT Kharagpur}{May 2025 - Aug 2025}
       {Research Intern (Multimodal AI)}{Kharagpur, India}
       \resumeItemListStart
-        \resumeItem{Developed \textbf{CircuitSynth}, a multimodal reasoning framework, fine-tuning \textbf{Qwen models (4B/8B)} with \textbf{LoRA/QLoRA} to generate executable Arduino circuit JSONs.}
-        \resumeItem{Achieved \textbf{75\% accuracy} on complex circuit-generation tasks (vs. near-zero for general-purpose GPT models) via a multi-stage \textbf{RAG} pipeline with automated unit-style validation.}
-        \resumeItem{Optimized inference for edge deployment, running quantized \textbf{GGUF} models on \textbf{Raspberry Pi} devices.}
+        \resumeItem{Developed \textbf{CircuitSynth}, fine-tuning \textbf{Qwen models (4B/8B)} with \textbf{LoRA/QLoRA} and a multi-stage \textbf{RAG} pipeline to generate executable Arduino circuit JSONs at \textbf{75\% accuracy}, quantized to \textbf{GGUF} for \textbf{Raspberry Pi}.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Indigle}{Sep 2024 - Sep 2025}
+      {Founding Software Engineer --- Samagra \href{https://play.google.com/store/apps/details?id=com.indigle.samagra}{\underline{Play Store}}}{India}
+      \resumeItemListStart
+        \resumeItem{Built \textbf{Samagra}, a campus ERP platform grown to \textbf{10,000+ active users} --- a \textbf{React Native} mobile client, a \textbf{Node.js}/\textbf{Express} \textbf{REST API}, \textbf{MongoDB}, and a \textbf{Next.js} web app.}
+        \resumeItem{Engineered \textbf{JWT authentication} with \textbf{role-based access control} and \textbf{Socket.io} real-time sync, and owned \textbf{CI/CD} and release on a \textbf{zero-cost} Vercel backend serving \textbf{150k+ monthly API requests}.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Web Accuracy}{Aug 2023 - Aug 2024}
+      {Software Engineer Intern}{Ranchi, India}
+      \resumeItemListStart
+        \resumeItem{Delivered 6 commercial \textbf{MERN} web applications, cutting client cost \textbf{30\%} and time-to-market \textbf{45\%}.}
+        \resumeItem{Designed \textbf{REST APIs} and \textbf{MongoDB} schemas serving \textbf{50,000+ monthly requests} at \textbf{99.9\% uptime}.}
       \resumeItemListEnd
 
   \resumeSubHeadingListEnd
@@ -121,19 +129,16 @@
     \resumeSubHeadingListStart
 
       \resumeProjectHeading
-          {\textbf{Samagra} --- Founding Software Engineer, Indigle \, \href{https://play.google.com/store/apps/details?id=com.indigle.samagra}{\underline{Play Store}}}{Sep 2024 - Sep 2025}
+          {\textbf{Open Source} $|$ \emph{TypeScript, Node.js, React, Vue.js}}{2025 - Present}
           \resumeItemListStart
-            \resumeItem{Built \textbf{Samagra}, a full-stack campus ERP platform grown to \textbf{10,000+ active users}, spanning a \textbf{React Native} mobile client, a \textbf{Node.js}/\textbf{Express} \textbf{REST API}, \textbf{MongoDB}, and a \textbf{Next.js} web app.}
-            \resumeItem{Engineered \textbf{JWT authentication} with \textbf{role-based access control}, rate limiting, and \textbf{Socket.io} real-time sync across the platform, sustaining \textbf{99.9\% uptime}.}
-            \resumeItem{Owned the product end-to-end --- architecture, \textbf{CI/CD}, release, and Play Store distribution --- on a \textbf{zero-cost} Vercel-hosted backend handling \textbf{150k+ monthly API requests} at sub-100ms latency.}
+            \resumeItem{\textbf{18 merged PRs} upstream --- \textbf{16 into mastra-ai/mastra (27k+ stars)} \href{https://github.com/mastra-ai/mastra/pulls?q=author:Sandy-1711}{\underline{[PR list]}} across the core agent runtime, streaming, ai-sdk, and Studio: ordering interleaved text and tool calls mid-stream and preserving persisted assistant messages on \textbf{tool-approval} resume. Contributing since June 2026.}
+            \resumeItem{\textbf{cal.com (47k+ stars)}: Authored a full \textbf{BigBlueButton video integration} --- checksum-signed client, encrypted credential storage, \textbf{912 LOC} on a bounty issue. \textbf{n8n (202k stars)}: Webhook CSP security fix (\texttt{allow-same-origin}).}
           \resumeItemListEnd
 
       \resumeProjectHeading
-          {\textbf{Open Source} $|$ \emph{TypeScript, Node.js, React, Vue.js}}{2025 - Present}
+          {\textbf{voice-sdk} $|$ \emph{TypeScript, WebSockets, pnpm monorepo} \, \href{https://github.com/Sandy-1711/voice-sdk}{\underline{GitHub}}}{2026}
           \resumeItemListStart
-            \resumeItem{\textbf{mastra-ai/mastra (25k+ stars)} \href{https://github.com/mastra-ai/mastra/pulls?q=author:Sandy-1711}{\underline{[PR list]}}: \textbf{12 merged PRs} across the core agent runtime, streaming, ai-sdk, and Studio --- including fixes to \textbf{semantic recall} injection, duplicate \textbf{stream-event delivery} on observe/replay, and tool-level \textbf{background execution} config. Active contributor since June 2026.}
-            \resumeItem{\textbf{cal.com (46k+ stars)}: Authored a full \textbf{BigBlueButton video integration} (checksum-signed client, encrypted credential storage) plus a generalized install-router fix for non-OAuth apps --- \textbf{912 LOC, 32 unit tests} (bounty issue).}
-            \resumeItem{\textbf{n8n (195k+ stars)}: Authored core infrastructure fixes --- a Webhook CSP security bug (\texttt{allow-same-origin}) and a cross-platform build-path failure.}
+            \resumeItem{One \textbf{TypeScript} interface for \textbf{text-to-speech} and \textbf{speech-to-text} across \textbf{Cartesia}, \textbf{Deepgram}, and \textbf{ElevenLabs} --- switching providers takes a one-line change, and capability declarations surface unsupported features up front.}
           \resumeItemListEnd
 
     \resumeSubHeadingListEnd
@@ -143,8 +148,8 @@
  \begin{itemize}[leftmargin=0.15in, label={}]
     \small{\item{
      %% >>>TAILOR:skills (the tailor CLI may reorder these per JD; safe to edit)
-     \textbf{AI/ML \& LLM}{: Claude Code, Hugging Face (PEFT/LoRA), LangChain, Langfuse, LlamaIndex, Mastra, OpenAI/Anthropic/Gemini API, Pinecone, promptfoo, PyTorch, Qdrant} \\
-     \textbf{Backend \& Ops}{: asyncio, AWS (Lambda, S3), CI/CD (GitHub Actions), Docker, FastAPI, MongoDB, PostgreSQL, Redis, REST APIs, WebSockets} \\
+     \textbf{AI/ML \& LLM}{: Claude Code, Hugging Face (PEFT/LoRA), LangChain, Langfuse, LlamaIndex, Mastra, MCP, OpenAI/Anthropic/Gemini API, Pinecone, promptfoo, PyTorch, Qdrant, RAG} \\
+     \textbf{Backend \& Ops}{: asyncio, AWS (Lambda, S3), CI/CD (GitHub Actions), Docker, FastAPI, MongoDB, Nginx, PostgreSQL, Pub/Sub, Redis, REST APIs, WebSockets} \\
      \textbf{Frontend \& Mobile}{: Next.js, React Native (Expo), React.js, Shadcn/UI, Tailwind CSS} \\
      \textbf{Languages}{: JavaScript, Python, SQL, TypeScript}
      %% <<<TAILOR:skills

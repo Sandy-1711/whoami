@@ -1,40 +1,84 @@
 {
   "_comment": "Auto-scraped from GitHub. Edit freely — the tailor treats this as an editable source of truth. Re-scrape with `npm run sync`.",
-  "scrapedAt": "2026-07-16T11:37:16.953Z",
+  "scrapedAt": "2026-08-23T14:17:47.668Z",
   "username": "Sandy-1711",
   "profileUrl": "https://github.com/Sandy-1711",
   "totals": {
-    "publicRepos": 47,
-    "totalStars": 56,
-    "mergedPRs": 38,
-    "externalRepos": 16
+    "publicRepos": 45,
+    "totalStars": 36,
+    "mergedPRs": 18,
+    "externalRepos": 7
   },
   "repos": [
     {
-      "name": "React_Native_Starter",
+      "name": "whoami",
       "description": "",
-      "url": "https://github.com/Sandy-1711/React_Native_Starter",
-      "homepage": "",
-      "stars": 9,
-      "language": "JavaScript",
+      "url": "https://github.com/Sandy-1711/whoami",
+      "homepage": "https://iamsandeep.vercel.app/",
+      "stars": 1,
+      "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2025-02-19T17:50:51Z",
+      "pushedAt": "2026-07-16T12:14:35Z",
       "fork": false,
-      "readmeSize": 87
+      "readmeSize": 23624,
+      "pinned": true
     },
     {
-      "name": "Portfolio",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/Portfolio",
+      "name": "EmailPartner",
+      "description": "Turns incoming Gmail into live AI cards — headline, summary, illustration, and voice narration per email. FastAPI + Pub/Sub push + durable worker queue + Gemini.",
+      "url": "https://github.com/Sandy-1711/EmailPartner",
       "homepage": "",
-      "stars": 6,
-      "language": "JavaScript",
+      "stars": 1,
+      "language": "Python",
       "topics": [],
       "archived": false,
-      "pushedAt": "2024-06-04T11:43:25Z",
+      "pushedAt": "2026-08-18T11:41:28Z",
       "fork": false,
-      "readmeSize": 1369
+      "readmeSize": 8481,
+      "pinned": true
+    },
+    {
+      "name": "Web-Aware-Rag-Engine",
+      "description": "Production-style RAG engine: async web ingestion, semantic search, and AI answers — load-balanced FastAPI replicas, Next.js 15 frontend.",
+      "url": "https://github.com/Sandy-1711/Web-Aware-Rag-Engine",
+      "homepage": "",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-01-19T10:59:07Z",
+      "fork": false,
+      "readmeSize": 26723,
+      "pinned": true
+    },
+    {
+      "name": "IntelliCommerce",
+      "description": "An ecommerce chatbot capable of deciding intent based on the user query and redirect to different microservices.",
+      "url": "https://github.com/Sandy-1711/IntelliCommerce",
+      "homepage": "",
+      "stars": 1,
+      "language": "Python",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2025-08-27T10:03:13Z",
+      "fork": false,
+      "readmeSize": 4540,
+      "pinned": true
+    },
+    {
+      "name": "DualOnline",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/DualOnline",
+      "homepage": "",
+      "stars": 1,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-06-13T19:47:20Z",
+      "fork": false,
+      "readmeSize": 1927,
+      "pinned": true
     },
     {
       "name": "reddit-clone-backend",
@@ -63,19 +107,6 @@
       "readmeSize": 0
     },
     {
-      "name": "whoami",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/whoami",
-      "homepage": "https://iamsandeep.vercel.app/",
-      "stars": 1,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-07-16T11:24:04Z",
-      "fork": false,
-      "readmeSize": 23624
-    },
-    {
       "name": "mastra",
       "description": "From the team behind Gatsby, Mastra is a framework for building AI-powered applications and agents with a modern TypeScript stack.",
       "url": "https://github.com/Sandy-1711/mastra",
@@ -84,7 +115,7 @@
       "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-15T11:12:44Z",
+      "pushedAt": "2026-08-17T11:03:44Z",
       "fork": true,
       "readmeSize": 0
     },
@@ -102,71 +133,6 @@
       "readmeSize": 0
     },
     {
-      "name": "Sandy-1711",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/Sandy-1711",
-      "homepage": "",
-      "stars": 1,
-      "language": "",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-07-08T07:51:34Z",
-      "fork": false,
-      "readmeSize": 4202
-    },
-    {
-      "name": "mastra-tools-vanish-repro",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/mastra-tools-vanish-repro",
-      "homepage": "",
-      "stars": 1,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-24T05:46:43Z",
-      "fork": false,
-      "readmeSize": 1851
-    },
-    {
-      "name": "EmailPartner",
-      "description": "Turns incoming Gmail into live AI cards — headline, summary, illustration, and voice narration per email. FastAPI + Pub/Sub push + durable worker queue + Gemini.",
-      "url": "https://github.com/Sandy-1711/EmailPartner",
-      "homepage": "",
-      "stars": 1,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-18T09:27:58Z",
-      "fork": false,
-      "readmeSize": 8481
-    },
-    {
-      "name": "studio-instructions-lock-repro",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/studio-instructions-lock-repro",
-      "homepage": "",
-      "stars": 1,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-17T07:33:37Z",
-      "fork": false,
-      "readmeSize": 1856
-    },
-    {
-      "name": "DualOnline",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/DualOnline",
-      "homepage": "",
-      "stars": 1,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-13T19:47:20Z",
-      "fork": false,
-      "readmeSize": 1927
-    },
-    {
       "name": "Portfolio-Website",
       "description": "",
       "url": "https://github.com/Sandy-1711/Portfolio-Website",
@@ -178,32 +144,6 @@
       "pushedAt": "2026-06-10T12:33:19Z",
       "fork": false,
       "readmeSize": 2995
-    },
-    {
-      "name": "SWAN_CIRCUIT_LLM_BACKEND",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/SWAN_CIRCUIT_LLM_BACKEND",
-      "homepage": "",
-      "stars": 1,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-02T08:48:03Z",
-      "fork": false,
-      "readmeSize": 5239
-    },
-    {
-      "name": "SWAN-Circuit-LLM-Frontend",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/SWAN-Circuit-LLM-Frontend",
-      "homepage": "",
-      "stars": 1,
-      "language": "JavaScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-06-02T08:44:57Z",
-      "fork": false,
-      "readmeSize": 4154
     },
     {
       "name": "ERP-Student-App",
@@ -232,19 +172,6 @@
       "readmeSize": 11297
     },
     {
-      "name": "Web-Aware-Rag-Engine",
-      "description": "Production-style RAG engine: async web ingestion, semantic search, and AI answers — load-balanced FastAPI replicas, Next.js 15 frontend.",
-      "url": "https://github.com/Sandy-1711/Web-Aware-Rag-Engine",
-      "homepage": "",
-      "stars": 1,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-01-19T10:59:07Z",
-      "fork": false,
-      "readmeSize": 26723
-    },
-    {
       "name": "SWAN-Evalutations",
       "description": "",
       "url": "https://github.com/Sandy-1711/SWAN-Evalutations",
@@ -269,19 +196,6 @@
       "pushedAt": "2025-10-15T16:31:04Z",
       "fork": false,
       "readmeSize": 2993
-    },
-    {
-      "name": "IntelliCommerce",
-      "description": "An ecommerce chatbot capable of deciding intent based on the user query and redirect to different microservices.",
-      "url": "https://github.com/Sandy-1711/IntelliCommerce",
-      "homepage": "",
-      "stars": 1,
-      "language": "Python",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2025-08-27T10:03:13Z",
-      "fork": false,
-      "readmeSize": 4540
     },
     {
       "name": "Product-Scan",
@@ -700,6 +614,84 @@
       "readmeSize": 0
     },
     {
+      "name": "CalQuity",
+      "description": "ParcePilot Assessment",
+      "url": "https://github.com/Sandy-1711/CalQuity",
+      "homepage": "https://calquitysupport.vercel.app/",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-08-23T14:03:28Z",
+      "fork": false,
+      "readmeSize": 5677
+    },
+    {
+      "name": "voice-sdk",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/voice-sdk",
+      "homepage": "",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-08-21T13:14:06Z",
+      "fork": false,
+      "readmeSize": 4563
+    },
+    {
+      "name": "weather-sdk",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/weather-sdk",
+      "homepage": "",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-08-17T11:23:00Z",
+      "fork": false,
+      "readmeSize": 4535
+    },
+    {
+      "name": "floe-guard",
+      "description": "Open-source unified billing for Voice AI builders and agents — stop before a runaway loop burns your bill. Local, framework-agnostic, no account required.",
+      "url": "https://github.com/Sandy-1711/floe-guard",
+      "homepage": "https://dev-dashboard.floelabs.xyz/",
+      "stars": 0,
+      "language": "",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-23T16:39:52Z",
+      "fork": true,
+      "readmeSize": 0
+    },
+    {
+      "name": "Floe-Prototype",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/Floe-Prototype",
+      "homepage": "",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-19T17:02:48Z",
+      "fork": false,
+      "readmeSize": 9717
+    },
+    {
+      "name": "search-sdk",
+      "description": "",
+      "url": "https://github.com/Sandy-1711/search-sdk",
+      "homepage": "",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [],
+      "archived": false,
+      "pushedAt": "2026-07-18T12:10:24Z",
+      "fork": false,
+      "readmeSize": 4553
+    },
+    {
       "name": "twenty",
       "description": "The open alternative to Salesforce, designed for AI.",
       "url": "https://github.com/Sandy-1711/twenty",
@@ -834,298 +826,65 @@
     {
       "repo": "mastra-ai/mastra",
       "url": "https://github.com/mastra-ai/mastra",
-      "merged": 12,
-      "open": 6,
-      "closedUnmerged": 4,
+      "merged": 16,
+      "open": 0,
+      "closedUnmerged": 6,
       "samplePRs": [
         {
-          "number": 19486,
-          "title": "fix(core): don't mutate persisted assistant message when resuming tool approval",
-          "state": "open",
-          "url": "https://github.com/mastra-ai/mastra/pull/19486"
-        },
-        {
-          "number": 19299,
-          "title": "fix: preserve Cloudflare execution context through the custom-route bridge",
-          "state": "open",
-          "url": "https://github.com/mastra-ai/mastra/pull/19299"
+          "number": 18059,
+          "title": "fix(playground): respect editor config locks for code-agent instructions",
+          "state": "closed",
+          "url": "https://github.com/mastra-ai/mastra/pull/18059"
         },
         {
           "number": 18421,
           "title": "fix(playground): warn and block when agents reference unpublished prompt blocks",
-          "state": "open",
+          "state": "closed",
           "url": "https://github.com/mastra-ai/mastra/pull/18421"
         },
         {
           "number": 18980,
           "title": "fix(react): keep interleaved text and tool calls in order while streaming",
-          "state": "open",
+          "state": "merged",
           "url": "https://github.com/mastra-ai/mastra/pull/18980"
+        },
+        {
+          "number": 19486,
+          "title": "fix(core): don't mutate persisted assistant message when resuming tool approval",
+          "state": "merged",
+          "url": "https://github.com/mastra-ai/mastra/pull/19486"
         },
         {
           "number": 19256,
           "title": "feat(playground): display experiment names and descriptions in Studio",
-          "state": "open",
+          "state": "merged",
           "url": "https://github.com/mastra-ai/mastra/pull/19256"
         },
         {
-          "number": 18963,
-          "title": "fix(daytona): pass --only-dir to gcsfuse when GCS prefix is set",
+          "number": 19299,
+          "title": "fix: preserve Cloudflare execution context through the custom-route bridge",
           "state": "merged",
-          "url": "https://github.com/mastra-ai/mastra/pull/18963"
+          "url": "https://github.com/mastra-ai/mastra/pull/19299"
         }
       ],
-      "stars": 26214
+      "stars": 27375,
+      "pinned": true
     },
     {
-      "repo": "TejasMishr/ERP_Client",
-      "url": "https://github.com/TejasMishr/ERP_Client",
-      "merged": 6,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 7,
-          "title": "Attendance page for student almost done",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/ERP_Client/pull/7"
-        },
-        {
-          "number": 6,
-          "title": "Attendance mark page added and completed",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/ERP_Client/pull/6"
-        },
-        {
-          "number": 4,
-          "title": "dasdfaqw",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/ERP_Client/pull/4"
-        },
-        {
-          "number": 3,
-          "title": "Merge pull request #1 from TejasMishr/master",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/ERP_Client/pull/3"
-        },
-        {
-          "number": 2,
-          "title": "attendance faculty",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/ERP_Client/pull/2"
-        },
-        {
-          "number": 1,
-          "title": "Added attendance page",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/ERP_Client/pull/1"
-        }
-      ],
-      "stars": 0
-    },
-    {
-      "repo": "mmmut-xyz/server.mmmut.xyz",
-      "url": "https://github.com/mmmut-xyz/server.mmmut.xyz",
-      "merged": 5,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 5,
-          "title": "Master",
-          "state": "merged",
-          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/5"
-        },
-        {
-          "number": 4,
-          "title": "Main",
-          "state": "merged",
-          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/4"
-        },
-        {
-          "number": 3,
-          "title": "From main",
-          "state": "merged",
-          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/3"
-        },
-        {
-          "number": 2,
-          "title": "Update",
-          "state": "merged",
-          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/2"
-        },
-        {
-          "number": 1,
-          "title": "Fixed file structure",
-          "state": "merged",
-          "url": "https://github.com/mmmut-xyz/server.mmmut.xyz/pull/1"
-        }
-      ],
-      "stars": 1
-    },
-    {
-      "repo": "TejasMishr/erp.mmmut.xyz",
-      "url": "https://github.com/TejasMishr/erp.mmmut.xyz",
-      "merged": 4,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 4,
-          "title": " Update attendance routes and controllers.",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/4"
-        },
-        {
-          "number": 3,
-          "title": " Update model schemas and controller functions",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/3"
-        },
-        {
-          "number": 2,
-          "title": "Master",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/2"
-        },
-        {
-          "number": 1,
-          "title": "Master",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/erp.mmmut.xyz/pull/1"
-        }
-      ],
-      "stars": 0
-    },
-    {
-      "repo": "TejasMishr/MMMUTRESO",
-      "url": "https://github.com/TejasMishr/MMMUTRESO",
-      "merged": 3,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 54,
-          "title": "team css",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/MMMUTRESO/pull/54"
-        },
-        {
-          "number": 42,
-          "title": "navbar heropage back",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/MMMUTRESO/pull/42"
-        },
-        {
-          "number": 35,
-          "title": "carousel added",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/MMMUTRESO/pull/35"
-        }
-      ],
-      "stars": 8
-    },
-    {
-      "repo": "TejasMishr/MMMUT_Erp",
-      "url": "https://github.com/TejasMishr/MMMUT_Erp",
-      "merged": 2,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 4,
-          "title": "ujas",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/MMMUT_Erp/pull/4"
-        },
-        {
-          "number": 1,
-          "title": "Changed file structure",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/MMMUT_Erp/pull/1"
-        }
-      ],
-      "stars": 1
-    },
-    {
-      "repo": "A-P-Singh-27/GDG-MMMUT-Website",
-      "url": "https://github.com/A-P-Singh-27/GDG-MMMUT-Website",
+      "repo": "Floe-Labs/floe-guard",
+      "url": "https://github.com/Floe-Labs/floe-guard",
       "merged": 1,
       "open": 0,
       "closedUnmerged": 0,
       "samplePRs": [
         {
-          "number": 3,
-          "title": "Fixes Deployment Issue",
+          "number": 44,
+          "title": "feat: Google Gemini pricing + google-genai adapter",
           "state": "merged",
-          "url": "https://github.com/A-P-Singh-27/GDG-MMMUT-Website/pull/3"
+          "url": "https://github.com/Floe-Labs/floe-guard/pull/44"
         }
       ],
-      "stars": 0
-    },
-    {
-      "repo": "Taransh121/Travel-Startup",
-      "url": "https://github.com/Taransh121/Travel-Startup",
-      "merged": 1,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 48,
-          "title": "Fix:possible  metadata fix  to layout.tsx",
-          "state": "merged",
-          "url": "https://github.com/Taransh121/Travel-Startup/pull/48"
-        }
-      ],
-      "stars": 0
-    },
-    {
-      "repo": "TejasMishr/ERP_FRONT",
-      "url": "https://github.com/TejasMishr/ERP_FRONT",
-      "merged": 1,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 1,
-          "title": "Merge pull request #1 from TejasMishr/main",
-          "state": "merged",
-          "url": "https://github.com/TejasMishr/ERP_FRONT/pull/1"
-        }
-      ],
-      "stars": 1
-    },
-    {
-      "repo": "Vatsalmadhur/gdsc23",
-      "url": "https://github.com/Vatsalmadhur/gdsc23",
-      "merged": 1,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 1,
-          "title": "[Feature]-Navbar",
-          "state": "merged",
-          "url": "https://github.com/Vatsalmadhur/gdsc23/pull/1"
-        }
-      ],
-      "stars": 0
-    },
-    {
-      "repo": "madhurgaur/abhyudayafest",
-      "url": "https://github.com/madhurgaur/abhyudayafest",
-      "merged": 1,
-      "open": 0,
-      "closedUnmerged": 0,
-      "samplePRs": [
-        {
-          "number": 1,
-          "title": "Help given",
-          "state": "merged",
-          "url": "https://github.com/madhurgaur/abhyudayafest/pull/1"
-        }
-      ],
-      "stars": 2
+      "stars": 516
     },
     {
       "repo": "formbricks/formbricks",
@@ -1141,7 +900,7 @@
           "url": "https://github.com/formbricks/formbricks/pull/1467"
         }
       ],
-      "stars": 12555
+      "stars": 12805
     },
     {
       "repo": "calcom/cal.diy",
@@ -1169,7 +928,7 @@
           "url": "https://github.com/calcom/cal.diy/pull/29355"
         }
       ],
-      "stars": 46475
+      "stars": 47877
     },
     {
       "repo": "therealanshuman/hwce-sandeep",
@@ -1229,7 +988,7 @@
           "url": "https://github.com/n8n-io/n8n/pull/20329"
         }
       ],
-      "stars": 196648
+      "stars": 202069
     }
   ]
 }

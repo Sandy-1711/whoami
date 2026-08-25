@@ -19,7 +19,7 @@
     "Backend Engineer",
     "Software Engineer"
   ],
-  "seniority": "early-career (graduating Aug 2026); ~1-2 yrs applied experience across AI eng + full-stack",
+  "seniority": "early-career (graduating Aug 2026); ~2.5 yrs cumulative applied experience (Aug 2023 - Mar 2026) across AI eng + full-stack, concurrent with the B.Tech",
   "allowed_keywords": [
     "AI agents", "agent infrastructure", "agentic workflows", "agent orchestration", "LLM", "LLMs",
     "large language models", "RAG", "retrieval-augmented generation", "semantic search", "vector databases",
@@ -41,11 +41,17 @@
     "real-time", "uptime", "scalability", "production reliability", "high ownership", "end-to-end ownership",
     "voice AI", "voice agents", "Cartesia", "text-to-speech", "audio streaming", "parallel tool calling",
     "retry logic", "webhooks", "Exa AI", "OpenRouter", "OTP verification", "Apple Sign In",
-    "WhatsApp automation", "Weights & Biases"
+    "WhatsApp automation", "Weights & Biases",
+    "BM25", "keyword search", "citations", "grounded answers", "source attribution", "document ingestion",
+    "document Q&A", "unstructured data", "data pipelines", "ingestion pipelines", "Pub/Sub", "durable queues",
+    "idempotency", "job leases", "access control", "row-level scoping", "guardrails", "HMAC", "multi-tenant",
+    "Nginx", "load balancing", "horizontal scaling", "eval harness", "deterministic evaluation",
+    "SDK design", "provider abstraction", "Deepgram", "ElevenLabs", "Imagen", "OIDC", "AES-GCM",
+    "MCP", "Model Context Protocol", "product thinking", "multi-step workflows", "reasoning systems"
   ],
   "skills": {
-    "AI/ML & LLM": ["Cartesia (voice AI)", "Claude Code", "Exa AI", "Hugging Face (PEFT/LoRA)", "LangChain", "Langfuse", "LlamaIndex", "Mastra", "OpenAI/Anthropic/Gemini API", "OpenRouter", "Pinecone", "promptfoo", "PyTorch", "Qdrant", "Weights & Biases"],
-    "Backend & Ops": ["asyncio", "AWS (Lambda, S3)", "CI/CD (GitHub Actions)", "Docker", "FastAPI", "MongoDB", "PostgreSQL", "Redis", "REST APIs", "WebSockets"],
+    "AI/ML & LLM": ["BM25", "Cartesia (voice AI)", "Claude Code", "Exa AI", "Hugging Face (PEFT/LoRA)", "LangChain", "Langfuse", "LlamaIndex", "Mastra", "MCP", "OpenAI/Anthropic/Gemini API", "OpenRouter", "Pinecone", "promptfoo", "PyTorch", "Qdrant", "RAG", "Weights & Biases"],
+    "Backend & Ops": ["asyncio", "AWS (Lambda, S3)", "CI/CD (GitHub Actions)", "Docker", "FastAPI", "MongoDB", "Nginx", "PostgreSQL", "Pub/Sub", "Redis", "REST APIs", "WebSockets"],
     "Frontend & Mobile": ["Next.js", "React Native (Expo)", "React.js", "Shadcn/UI", "Tailwind CSS"],
     "Languages": ["JavaScript", "Python", "SQL", "TypeScript"]
   },
@@ -62,7 +68,7 @@
         "Implemented Langfuse observability for LLM traces, latency, and cost.",
         "Worked on CASA security standards: logout token invalidation via a Redis token_denylists collection (TTL matched to the token's own expiry), email-header injection sanitization, and MongoDB collection-name normalization.",
         "Built voice AI streaming with the Cartesia provider — audio packets with emotion tags and word timestamps, regex-parsed to stay in sync with the text channel.",
-        "Parallelized the orchestrator's tool calling, significantly cutting execution time and token usage; added retry semantics so the agentic loop recovers from empty OpenRouter responses instead of stalling.",
+        "Parallelized the orchestrator's tool calling, significantly cutting execution time and token usage; added retry semantics so the agentic loop recovers from empty OpenRouter responses and continues.",
         "Implemented live task updates — the main LLM can amend an ongoing task without stopping the Orchestrator's running execution loop.",
         "Shipped the WhatsApp moderation agent: natural-language rule/group management via dedicated agents with their own memory files, a send/delete-message tool, reply-context memory for WhatsApp replies, and a Periskope→WAHA provider migration.",
         "Made task scheduling timezone-correct: moved system time to UTC and handled per-user local timezones, so relative ('in 10 minutes') and absolute ('at 2 pm') reminders execute at the right time.",
@@ -87,6 +93,28 @@
         "Shipped the full deployment app — Next.js frontend, FastAPI backend, PostgreSQL, self-built auth — with a side-by-side evaluation UI comparing outputs against OpenAI GPT-5 and Gemini Pro.",
         "Contributed to the project's research paper, copyright, and patent filings."
       ]
+    },
+    {
+      "org": "Indigle", "role": "Founding Member and Software Engineer",
+      "dates": "Sep 2024 - Sep 2025",
+      "keywords": ["React Native", "Node.js", "Express", "REST APIs", "MongoDB", "Next.js", "JWT", "authentication", "RBAC", "role-based access control", "rate limiting", "Socket.io", "WebSockets", "real-time", "CI/CD", "serverless", "Vercel", "AWS S3", "Cloudinary", "uptime", "scalability", "end-to-end ownership"],
+      "highlights": [
+        "Built Samagra, a full-stack campus ERP platform grown to 10,000+ active users — React Native mobile client, Node.js/Express REST API, MongoDB, and a Next.js web app.",
+        "Engineered JWT auth with role-based access control, rate limiting, and Socket.io real-time sync, sustaining 99.9% uptime.",
+        "Owned the product end-to-end — architecture, CI/CD, release, and Play Store distribution — on a zero-cost Vercel-hosted backend handling 150k+ monthly API requests at sub-100ms latency."
+      ]
+    },
+    {
+      "org": "Web Accuracy", "role": "Software Engineer Intern",
+      "dates": "Aug 2023 - Aug 2024",
+      "location": "Ranchi, India",
+      "keywords": ["MERN", "Node.js", "Express", "MongoDB", "REST APIs", "database schema design", "CI/CD", "test coverage", "Tailwind CSS", "performance optimization", "uptime", "scalability", "latency optimization"],
+      "highlights": [
+        "Spearheaded development of 6 commercial web applications using the MERN stack, cutting client dev costs by 30% and reducing time-to-market by 45%.",
+        "Designed scalable REST APIs and MongoDB schemas supporting 50,000+ monthly requests with 99.9% uptime and sub-100ms response times.",
+        "Built high-performance landing pages (HTML5, Tailwind CSS, ES6+) reaching 95+ Google PageSpeed scores and increasing user engagement by 40%.",
+        "Integrated CI/CD pipelines and testing workflows, cutting deployment time by 60% while maintaining 98% code coverage."
+      ]
     }
   ],
   "projects": [
@@ -103,22 +131,55 @@
     },
     {
       "name": "Open Source", "role": "Contributor",
-      "keywords": ["Mastra", "cal.com", "n8n", "TypeScript", "agent runtime", "streaming", "code review", "open source"],
+      "keywords": ["Mastra", "cal.com", "n8n", "formbricks", "TypeScript", "agent runtime", "streaming", "tool approval", "code review", "open source"],
+      "_verified": "Counts below re-scraped 2026-08-23 via `pnpm sync`. MERGED = mastra 16, Floe-Labs/floe-guard 1, formbricks 1 (18 total). NOT merged: calcom/cal.diy (0 merged / 2 open / 1 closed) and n8n-io/n8n (0 merged / 3 closed). Never describe the cal.com or n8n PRs as merged.",
       "highlights": [
-        "mastra-ai/mastra (25k+ stars): 12 merged PRs across core agent runtime, streaming, ai-sdk, and Studio.",
-        "cal.com (46k+ stars): full BigBlueButton video integration — 912 LOC, 32 unit tests.",
-        "n8n (195k+ stars): Webhook CSP security fix and a cross-platform build-path fix."
+        "mastra-ai/mastra (27k+ stars): 16 merged PRs across the core agent runtime, streaming, ai-sdk, and Studio — including keeping interleaved text and tool calls ordered while streaming, preserving the persisted assistant message when resuming tool approval, and preserving Cloudflare execution context through the custom-route bridge.",
+        "Floe-Labs/floe-guard (516 stars): 1 merged PR adding Google Gemini pricing and a google-genai adapter.",
+        "formbricks/formbricks (12.8k stars): 1 merged PR.",
+        "calcom/cal.diy (47k+ stars): authored a full BigBlueButton video integration on a bounty issue — 912 LOC, 32 unit tests — plus 2 open PRs (booker month auto-advance, CalDAV attendee PARTSTAT). NOT merged.",
+        "n8n-io/n8n (202k stars): authored 3 PRs (Webhook CSP `allow-same-origin` security fix, cross-platform build-path fix, form-completion redirect). NOT merged."
       ]
     },
     {
       "name": "EmailPartner", "role": "Solo",
-      "keywords": ["Gmail API", "Pub/Sub", "durable worker queue", "Gemini API", "FastAPI", "MongoDB", "OAuth", "encryption"],
-      "highlights": ["Turns incoming Gmail into live AI cards via Gmail watch → Pub/Sub → durable worker queue → Gemini."]
+      "url": "https://github.com/Sandy-1711/EmailPartner",
+      "keywords": ["Gmail API", "Pub/Sub", "durable worker queue", "lease sweep", "idempotency", "Gemini API", "FastAPI", "MongoDB", "OAuth", "OIDC", "encryption", "AES-GCM", "webhooks", "data pipelines", "multi-tenant"],
+      "highlights": [
+        "Multi-user service turning every new Gmail message into an AI card — headline, summary, illustration, and voice narration — live in a web feed.",
+        "Pipeline: Google OIDC consent → AES-GCM envelope-encrypted refresh token → Gmail `users.watch` → Pub/Sub push webhook → `users.history.list` sync → durable worker queue → Gemini summarization, Imagen illustration, and Gemini TTS.",
+        "The pending email row IS the job — a lease sweep reclaims stalled work so jobs survive worker restarts."
+      ]
     },
     {
       "name": "Web-Aware RAG Engine", "role": "Solo",
-      "keywords": ["RAG", "semantic search", "FastAPI", "Next.js", "load balancing", "async ingestion", "vector databases"],
-      "highlights": ["Async web ingestion + semantic search with load-balanced FastAPI replicas and a Next.js 15 frontend."]
+      "url": "https://github.com/Sandy-1711/Web-Aware-Rag-Engine",
+      "keywords": ["RAG", "retrieval-augmented generation", "semantic search", "FastAPI", "Next.js", "load balancing", "Nginx", "async ingestion", "vector databases", "horizontal scaling"],
+      "highlights": [
+        "Production-style RAG engine: asynchronous web ingestion, semantic search, and cited AI answers.",
+        "Nginx round-robins across three FastAPI backend replicas; Next.js 15 / React 19 frontend."
+      ]
+    },
+    {
+      "name": "voice-sdk", "role": "Solo",
+      "url": "https://github.com/Sandy-1711/voice-sdk",
+      "keywords": ["TypeScript", "SDK design", "API design", "provider abstraction", "Cartesia", "Deepgram", "ElevenLabs", "text-to-speech", "speech-to-text", "WebSockets", "testing", "monorepo", "pnpm"],
+      "highlights": [
+        "Unified TypeScript SDK exposing one interface for text-to-speech and speech-to-text across Cartesia, Deepgram, and ElevenLabs, so an application switches providers with a one-line change.",
+        "Per-provider capability declarations surface unsupported features up front, with a clear message naming the provider responsible.",
+        "The suite runs offline against mock servers, requiring no vendor API keys or spend; a separate live tier validates against real vendors before release. Four packages are versioned together."
+      ]
+    },
+    {
+      "name": "whoami (Résumé Studio)", "role": "Solo",
+      "url": "https://github.com/Sandy-1711/whoami",
+      "keywords": ["CI/CD", "GitHub Actions", "LaTeX", "Vercel", "serverless", "Redis", "Upstash", "MCP", "Model Context Protocol", "Claude Code", "evals", "deterministic scoring", "TypeScript", "monorepo"],
+      "highlights": [
+        "Self-deploying résumé system: a LaTeX source of truth compiled, guarded, and shipped by GitHub Actions on every push.",
+        "Quality gates run source structure checks before the expensive compile, then verify the rendered PDF (exactly one page, sections survive extraction, contact email present) and parse LaTeX logs for `Overfull \\hbox` overflow.",
+        "Vercel serverless function serves the PDF with Redis-backed view counting, content-negotiates HTML+OpenGraph for social crawlers, and still serves the PDF if Redis is down.",
+        "Ships a job-search toolkit as a CLI, chat agent, and MCP server (19 tools) for Claude Code / Cursor, with deterministic no-LLM JD scoring and all claims grounded in a hand-verified fact base to prevent fabrication."
+      ]
     },
     {
       "name": "IntelliCommerce", "role": "Solo",
@@ -127,7 +188,7 @@
     }
   ],
   "headline_metrics": [
-    "12 merged PRs into Mastra's agent runtime (25k+ stars)",
+    "16 merged PRs into Mastra's agent runtime (27k+ stars)",
     "shipped production agents at AiRA",
     "scaled a campus platform to 10,000+ users",
     "fine-tuned multimodal LLMs to 75% accuracy",
