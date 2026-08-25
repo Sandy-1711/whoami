@@ -48,7 +48,7 @@ Code/Cursor/Claude Desktop — same free/paid split, listed in `job-copilot`.
 
 ## The digest — how the scrapes reach the LLM
 The pipeline no longer ignores the scrapes: every drafting prompt (tailor,
-email, outreach, wellfound) gets a deterministic ~2 KB **profile digest** —
+email, outreach, note) gets a deterministic ~2 KB **profile digest** —
 top repos (curation pins first, forks/archived/banned excluded, ranked by
 stars/recency/description), external contributions with merged-PR counts and
 sample titles, and LinkedIn role one-liners — as *evidence for what to

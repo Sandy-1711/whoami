@@ -19,7 +19,6 @@
     "tailor": "pnpm --filter @resume/cli run tailor",
     "email": "pnpm --filter @resume/cli run email",
     "note": "pnpm --filter @resume/cli run note",
-    "wellfound-profile": "pnpm --filter @resume/cli run wellfound-profile",
     "sync": "pnpm --filter @resume/cli run sync",
     "score": "pnpm --filter @resume/cli run score",
     "digest": "pnpm --filter @resume/cli run digest",

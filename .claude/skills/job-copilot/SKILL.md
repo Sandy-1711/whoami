@@ -22,7 +22,7 @@ LLM systems), anchored on his open-source Mastra work.
   the profile digest (`pnpm digest` here; `read_profile` over MCP), and
   put the text into the file (or the send tool) yourself. Do NOT call the paid
   LLM tools — `tailor_resume`, `draft_application_email`, `outreach_message`,
-  (or their CLI equivalents `pnpm tailor/email/wellfound/wellfound-profile`)
+  (or their CLI equivalents `pnpm tailor/email/note`)
   — unless the user explicitly asks to spend API credits.
 - JD scoring, PDF builds, structure/width checks, source sync, actually sending
   an email → **always via the repo's tools** (`pnpm score` / `score_jd`,
@@ -60,7 +60,7 @@ LLM systems), anchored on his open-source Mastra work.
 | See the ranked GitHub/LinkedIn evidence | `pnpm digest` (no LLM) | — |
 | Draft an application-form note / cold email / DM / follow-up | **you draft it** → `resume-outreach` skill | `pnpm note` / `pnpm email` / agent |
 | Tailor the résumé summary/skills to a JD | **you edit `resume.tex`** → `resume-latex` + `resume-ats` | `pnpm tailor` |
-| LinkedIn / GitHub profile copy | **you draft it** → `resume-outreach` | `pnpm wellfound-profile` |
+| LinkedIn / Wellfound / GitHub profile copy | **you draft it** → `resume-outreach` | — |
 | Add/remove a fact, keyword, skill | **you edit `facts.json`** → `resume-facts` | agent's update_facts |
 | Ban/pin repos feeding the profile | **you edit `curation.json`** → `resume-facts` | — |
 | Build the PDF, run guards, check drift | Bash (`pnpm build:pdf`, `pnpm check`, `pnpm status`) | same |
@@ -70,9 +70,8 @@ LLM systems), anchored on his open-source Mastra work.
 Commands that only compute or check (`score`, `digest`, `build:pdf`, `check`,
 `status`) don't call an LLM — run them freely via Bash. `pnpm sync` hits the
 GitHub API (no LLM) and scrapes LinkedIn **only with `--linkedin`** (that
-structuring step uses Gemini). Commands that *draft* (`tailor`, `email`,
-`note`, `wellfound-profile`) call Gemini/DeepSeek — do that drafting
-yourself instead. All are `pnpm <script>` from the repo root.
+structuring step uses Gemini). Commands that *draft* (`tailor`, `email`, `note`)
+call Gemini/DeepSeek — do that drafting yourself instead. All are `pnpm <script>` from the repo root.
 
 ## The MCP server (`pnpm mcp`)
 The toolkit is also exposed over MCP (stdio) for Claude Code / Cursor / Claude

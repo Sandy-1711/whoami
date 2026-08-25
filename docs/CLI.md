@@ -20,7 +20,7 @@ don't remember the flags. Each action returns to the menu until you choose Exit.
 
 > **Two ways to drive the toolkit.** `chat` is the conversational front end — it
 > wraps every capability below as a tool and calls them for you. The individual
-> commands (`tailor`, `email`, `wellfound`, …) are the same capabilities run
+> commands (`tailor`, `email`, `note`, …) are the same capabilities run
 > directly, for scripting or when you know exactly what you want.
 
 ## Commands
@@ -32,7 +32,7 @@ resume chat [--new]
 ```
 
 Opens a streaming chat with the job-search agent (Mastra + Gemini/DeepSeek). It has all the
-toolkit's capabilities as tools — scoring, tailoring, drafting/sending email, Wellfound notes,
+toolkit's capabilities as tools — scoring, tailoring, drafting/sending email, application notes,
 syncing, building, updating facts, and more — and calls them for you. Text streams back; tool
 calls and progress show as dim lines; `Ctrl+C` cancels the current turn without quitting.
 
@@ -169,16 +169,6 @@ platforms at the same company do not overwrite each other.
 
 `resume wellfound` is kept as an alias that passes `--platform Wellfound`.
 
-### `wellfound-profile` — standing Wellfound profile
-
-```
-resume wellfound-profile [--target "remote agent-infra roles"]
-```
-
-Builds your standing Wellfound profile (headline, bio, "looking for", achievements,
-skills, per-role blurbs) from the fact base — one profile for every role, not JD-specific.
-Writes `wellfound-profile.md` in the repo root (gitignored). `--target` steers the focus.
-
 ### `score` — deterministic JD fit check (free)
 
 ```
@@ -202,7 +192,7 @@ Prints the deterministic **profile digest**: top GitHub repos (curation pins fir
 forks, archived, and banned repos excluded; ranked by stars/recency/description, cap 8),
 external contributions with merged-PR counts and sample titles (cap 5), and one line per
 LinkedIn role. This is exactly the evidence block injected into the drafting prompts
-(tailor/email/outreach/wellfound) — `facts.json` remains the only source of claims.
+(tailor/email/outreach/note) — `facts.json` remains the only source of claims.
 `--json` emits the structured form. Output is plain (no banner) so agents can consume it.
 Same data over MCP: `read_profile` (whole) or `read_profile` scoped to `evidence`.
 

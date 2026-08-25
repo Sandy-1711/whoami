@@ -13,7 +13,6 @@
     "tailor": "tsx src/main.ts tailor",
     "email": "tsx src/main.ts email",
     "note": "tsx src/main.ts note",
-    "wellfound-profile": "tsx src/main.ts wellfound-profile",
     "sync": "tsx src/main.ts sync",
     "score": "tsx src/main.ts score",
     "digest": "tsx src/main.ts digest",

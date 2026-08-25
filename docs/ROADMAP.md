@@ -171,12 +171,14 @@ costs or what follows it. Rigid inputs are one layer of that; the shape of the s
 These came from working the surface rather than reading it, and they override the tool list the
 rest of this document assumed:
 
-- **The Wellfound tools are gone.** The per-JD note is now `outreach_message`'s `wellfound_note`
-  kind — `kind` was the only axis that ever varied between five drafting tools. The standing
-  Wellfound profile left the agent surface entirely: it is a document regenerated when the fact
-  base changes, not something to reach for mid-conversation. `pnpm wellfound-profile` still
-  writes it. **Open:** whether the note kind should survive either, or whether all Wellfound copy
-  belongs outside the agent.
+- **Nothing is named after one platform any more.** The per-JD note is `outreach_message`'s
+  `application_note` kind, with an optional `platform` that names the destination in the prompt
+  and the filename and is branched on nowhere — the same note serves Wellfound, Work at a
+  Startup, Lever, Greenhouse. `kind` was the only axis that ever varied between five drafting
+  tools. The CLI command is `resume note --platform`.
+- **The standing Wellfound profile is gone**, command and service. It was a document regenerated
+  when the fact base changes, not something to reach for mid-conversation, and the
+  `resume-outreach` skill writes it for free.
 - **The profile enhancer is gone**, tool and service. The `resume-outreach` skill already does
   that comparison for free, down to the same `linkedin-updates.md`.
 - **The tracker must stop being a tool the model remembers to call.** It never worked in practice,
@@ -203,7 +205,7 @@ after the `.mcp.json` switch.
 - [x] Input resolver applied everywhere (`jd` / `jdPath` / `jdUrl`)
 - [x] `opt()` rejects a flag-shaped value
 - [x] Grounding reads merged into `read_profile`
-- [x] Wellfound tools collapsed; profile enhancer deleted
+- [x] Wellfound tools removed; note generalized to any platform; profile enhancer deleted
 - [ ] Automatic activity log; tracker stops depending on the model
 - [ ] Outreach configuration + a tool that asks the user for it
 - [ ] GitHub read/search actions
