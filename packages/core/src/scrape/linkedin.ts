@@ -10,12 +10,25 @@
 //
 // Either way the raw text is structured into clean JSON by Gemini and written to
 // profile/linkedin.json — an editable source of truth you can hand-correct.
+//
+// The LIVE path is DEPRECATED and no front end offers it any more (see
+// LINKEDIN_LIVE_DEPRECATED). The code stays because the PDF path shares it and
+// because turning it back on should be a decision, not a rewrite.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { extractPdf } from '../check/pdf.js';
 import type { Llm } from '@resume/llm';
 import { linkedinPrompt, LINKEDIN_SCHEMA, type LinkedinResponse } from '../prompts.js';
 import type { LinkedinData } from '../types.js';
+
+/**
+ * Why the live LinkedIn scrape is no longer offered. The committed
+ * profile/linkedin.json is still read; only re-scraping is off.
+ */
+export const LINKEDIN_LIVE_DEPRECATED =
+  'The live LinkedIn scrape is deprecated — it automates a site against its terms using your own '
+  + 'session cookie, and the downside is your account. profile/linkedin.json stays in use; refresh it '
+  + 'by exporting Linkedin_Profile.pdf to the repo root, or by editing the JSON directly.';
 
 // Try to render the live profile with Playwright + the session cookie. Throws a
 // descriptive error (Playwright missing, login wall, timeout) so the caller can
