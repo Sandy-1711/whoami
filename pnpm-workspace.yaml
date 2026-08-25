@@ -5,3 +5,6 @@ packages:
 # pnpm blocks dependency build scripts by default; allow the ones we trust.
 allowBuilds:
   esbuild: true
+  # Reached only through the gRPC OTLP exporter, which nothing here uses — traces
+  # go to Langfuse over HTTP. Left blocked rather than trusted for dead weight.
+  protobufjs: false
