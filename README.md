@@ -102,7 +102,8 @@ external storage to read on each request.
 │       ├── model.ts            # AppConfig → AI SDK model (Gemini/DeepSeek); chat-model resolution
 │       ├── memory.ts           # libSQL memory: threads + working memory + semantic recall
 │       ├── instructions.ts     # the copilot system prompt (STRICT grounding in facts.json)
-│       └── tools/              # readonly · pipeline · email · wellfound · facts · enhance · github · outreach · tracker
+│       ├── recording.ts        # every tool call logs itself — activity log + application tracker
+│       └── tools/              # readonly · pipeline · email · facts · github · outreach · tracker
 ├── apps/cli/                   # @resume/cli — `resume` toolkit shell
 │   └── src/
 │       ├── main.ts             # entrypoint (interactive menu + dispatch)
@@ -115,7 +116,7 @@ external storage to read on each request.
 │   ├── lib/                    # view-counter.ts (ViewCounter port) · redis.ts · …
 │   ├── apps/web/assets/resume.pdf       # compiled by CI — gitignored, never committed
 │   └── vercel.json
-├── .agent/                     # chat memory, application tracker — gitignored, machine-local
+├── .agent/                     # chat memory, activity log, application tracker — gitignored, machine-local
 ├── .claude/skills/             # resume-ats · resume-latex · resume-tailor · resume-facts · resume-outreach …
 ├── build/                      # LaTeX artifacts (.aux/.log/.pdf …) — gitignored
 ├── tailored/                   # per-JD outputs, tailored/<company>/… — gitignored

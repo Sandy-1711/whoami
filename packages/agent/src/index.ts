@@ -17,3 +17,4 @@ export { githubTools } from './tools/github.js';
 export { outreachTools } from './tools/outreach.js';
 export { trackerTools } from './tools/tracker.js';
 export { logApplication, listApplications, type Application } from './tracker.js';
+export { recordActivity, readActivity, type ActivityEvent } from './activity.js';
