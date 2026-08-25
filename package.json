@@ -31,6 +31,8 @@
     "check:pdf": "pnpm --filter @resume/cli run check:pdf",
     "check:width": "pnpm --filter @resume/cli run check:width",
     "dev": "pnpm --filter @resume/web run dev",
+    "langfuse:up": "docker compose -f infra/langfuse/docker-compose.yml up -d",
+    "langfuse:down": "docker compose -f infra/langfuse/docker-compose.yml down",
     "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks')}catch{}\""
   },
   "devDependencies": {
