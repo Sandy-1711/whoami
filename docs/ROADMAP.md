@@ -168,9 +168,16 @@ costs or what follows it. Rigid inputs are one layer of that; the shape of the s
   are pnpm-isolated under `packages/*/node_modules` where a bundle at `apps/cli/dist` cannot
   resolve them — and bundling those too means bundling `@libsql`'s native bindings. Revisit only
   if tsx's startup transpile becomes the problem.
-- Outward-facing tools require an explicit `confirm: true` argument. `runMcp` sets
-  `confirm: async () => true` and delegates entirely to the MCP client's prompt — one "always
-  allow" and mail goes out unchecked.
+- Anything that spends credits, leaves the machine, or rewrites the grounding stops at
+  `deps.confirm`, and the prompt shows the call: tool id, the values it resolved to, and the exact
+  text that will go out. **Landed differently:** an explicit `confirm: true` argument was built
+  first and then removed. It reads as a safety check and is not one — it is the model asserting
+  that the user approved something, with no user involved. What makes an approval real is that the
+  recipient, the subject and the body are on the screen when the question is asked.
+  `runMcp` still delegates to the MCP client's own prompt: there is no terminal to reach on that
+  path, and a gate that cannot be answered would hang the call. One "always allow" there and the
+  gate is gone — what still holds is the draft-first rule, since `send_application_email` can only
+  transmit bytes an earlier drafting call wrote under `tailored/`.
 
 ### Surface decisions taken mid-phase
 
@@ -203,6 +210,10 @@ rest of this document assumed:
 - **GitHub needs read actions, not only the push.** Read a repo's README or description, read the
   user, search where the API allows it. The agent currently pushes to GitHub but cannot look at it.
 - **Email is fine as it stands** — draft, then send through the confirm gate.
+- **The live LinkedIn scrape is deprecated**, not deleted. It automates a site against its terms
+  with the user's own session cookie, and the data barely moves; a PDF export covers it.
+  `profile/linkedin.json` is still read, the scraper still backs the PDF path, and `sync --linkedin`
+  now explains itself instead of running.
 
 **Verify:** score a JD by path without pasting; restart the MCP server and send a draft from a
 previous session; call `mcp__resume__profile_status` and `mcp__resume__score_jd` from Claude Code
@@ -220,7 +231,8 @@ after the `.mcp.json` switch.
 - [x] `update_facts` batch; `check_resume` scope enum + CLI naming
 - [x] `tailor_plan` / `tailor_render` split
 - [x] One-process MCP launch (no `dist` — see above)
-- [x] Explicit confirm argument
+- [x] Confirm gate shows the resolved call (tool, values, body) before it runs
+- [x] Live LinkedIn scrape deprecated
 
 **Open question — should drafting be a tool at all?** Raised mid-phase and not yet decided. What
 the toolkit uniquely provides is not prose: it is the grounding (fact base + evidence), the
