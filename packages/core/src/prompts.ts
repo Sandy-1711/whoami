@@ -2,7 +2,7 @@
 // wording and the expected JSON shape can be reviewed and tuned in one file.
 // This module is pure (no network, no I/O): it builds strings/objects and maps
 // raw responses into typed results. The transport is any LlmProvider.
-import type { JsonSchema } from './ports/llm.js';
+import { z } from 'zod';
 import { serializeFacts } from './profile/serialize.js';
 import type { Facts, Classification, TailorContent, LinkedinProfile, WellfoundProfile, GithubData, LinkedinData } from './types.js';
 
@@ -35,26 +35,17 @@ VERIFIED PUBLIC EVIDENCE (auto-digest of the candidate's GitHub/LinkedIn — use
 
 // ---- résumé tailoring -------------------------------------------------------
 
-export const TAILOR_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    role_title: { type: 'string' },
-    tailored_summary_text: { type: 'string' },
-    tailored_subtitle: { type: 'string' },
-    bold_terms: { type: 'array', items: { type: 'string' } },
-    rationale: { type: 'string' },
-  },
-  required: ['role_title', 'tailored_summary_text', 'tailored_subtitle', 'bold_terms', 'rationale'],
-};
+// Fields the copy depends on are required; the cosmetic ones default, so a model
+// that omits a rationale does not fail an otherwise good run.
+export const TAILOR_SCHEMA = z.object({
+  role_title: z.string().default(''),
+  tailored_summary_text: z.string(),
+  tailored_subtitle: z.string(),
+  bold_terms: z.array(z.string()).default([]),
+  rationale: z.string().default(''),
+});
 
-// Raw JSON shape Gemini returns for TAILOR_SCHEMA.
-export interface TailorResponse {
-  role_title?: string;
-  tailored_summary_text: string;
-  tailored_subtitle: string;
-  bold_terms?: string[];
-  rationale?: string;
-}
+export type TailorResponse = z.infer<typeof TAILOR_SCHEMA>;
 
 export function tailorPrompt({
   jd,
@@ -146,11 +137,11 @@ Return JSON only.`;
 // Normalize a raw tailor response into the shape the pipeline consumes.
 export function mapTailorResponse(parsed: TailorResponse): TailorContent {
   return {
-    roleTitle: parsed.role_title || '',
+    roleTitle: parsed.role_title,
     summaryText: parsed.tailored_summary_text,
     subtitle: parsed.tailored_subtitle,
-    boldTerms: parsed.bold_terms || [],
-    rationale: parsed.rationale || '',
+    boldTerms: parsed.bold_terms,
+    rationale: parsed.rationale,
   };
 }
 
@@ -159,20 +150,12 @@ export function mapTailorResponse(parsed: TailorResponse): TailorContent {
 // box. It is read by a founder/hiring manager, not an ATS — so this optimizes
 // for a reply, not keyword density. Draws only on the verified fact base.
 
-export const WELLFOUND_MESSAGE_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    message: { type: 'string' },
-    rationale: { type: 'string' },
-  },
-  required: ['message', 'rationale'],
-};
+export const WELLFOUND_MESSAGE_SCHEMA = z.object({
+  message: z.string(),
+  rationale: z.string().default(''),
+});
 
-// Raw JSON shape returned for WELLFOUND_MESSAGE_SCHEMA.
-export interface WellfoundMessageResponse {
-  message: string;
-  rationale?: string;
-}
+export type WellfoundMessageResponse = z.infer<typeof WELLFOUND_MESSAGE_SCHEMA>;
 
 export function wellfoundMessagePrompt({
   jd,
@@ -226,25 +209,15 @@ Return JSON: { "message": the note to paste, "rationale": 1-2 lines on why this 
 // density. Draws only on the verified fact base. The contact-link signature is
 // appended deterministically by the service, so the model must NOT invent links.
 
-export const EMAIL_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    to: { type: 'string' },
-    subject: { type: 'string' },
-    body: { type: 'string' },
-    rationale: { type: 'string' },
-  },
-  required: ['subject', 'body', 'rationale'],
-};
+export const EMAIL_SCHEMA = z.object({
+  /** Apply-to address copied verbatim from the JD, or '' when none appears. */
+  to: z.string().default(''),
+  subject: z.string(),
+  body: z.string(),
+  rationale: z.string().default(''),
+});
 
-// Raw JSON shape returned for EMAIL_SCHEMA.
-export interface EmailResponse {
-  // The apply-to address copied verbatim from the JD, or '' when none appears.
-  to?: string;
-  subject: string;
-  body: string;
-  rationale?: string;
-}
+export type EmailResponse = z.infer<typeof EMAIL_SCHEMA>;
 
 export function emailPrompt({
   jd,
@@ -308,40 +281,19 @@ Return JSON: { "to": apply-to email from the JD or "", "subject": the subject li
 // Wellfound caps the bio field at 160 characters.
 export const WELLFOUND_BIO_MAX = 160;
 
-export const WELLFOUND_PROFILE_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    headline: { type: 'string' },
-    bio: { type: 'string' },
-    looking_for: { type: 'string' },
-    achievements: { type: 'array', items: { type: 'string' } },
-    skills: { type: 'array', items: { type: 'string' } },
-    experience: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          label: { type: 'string' },
-          blurb: { type: 'string' },
-        },
-        required: ['label', 'blurb'],
-      },
-    },
-    rationale: { type: 'string' },
-  },
-  required: ['headline', 'bio', 'looking_for', 'achievements', 'skills'],
-};
+export const WELLFOUND_PROFILE_SCHEMA = z.object({
+  headline: z.string(),
+  bio: z.string(),
+  looking_for: z.string(),
+  achievements: z.array(z.string()).default([]),
+  skills: z.array(z.string()).default([]),
+  experience: z
+    .array(z.object({ label: z.string().default(''), blurb: z.string().default('') }))
+    .default([]),
+  rationale: z.string().default(''),
+});
 
-// Raw JSON shape returned for WELLFOUND_PROFILE_SCHEMA.
-export interface WellfoundProfileResponse {
-  headline: string;
-  bio: string;
-  looking_for: string;
-  achievements?: string[];
-  skills?: string[];
-  experience?: { label?: string; blurb?: string }[];
-  rationale?: string;
-}
+export type WellfoundProfileResponse = z.infer<typeof WELLFOUND_PROFILE_SCHEMA>;
 
 export function wellfoundProfilePrompt({
   facts,
@@ -386,61 +338,50 @@ export function clampBio(s: string, max = WELLFOUND_BIO_MAX): string {
 // Normalize a raw Wellfound profile response into the domain shape.
 export function mapWellfoundProfile(parsed: WellfoundProfileResponse): WellfoundProfile {
   return {
-    headline: (parsed.headline || '').trim(),
-    bio: clampBio(parsed.bio || ''),
-    lookingFor: parsed.looking_for || '',
-    achievements: (parsed.achievements || []).map((s) => String(s).trim()).filter(Boolean),
-    skills: parsed.skills || [],
-    experience: (parsed.experience || [])
-      .filter((e) => e && (e.label || e.blurb))
-      .map((e) => ({ label: (e.label || '').trim(), blurb: (e.blurb || '').trim() })),
+    headline: parsed.headline.trim(),
+    bio: clampBio(parsed.bio),
+    lookingFor: parsed.looking_for,
+    achievements: parsed.achievements.map((s) => s.trim()).filter(Boolean),
+    skills: parsed.skills,
+    experience: parsed.experience
+      .filter((e) => e.label || e.blurb)
+      .map((e) => ({ label: e.label.trim(), blurb: e.blurb.trim() })),
   };
 }
 
 // ---- LinkedIn profile structuring -------------------------------------------
 
-export const LINKEDIN_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    headline: { type: 'string' },
-    location: { type: 'string' },
-    about: { type: 'string' },
-    experience: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          company: { type: 'string' },
-          title: { type: 'string' },
-          dates: { type: 'string' },
-          location: { type: 'string' },
-          description: { type: 'string' },
-        },
-        required: ['company', 'title'],
-      },
-    },
-    education: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          school: { type: 'string' },
-          degree: { type: 'string' },
-          field: { type: 'string' },
-          dates: { type: 'string' },
-        },
-        required: ['school'],
-      },
-    },
-    skills: { type: 'array', items: { type: 'string' } },
-    certifications: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['name', 'headline', 'experience', 'education', 'skills'],
-};
+export const LINKEDIN_SCHEMA = z.object({
+  name: z.string(),
+  headline: z.string(),
+  location: z.string().default(''),
+  about: z.string().default(''),
+  experience: z
+    .array(
+      z.object({
+        company: z.string(),
+        title: z.string(),
+        dates: z.string().default(''),
+        location: z.string().default(''),
+        description: z.string().default(''),
+      }),
+    )
+    .default([]),
+  education: z
+    .array(
+      z.object({
+        school: z.string(),
+        degree: z.string().default(''),
+        field: z.string().default(''),
+        dates: z.string().default(''),
+      }),
+    )
+    .default([]),
+  skills: z.array(z.string()).default([]),
+  certifications: z.array(z.string()).default([]),
+});
 
-// Gemini returns exactly a LinkedinProfile for LINKEDIN_SCHEMA.
-export type LinkedinResponse = LinkedinProfile;
+export type LinkedinResponse = z.infer<typeof LINKEDIN_SCHEMA>;
 
 export function linkedinPrompt(text: string): string {
   return `Extract this LinkedIn profile into clean structured JSON. Use ONLY what appears in the text — do not invent roles, dates, or skills. Preserve exact company names, titles, and date ranges. Keep "about" concise.
@@ -457,27 +398,16 @@ Return JSON matching the schema.`;
 // stale or missing. Grounded strictly in the fact base — it may rephrase facts
 // but never invent them. The user pastes the results into LinkedIn/GitHub by hand.
 
-export const ENHANCE_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    linkedin_headline: { type: 'string' },
-    linkedin_about: { type: 'string' },
-    linkedin_skills_to_add: { type: 'array', items: { type: 'string' } },
-    github_bio: { type: 'string' },
-    stale_or_missing: { type: 'array', items: { type: 'string' } },
-    rationale: { type: 'string' },
-  },
-  required: ['linkedin_headline', 'linkedin_about', 'linkedin_skills_to_add', 'github_bio', 'stale_or_missing'],
-};
+export const ENHANCE_SCHEMA = z.object({
+  linkedin_headline: z.string(),
+  linkedin_about: z.string(),
+  linkedin_skills_to_add: z.array(z.string()).default([]),
+  github_bio: z.string(),
+  stale_or_missing: z.array(z.string()).default([]),
+  rationale: z.string().default(''),
+});
 
-export interface EnhanceResponse {
-  linkedin_headline: string;
-  linkedin_about: string;
-  linkedin_skills_to_add: string[];
-  github_bio: string;
-  stale_or_missing: string[];
-  rationale?: string;
-}
+export type EnhanceResponse = z.infer<typeof ENHANCE_SCHEMA>;
 
 export function enhancePrompt({
   facts,
@@ -527,21 +457,13 @@ Return JSON only.`;
 
 export type OutreachKind = 'cold_email' | 'linkedin_dm' | 'followup' | 'referral_ask';
 
-export const OUTREACH_SCHEMA: JsonSchema = {
-  type: 'object',
-  properties: {
-    subject: { type: 'string' },
-    message: { type: 'string' },
-    rationale: { type: 'string' },
-  },
-  required: ['message'],
-};
+export const OUTREACH_SCHEMA = z.object({
+  subject: z.string().default(''),
+  message: z.string(),
+  rationale: z.string().default(''),
+});
 
-export interface OutreachResponse {
-  subject?: string;
-  message: string;
-  rationale?: string;
-}
+export type OutreachResponse = z.infer<typeof OUTREACH_SCHEMA>;
 
 const OUTREACH_SPEC: Record<OutreachKind, { words: number; subject: boolean; brief: string }> = {
   cold_email: { words: 130, subject: true, brief: 'A cold email to a hiring manager or founder. Has a subject line. One clear ask (a quick chat or to be considered). Lead with the single most relevant proof point.' },

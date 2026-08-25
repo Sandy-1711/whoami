@@ -7,6 +7,7 @@ import {
   WellfoundService, WELLFOUND_BIO_MAX,
   type WellfoundMessageResult, type WellfoundProfileResult,
 } from '@resume/core';
+import { createLlm } from '@resume/llm';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
 import type { Cli } from '../container.js';
@@ -25,11 +26,12 @@ export async function runWellfound(
   cli: Cli,
   { jd, company, role = '', provider, model }: RunWellfoundArgs,
 ): Promise<void> {
-  const llm = cli.registry.resolve(cli.config, { provider, model });
-  console.log(ui.banner('Wellfound Note', `JD → application-box message · engine: ${llm.label} ${llm.model}`));
+  const llm = createLlm(cli.config.llm, { provider, model });
+  const engine = llm.describe();
+  console.log(ui.banner('Wellfound Note', `JD → application-box message · engine: ${engine.label} ${engine.modelId}`));
 
   const service = new WellfoundService({ root: cli.root, presenter: cli.presenter });
-  const result = await service.message({ jd, company, role }, { provider: llm });
+  const result = await service.message({ jd, company, role }, { llm });
   renderMessage(cli, result);
 }
 
@@ -72,11 +74,12 @@ export async function runWellfoundProfile(
   cli: Cli,
   { target = '', provider, model }: RunWellfoundProfileArgs,
 ): Promise<void> {
-  const llm = cli.registry.resolve(cli.config, { provider, model });
-  console.log(ui.banner('Wellfound Profile', `standing profile from your fact base · engine: ${llm.label} ${llm.model}`));
+  const llm = createLlm(cli.config.llm, { provider, model });
+  const engine = llm.describe();
+  console.log(ui.banner('Wellfound Profile', `standing profile from your fact base · engine: ${engine.label} ${engine.modelId}`));
 
   const service = new WellfoundService({ root: cli.root, presenter: cli.presenter });
-  const result = await service.profile({ target }, { provider: llm });
+  const result = await service.profile({ target }, { llm });
   renderProfile(cli, result);
 }
 

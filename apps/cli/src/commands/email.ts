@@ -5,6 +5,7 @@
 import { relative } from 'node:path';
 import * as p from '@clack/prompts';
 import { EmailService, type EmailDraft } from '@resume/core';
+import { createLlm } from '@resume/llm';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
 import type { Cli } from '../container.js';
@@ -24,14 +25,15 @@ export interface RunEmailArgs {
 
 export async function runEmail(cli: Cli, args: RunEmailArgs): Promise<void> {
   const { jd, company, role = '', to, attach, noAttach, dryRun, autoSend, provider, model } = args;
-  const llm = cli.registry.resolve(cli.config, { provider, model });
-  console.log(ui.banner('Application Email', `JD → email · engine: ${llm.label} ${llm.model}`));
+  const llm = createLlm(cli.config.llm, { provider, model });
+  const engine = llm.describe();
+  console.log(ui.banner('Application Email', `JD → email · engine: ${engine.label} ${engine.modelId}`));
 
   const service = new EmailService({ root: cli.root, presenter: cli.presenter });
   const draft = await service.draft(
     { jd, company, role, attach: noAttach ? false : attach || undefined },
     // A --dry-run is a read-only preview: never overwrite an existing draft file.
-    { provider: llm, from: cli.config.gmail.user, persist: !dryRun },
+    { llm, from: cli.config.gmail.user, persist: !dryRun },
   );
   renderDraft(cli, draft);
 

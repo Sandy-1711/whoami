@@ -2,13 +2,10 @@
 // concrete implementation (apps/cli) loads .env; tests pass a plain object. Core
 // never reads process.env directly, so it stays pure and testable.
 
-export interface LlmSettings {
-  // Explicit default provider id, or '' to let the registry auto-pick.
-  provider: string;
-  // Per-provider API keys and model overrides, keyed by provider id.
-  keys: Record<string, string>;
-  models: Record<string, string>;
-}
+import type { LlmConfig } from '@resume/llm';
+
+// The gateway owns the shape; this alias keeps the existing AppConfig.llm name.
+export type LlmSettings = LlmConfig;
 
 export interface GmailSettings {
   // The Gmail address emails are sent from.
@@ -18,13 +15,11 @@ export interface GmailSettings {
   appPassword: string;
 }
 
-// Chat-agent runtime settings. The deterministic pipelines (tailor/email/…)
-// keep using LlmSettings + the provider registry; these only steer the Mastra
-// conversation loop and its embeddings. All optional overrides — blank falls
-// back to the same provider chain the pipelines use.
+// Chat-agent runtime settings. These steer only the Mastra conversation loop and
+// its embeddings; the pipelines read LlmSettings directly. All optional — blank
+// falls back to the same provider chain the pipelines use.
 export interface AgentSettings {
-  // Provider id for the agent loop (AGENT_PROVIDER); '' → prefer Gemini when
-  // keyed (fast chat), else llm.provider / first key.
+  // Provider id for the agent loop (AGENT_PROVIDER); '' → the pipeline default.
   provider: string;
   // Chat model override (AGENT_MODEL); '' → provider default.
   model: string;

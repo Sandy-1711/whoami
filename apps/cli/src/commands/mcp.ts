@@ -21,7 +21,7 @@ export async function runMcp(cli: Cli): Promise<void> {
   const deps: AgentDeps = {
     root: cli.root,
     config: cli.config,
-    registry: cli.registry,
+    llm: cli.llm,
     latex: cli.latex,
     pdf: cli.pdf,
     mailer: cli.mailer,

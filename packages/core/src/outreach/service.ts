@@ -4,7 +4,7 @@
 // saved to tailored/<company>/outreach-<kind>.txt for reuse.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { LlmProvider } from '../ports/llm.js';
+import { LlmError, type Llm } from '@resume/llm';
 import type { Presenter } from '../ports/logger.js';
 import { slugCompany, extractRoleFromJd } from '../naming.js';
 import { loadProfileDigestText } from '../profile/loaders.js';
@@ -39,7 +39,7 @@ export interface OutreachServiceDeps {
 }
 
 export interface OutreachRunContext {
-  provider: LlmProvider;
+  llm: Llm;
 }
 
 const wordCount = (s: string): number => (s.trim() ? s.trim().split(/\s+/).length : 0);
@@ -49,7 +49,8 @@ export class OutreachService {
 
   async generate(request: OutreachRequest, ctx: OutreachRunContext): Promise<OutreachResult> {
     const { root, presenter } = this.deps;
-    const { provider } = ctx;
+    const { llm } = ctx;
+    const model = llm.describe();
     const { kind, company = '', role: roleOverride = '', jd = '', context = '' } = request;
 
     const facts: Facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
@@ -57,18 +58,19 @@ export class OutreachService {
     // Ranked GitHub/LinkedIn evidence so the message cites real repos/PRs.
     const digest = await loadProfileDigestText(root);
 
-    const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to write a ${kind.replace('_', ' ')}…`);
+    const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to write a ${kind.replace('_', ' ')}…`);
     let parsed: OutreachResponse;
     try {
-      parsed = await provider.generateJson<OutreachResponse>({
+      ({ object: parsed } = await llm.generateJson({
+        operation: `outreach-${kind}`,
         prompt: outreachPrompt({ kind, facts, company, role, jd, context, digest }),
         schema: OUTREACH_SCHEMA,
-      });
+      }));
       if (!parsed?.message?.trim()) throw new Error('empty message');
-      spin.succeed(`${provider.label} wrote the ${kind.replace('_', ' ')}.`);
+      spin.succeed(`${model.label} wrote the ${kind.replace('_', ' ')}.`);
     } catch (err) {
-      spin.fail(`${provider.label} failed: ${(err as Error).message}`);
-      throw new Error(`Check the ${provider.label} API key / quota / model name and retry.`);
+      spin.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
+      throw err;
     }
 
     const subject = (parsed.subject || '').trim();

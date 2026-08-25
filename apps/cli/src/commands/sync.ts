@@ -1,7 +1,7 @@
 // `resume sync` — refresh the scraped profile sources into profile/*.json.
 import {
   SourceRefresher, hashSources, writeLock, timeAgo,
-  type GithubData, type LinkedinData, type LlmProvider, type RefreshResult,
+  type GithubData, type LinkedinData, type RefreshResult,
 } from '@resume/core';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
@@ -17,17 +17,14 @@ export async function runSync(
   console.log(ui.banner('Sync Sources', `${force ? 'force re-scrape' : 'refresh what is stale'} · ${scope}`));
   console.log();
 
-  // A provider is only needed to structure LinkedIn; resolve it soft so a
-  // missing key doesn't block the GitHub scrape.
-  let llm: LlmProvider | undefined;
-  try { llm = cli.registry.resolve(cli.config); } catch { llm = undefined; }
-
   const refresher = new SourceRefresher({
     githubToken: cli.config.githubToken,
     linkedinCookie: cli.config.linkedinCookie,
     ttlHours: cli.config.scrapeTtlHours,
     liveLinkedin: linkedin,
-    llm,
+    // Only the LinkedIn structuring step calls it; a missing key surfaces as a
+    // per-source error rather than blocking the GitHub scrape.
+    llm: cli.llm,
   });
 
   const spin = ui.spinner();

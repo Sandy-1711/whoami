@@ -4,14 +4,15 @@
 // Playwright flag for the status tool. Tools close over an AgentDeps; they never
 // read process.env or construct adapters themselves.
 import type {
-  AppConfig, LlmProviderRegistry, LatexCompiler, PdfInspector, Mailer, Presenter,
+  AppConfig, LatexCompiler, PdfInspector, Mailer, Presenter,
 } from '@resume/core';
+import type { Llm } from '@resume/llm';
 import type { ConfirmGate } from './confirm.js';
 
 export interface AgentDeps {
   root: string;
   config: AppConfig;
-  registry: LlmProviderRegistry;
+  llm: Llm;
   latex: LatexCompiler;
   pdf: PdfInspector;
   mailer: Mailer;

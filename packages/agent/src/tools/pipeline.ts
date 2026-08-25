@@ -32,17 +32,16 @@ export function pipelineTools(deps: AgentDeps) {
       role: z.string().optional().describe('Override the role title; omit to infer from the JD.'),
     }),
     execute: async ({ jd, company, role }) => {
-      const llm = deps.registry.resolve(deps.config);
       const refresher = new SourceRefresher({
         githubToken: deps.config.githubToken,
         linkedinCookie: deps.config.linkedinCookie,
         ttlHours: deps.config.scrapeTtlHours,
-        llm,
+        llm: deps.llm,
       });
       const service = new TailorService({
         root: deps.root, latex: deps.latex, pdf: deps.pdf, presenter: deps.presenter,
       });
-      const result = await service.run({ jd, company, role: role || '' }, { provider: llm, refresher });
+      const result = await service.run({ jd, company, role: role || '' }, { llm: deps.llm, refresher });
       const r = result.report;
       return {
         company: result.paths.slug,
@@ -72,14 +71,12 @@ export function pipelineTools(deps: AgentDeps) {
       linkedin: z.boolean().optional().describe('Opt in to the LinkedIn scrape (default off — ToS/ban risk). Only when the user explicitly asks.'),
     }),
     execute: async ({ force, linkedin }) => {
-      let llm;
-      try { llm = deps.registry.resolve(deps.config); } catch { llm = undefined; }
       const refresher = new SourceRefresher({
         githubToken: deps.config.githubToken,
         linkedinCookie: deps.config.linkedinCookie,
         ttlHours: deps.config.scrapeTtlHours,
         liveLinkedin: Boolean(linkedin),
-        llm,
+        llm: deps.llm,
       });
       const results = await refresher.refreshAll(deps.root, {
         force: Boolean(force),

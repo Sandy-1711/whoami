@@ -22,9 +22,8 @@ export function outreachTools(deps: AgentDeps) {
       context: z.string().optional().describe('Who it\'s to, prior touch, why now, etc.'),
     }),
     execute: async ({ kind, company, role, jd, context }) => {
-      const llm = deps.registry.resolve(deps.config);
       const service = new OutreachService({ root: deps.root, presenter: deps.presenter });
-      const r = await service.generate({ kind, company, role, jd, context }, { provider: llm });
+      const r = await service.generate({ kind, company, role, jd, context }, { llm: deps.llm });
       return {
         kind: r.kind,
         subject: r.subject || null,

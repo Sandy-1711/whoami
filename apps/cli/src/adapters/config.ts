@@ -1,20 +1,19 @@
-// Config adapter — loads .env (from the repo root, not the CLI package dir) and
-// builds the typed AppConfig the domain consumes. The per-provider API keys and
-// model overrides are derived from the registered factories' declared env var
-// names, so adding a provider needs no change here.
+// Config adapter — loads .env from the repo root (not the CLI package dir) and
+// builds the typed AppConfig the domain consumes. Core never reads process.env.
 import { join } from 'node:path';
 import dotenv from 'dotenv';
-import type { AppConfig, LlmProviderFactory } from '@resume/core';
+import type { AppConfig } from '@resume/core';
+import { listProviders } from '@resume/llm';
 import { repoRoot } from '../paths.js';
 
 dotenv.config({ path: join(repoRoot, '.env'), quiet: true });
 
-export function loadConfig(factories: LlmProviderFactory[]): AppConfig {
+export function loadConfig(): AppConfig {
   const keys: Record<string, string> = {};
   const models: Record<string, string> = {};
-  for (const f of factories) {
-    keys[f.id] = process.env[f.apiKeyEnv] || '';
-    models[f.id] = (f.modelEnv && process.env[f.modelEnv]) || '';
+  for (const provider of listProviders()) {
+    keys[provider.id] = process.env[provider.apiKeyEnv] || '';
+    models[provider.id] = process.env[provider.modelEnv] || '';
   }
   return {
     llm: {

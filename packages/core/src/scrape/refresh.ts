@@ -13,7 +13,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { contentHash, isStale, recordScrape, lastScrape } from '../profile/sources.js';
 import { loadCuration, applyCuration } from '../profile/curation.js';
-import type { LlmProvider } from '../ports/llm.js';
+import type { Llm } from '@resume/llm';
 import { scrapeGithub, githubUsername } from './github.js';
 import { scrapeLinkedin } from './linkedin.js';
 import type { Facts, GithubData, LinkedinData, RefreshResult } from '../types.js';
@@ -36,7 +36,7 @@ export interface ScrapeConfig {
   liveLinkedin?: boolean;
   // Provider used to structure the LinkedIn profile. Undefined is allowed — the
   // linkedin scrape then fails soft (surfaced as a per-source error).
-  llm?: LlmProvider;
+  llm?: Llm;
 }
 
 async function readFacts(root: string): Promise<Facts> {

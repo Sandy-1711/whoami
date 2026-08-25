@@ -5,6 +5,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { collectStatus, timeAgo, type StatusReport } from '@resume/core';
+import { defaultProviderId, listProviders } from '@resume/llm';
 import { renderEngineReason } from '../adapters/latex.js';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
@@ -20,14 +21,14 @@ function havePlaywright(root: string): boolean {
 }
 
 export async function runStatus(cli: Cli): Promise<StatusReport> {
-  const { root, config, registry } = cli;
+  const { root, config } = cli;
   console.log(ui.banner('Résumé Studio', 'status · sources · outputs'));
 
   const report = await collectStatus({
     root,
     config,
-    providers: registry.list().map((f) => ({ id: f.id, label: f.label, defaultModel: f.defaultModel })),
-    activeProviderId: registry.defaultProviderId(config),
+    providers: listProviders(),
+    activeProviderId: defaultProviderId(config.llm),
     renderReason: renderEngineReason(),
     playwright: havePlaywright(root),
   });

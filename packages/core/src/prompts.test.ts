@@ -42,8 +42,9 @@ describe("mapTailorResponse", () => {
             rationale: "because",
         });
     });
-    it("should default the optional fields when absent", () => {
-        const mapped = mapTailorResponse({ tailored_summary_text: "s", tailored_subtitle: "t" } as TailorResponse);
+    it("should default the optional fields when the model omits them", () => {
+        const parsed = TAILOR_SCHEMA.parse({ tailored_summary_text: "s", tailored_subtitle: "t" });
+        const mapped = mapTailorResponse(parsed);
         expect(mapped.roleTitle).toBe("");
         expect(mapped.boldTerms).toEqual([]);
         expect(mapped.rationale).toBe("");
@@ -59,10 +60,13 @@ describe("linkedinPrompt", () => {
 });
 
 describe("TAILOR_SCHEMA", () => {
-    it("should require every field the mapper reads", () => {
-        expect(TAILOR_SCHEMA.required).toEqual(
-            expect.arrayContaining(["role_title", "tailored_summary_text", "tailored_subtitle", "bold_terms", "rationale"]),
-        );
+    it("rejects a response missing the copy the résumé depends on", () => {
+        expect(TAILOR_SCHEMA.safeParse({ tailored_subtitle: "t" }).success).toBe(false);
+        expect(TAILOR_SCHEMA.safeParse({ tailored_summary_text: "s" }).success).toBe(false);
+    });
+
+    it("accepts a response carrying only the required copy", () => {
+        expect(TAILOR_SCHEMA.safeParse({ tailored_summary_text: "s", tailored_subtitle: "t" }).success).toBe(true);
     });
 });
 
@@ -102,32 +106,35 @@ describe("wellfoundProfilePrompt", () => {
 });
 
 describe("mapWellfoundProfile", () => {
+    // The mapper only ever sees schema-parsed input, so the tests go through the
+    // schema too — that is what applies the list defaults it relies on.
+    const mapParsed = (raw: unknown) => mapWellfoundProfile(WELLFOUND_PROFILE_SCHEMA.parse(raw));
+
     it("should map snake_case looking_for + bio + achievements + experience", () => {
-        const raw: WellfoundProfileResponse = {
+        expect(mapParsed({
             headline: "AI Engineer", bio: "Ships agents.", looking_for: "remote AI work",
             achievements: ["12 merged Mastra PRs"], skills: ["RAG"],
             experience: [{ label: "AiRA — AI Engineer", blurb: "Built agents." }],
-        };
-        expect(mapWellfoundProfile(raw)).toEqual({
+        })).toEqual({
             headline: "AI Engineer", bio: "Ships agents.", lookingFor: "remote AI work",
             achievements: ["12 merged Mastra PRs"], skills: ["RAG"],
             experience: [{ label: "AiRA — AI Engineer", blurb: "Built agents." }],
         });
-        const bare = mapWellfoundProfile({ headline: "x", bio: "y", looking_for: "z" } as WellfoundProfileResponse);
+        const bare = mapParsed({ headline: "x", bio: "y", looking_for: "z" });
         expect(bare.skills).toEqual([]);
         expect(bare.achievements).toEqual([]);
         expect(bare.experience).toEqual([]);
     });
     it("should drop experience entries with neither label nor blurb", () => {
-        const mapped = mapWellfoundProfile({
+        const mapped = mapParsed({
             headline: "x", bio: "y", looking_for: "z",
             experience: [{ label: "", blurb: "" }, { label: "Real", blurb: "text" }],
-        } as WellfoundProfileResponse);
+        });
         expect(mapped.experience).toEqual([{ label: "Real", blurb: "text" }]);
     });
     it("should hard-clamp an over-long bio to the Wellfound limit at a word boundary", () => {
         const long = "word ".repeat(60).trim(); // ~299 chars
-        const bio = mapWellfoundProfile({ headline: "x", bio: long, looking_for: "z" } as WellfoundProfileResponse).bio;
+        const bio = mapParsed({ headline: "x", bio: long, looking_for: "z" }).bio;
         expect(bio.length).toBeLessThanOrEqual(WELLFOUND_BIO_MAX);
         expect(bio.endsWith(" ")).toBe(false);
     });
@@ -168,12 +175,23 @@ describe("evidence digest injection", () => {
 });
 
 describe("Wellfound schemas", () => {
-    it("message schema requires the fields the service reads", () => {
-        expect(WELLFOUND_MESSAGE_SCHEMA.required).toEqual(expect.arrayContaining(["message", "rationale"]));
+    it("message schema requires a message and defaults the rationale", () => {
+        expect(WELLFOUND_MESSAGE_SCHEMA.safeParse({ rationale: "r" }).success).toBe(false);
+        expect(WELLFOUND_MESSAGE_SCHEMA.parse({ message: "m" }).rationale).toBe("");
     });
-    it("profile schema requires headline, bio, looking_for, achievements, skills", () => {
-        expect(WELLFOUND_PROFILE_SCHEMA.required).toEqual(
-            expect.arrayContaining(["headline", "bio", "looking_for", "achievements", "skills"]),
-        );
+
+    it("profile schema requires the fields a founder actually reads", () => {
+        for (const missing of ["headline", "bio", "looking_for"]) {
+            const payload: Record<string, string> = { headline: "h", bio: "b", looking_for: "l" };
+            delete payload[missing];
+            expect(WELLFOUND_PROFILE_SCHEMA.safeParse(payload).success).toBe(false);
+        }
+    });
+
+    it("profile schema defaults the list fields so the mapper never sees undefined", () => {
+        const parsed = WELLFOUND_PROFILE_SCHEMA.parse({ headline: "h", bio: "b", looking_for: "l" });
+        expect(parsed.achievements).toEqual([]);
+        expect(parsed.skills).toEqual([]);
+        expect(parsed.experience).toEqual([]);
     });
 });

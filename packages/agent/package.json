@@ -20,6 +20,7 @@
     "@mastra/mcp": "^1.13.1",
     "@mastra/memory": "^1.22.2",
     "@resume/core": "workspace:*",
+    "@resume/llm": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

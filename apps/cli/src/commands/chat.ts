@@ -79,7 +79,7 @@ function buildDeps(cli: Cli, out: Out, ask: (q: string) => Promise<string>): Age
   return {
     root: cli.root,
     config: cli.config,
-    registry: cli.registry,
+    llm: cli.llm,
     latex: cli.latex,
     pdf: cli.pdf,
     mailer: cli.mailer,

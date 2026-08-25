@@ -10,7 +10,7 @@
 // injected LlmProvider (drafting) and Mailer (sending), so it stays testable.
 import { readFile, writeFile, mkdir, readdir, access } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { LlmProvider } from '../ports/llm.js';
+import { LlmError, type Llm } from '@resume/llm';
 import type { Presenter } from '../ports/logger.js';
 import type { Mailer, EmailAttachment, SendResult } from '../ports/mailer.js';
 import {
@@ -62,7 +62,7 @@ export interface FileDraft extends SendableDraft {
 }
 
 export interface EmailDraftContext {
-  provider: LlmProvider;
+  llm: Llm;
   // The sender address, so the written draft shows the real "From". Sending
   // still goes through the Mailer, which owns auth.
   from?: string;
@@ -102,7 +102,8 @@ export class EmailService {
 
   async draft(request: EmailDraftRequest, ctx: EmailDraftContext): Promise<EmailDraft> {
     const { root, presenter } = this.deps;
-    const { provider, from = '', persist = true } = ctx;
+    const { llm, from = '', persist = true } = ctx;
+    const model = llm.describe();
     const { jd, company, role: roleOverride = '', attach } = request;
 
     if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
@@ -128,21 +129,22 @@ export class EmailService {
     // Ranked GitHub/LinkedIn evidence so the email cites real repos/PRs.
     const digest = await loadProfileDigestText(root);
 
-    const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to draft the application email…`);
+    const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to draft the application email…`);
     let parsed: EmailResponse;
     try {
-      parsed = await provider.generateJson<EmailResponse>({
+      ({ object: parsed } = await llm.generateJson({
+        operation: 'email',
         prompt: emailPrompt({
           jd, company, role: roleOverride, facts, classification: cls,
           candidateName, hasResume: Boolean(attachment), digest,
         }),
         schema: EMAIL_SCHEMA,
-      });
+      }));
       if (!parsed?.subject?.trim() || !parsed?.body?.trim()) throw new Error('empty subject/body');
-      spin.succeed(`${provider.label} drafted the email.`);
+      spin.succeed(`${model.label} drafted the email.`);
     } catch (err) {
-      spin.fail(`${provider.label} failed: ${(err as Error).message}`);
-      throw new Error(`Check the ${provider.label} API key / quota / model name and retry.`);
+      spin.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
+      throw err;
     }
 
     const subject = parsed.subject.trim();

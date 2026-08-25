@@ -4,16 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { WellfoundService } from "./service.js";
 import { silentPresenter } from "../ports/logger.js";
-import type { LlmProvider, LlmRequest } from "../ports/llm.js";
-
-// A fake provider returning canned JSON regardless of prompt — each test only
-// exercises one of message()/profile(), so no routing is needed.
-function fakeProvider(payload: unknown): LlmProvider {
-    return {
-        id: "fake", label: "Fake", model: "test",
-        async generateJson<T>(_req: LlmRequest): Promise<T> { return payload as T; },
-    };
-}
+import { createFakeLlm } from '@resume/llm/testing';
 
 const MESSAGE = { message: "I shipped RAG agents on FastAPI at AiRA.", rationale: "leads with proof" };
 const PROFILE = {
@@ -45,7 +36,7 @@ describe("WellfoundService.message", () => {
     it("writes the per-JD note under tailored/<slug> and grounds it in real keywords", async () => {
         const root = await makeRoot();
         const svc = new WellfoundService({ root, presenter: silentPresenter });
-        const res = await svc.message({ jd: JD, company: "Acme AI" }, { provider: fakeProvider(MESSAGE) });
+        const res = await svc.message({ jd: JD, company: "Acme AI" }, { llm: createFakeLlm({ responses: [MESSAGE] }) });
 
         expect(res.paths.slug).toBe("acme_ai");
         expect(res.paths.file).toContain(join("tailored", "acme_ai", "wellfound-message.txt"));
@@ -61,9 +52,9 @@ describe("WellfoundService.message", () => {
     it("rejects a too-short JD and a missing company", async () => {
         const root = await makeRoot();
         const svc = new WellfoundService({ root, presenter: silentPresenter });
-        await expect(svc.message({ jd: "short", company: "Acme" }, { provider: fakeProvider(MESSAGE) }))
+        await expect(svc.message({ jd: "short", company: "Acme" }, { llm: createFakeLlm({ responses: [MESSAGE] }) }))
             .rejects.toThrow(/too short/i);
-        await expect(svc.message({ jd: JD, company: "" }, { provider: fakeProvider(MESSAGE) }))
+        await expect(svc.message({ jd: JD, company: "" }, { llm: createFakeLlm({ responses: [MESSAGE] }) }))
             .rejects.toThrow(/No company/i);
     });
 });
@@ -72,7 +63,7 @@ describe("WellfoundService.profile", () => {
     it("writes ONE standing profile at the repo root (not per-company)", async () => {
         const root = await makeRoot();
         const svc = new WellfoundService({ root, presenter: silentPresenter });
-        const res = await svc.profile({ target: "agent infrastructure" }, { provider: fakeProvider(PROFILE) });
+        const res = await svc.profile({ target: "agent infrastructure" }, { llm: createFakeLlm({ responses: [PROFILE] }) });
 
         expect(res.relPath).toBe("wellfound-profile.md");
         expect(res.path).toBe(join(root, "wellfound-profile.md"));
@@ -96,18 +87,25 @@ describe("WellfoundService.profile", () => {
     it("re-running overwrites the same file", async () => {
         const root = await makeRoot();
         const svc = new WellfoundService({ root, presenter: silentPresenter });
-        const first = await svc.profile({}, { provider: fakeProvider(PROFILE) });
-        const second = await svc.profile({}, { provider: fakeProvider({ ...PROFILE, headline: "Backend Engineer" }) });
+        const first = await svc.profile({}, { llm: createFakeLlm({ responses: [PROFILE] }) });
+        const second = await svc.profile({}, { llm: createFakeLlm({ responses: [{ ...PROFILE, headline: "Backend Engineer" }] }) });
         expect(second.path).toBe(first.path);
         expect(await readFile(second.path, "utf8")).toContain("Backend Engineer");
         // exactly one file, overwritten
         await expect(stat(second.path)).resolves.toBeTruthy();
     });
 
-    it("throws a helpful error when the model returns an incomplete profile", async () => {
+    it("says what is wrong when the model returns an incomplete profile", async () => {
         const root = await makeRoot();
         const svc = new WellfoundService({ root, presenter: silentPresenter });
-        await expect(svc.profile({}, { provider: fakeProvider({ headline: "", bio: "", looking_for: "", skills: [] }) }))
-            .rejects.toThrow(/API key|quota|model/i);
+        await expect(svc.profile({}, { llm: createFakeLlm({ responses: [{ headline: "", bio: "", looking_for: "", skills: [] }] }) }))
+            .rejects.toThrow(/incomplete profile/i);
+    });
+
+    it("surfaces the provider's own failure instead of a generic sentence", async () => {
+        const root = await makeRoot();
+        const svc = new WellfoundService({ root, presenter: silentPresenter });
+        const llm = createFakeLlm({ responses: [PROFILE], failFirst: 1, failWith: "rate_limit" });
+        await expect(svc.profile({}, { llm })).rejects.toThrow(/rate_limit/i);
     });
 });

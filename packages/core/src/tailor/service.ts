@@ -5,7 +5,8 @@
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { LlmProvider } from '../ports/llm.js';
+import type { Llm } from '@resume/llm';
+import { LlmError } from '@resume/llm';
 import type { LatexCompiler, PdfInspector, EngineReason } from '../ports/latex.js';
 import type { Presenter } from '../ports/logger.js';
 import {
@@ -44,10 +45,9 @@ export interface TailorServiceDeps {
   presenter: Presenter;
 }
 
-// One tailoring run needs a provider + a refresher (both depend on the per-run
-// provider selection), passed to run().
+// One tailoring run needs a model gateway + a refresher, passed to run().
 export interface TailorRunContext {
-  provider: LlmProvider;
+  llm: Llm;
   refresher: SourceRefresher;
 }
 
@@ -97,8 +97,9 @@ export class TailorService {
 
   async run(request: TailorRequest, ctx: TailorRunContext): Promise<TailorRunResult> {
     const { root, latex, pdf, presenter } = this.deps;
-    const { provider, refresher } = ctx;
+    const { llm, refresher } = ctx;
     const { jd, company, role: roleOverride = '' } = request;
+    const model = llm.describe();
 
     if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
     if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
@@ -135,18 +136,20 @@ export class TailorService {
     const digest = await loadProfileDigestText(root);
 
     // ---- tailor content (LLM) --------------------------------------------
-    const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to tailor from your fact base…`);
+    const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to tailor from your fact base…`);
     let roleTitle: string, summaryText: string, subtitle: string, boldTerms: string[], rationale: string;
     try {
-      const parsed = await provider.generateJson<TailorResponse>({
+      const { object } = await llm.generateJson({
+        operation: 'tailor',
         prompt: tailorPrompt({ jd, facts, classification: cls, digest }),
         schema: TAILOR_SCHEMA,
       });
-      ({ roleTitle, summaryText, subtitle, boldTerms, rationale } = mapTailorResponse(parsed));
-      spin.succeed(`${provider.label} tailored the summary & subtitle.`);
+      ({ roleTitle, summaryText, subtitle, boldTerms, rationale } = mapTailorResponse(object));
+      spin.succeed(`${model.label} tailored the summary & subtitle.`);
     } catch (err) {
-      spin.fail(`${provider.label} failed: ${(err as Error).message}`);
-      throw new Error(`Check the ${provider.label} API key / quota / model name and retry.`);
+      const detail = err instanceof LlmError ? err.describe() : (err as Error).message;
+      spin.fail(detail);
+      throw err;
     }
 
     // ---- resolve role + output paths -------------------------------------
@@ -167,17 +170,18 @@ export class TailorService {
     for (let attempt = 1; !guardsPass(guards) && attempt <= MAX_FIX_ATTEMPTS; attempt++) {
       const problem = describeGuardFailure(guards);
       const summaryBudget = Math.max(160, 300 - attempt * 60);
-      const spinFix = presenter.spinner(`Asking ${provider.label} to tighten the copy (fix ${attempt}/${MAX_FIX_ATTEMPTS})…`);
+      const spinFix = presenter.spinner(`Asking ${model.label} to tighten the copy (fix ${attempt}/${MAX_FIX_ATTEMPTS})…`);
       try {
-        const parsed = await provider.generateJson<TailorResponse>({
+        const { object } = await llm.generateJson({
+          operation: 'tailor-fix',
           prompt: tailorFixPrompt({ jd, facts, classification: cls, previous: content, problem, summaryBudget }),
           schema: TAILOR_SCHEMA,
         });
-        const fixed = mapTailorResponse(parsed);
+        const fixed = mapTailorResponse(object);
         content = { summaryText: fixed.summaryText, subtitle: fixed.subtitle, boldTerms: fixed.boldTerms };
-        spinFix.succeed(`${provider.label} returned a tighter draft — re-rendering…`);
+        spinFix.succeed(`${model.label} returned a tighter draft — re-rendering…`);
       } catch (err) {
-        spinFix.fail(`${provider.label} fix attempt failed: ${(err as Error).message}`);
+        spinFix.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
         break;
       }
       const spinR = presenter.spinner(`Re-rendering PDF & re-checking guards (fix ${attempt})…`);
@@ -192,7 +196,7 @@ export class TailorService {
     const report: TailorReportData = {
       cls, score, role, summaryText, subtitle, rationale,
       guards: { pages: guards.pages, width: guards.width },
-      paths, guardsPass: passed, provider: provider.id, model: provider.model,
+      paths, guardsPass: passed, provider: model.providerId, model: model.modelId,
     };
     await writeFile(paths.report, buildReportMarkdown(report));
     return { paths, score, role, guardsPass: passed, report };

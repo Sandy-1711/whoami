@@ -7,6 +7,7 @@ import {
   extractJdKeywords, classify, scoreResume, collectStatus, listTailoredOutputs,
   loadProfileDigest, renderProfileDigest,
 } from '@resume/core';
+import { defaultProviderId, listProviders } from '@resume/llm';
 import type { AgentDeps } from '../deps.js';
 import { loadFacts, loadResumeText, cap } from './shared.js';
 
@@ -53,8 +54,8 @@ export function readOnlyTools(deps: AgentDeps) {
       const report = await collectStatus({
         root: deps.root,
         config: deps.config,
-        providers: deps.registry.list().map((f) => ({ id: f.id, label: f.label, defaultModel: f.defaultModel })),
-        activeProviderId: deps.registry.defaultProviderId(deps.config),
+        providers: listProviders(),
+        activeProviderId: defaultProviderId(deps.config.llm),
         renderReason: deps.latex.availability(),
         playwright: deps.playwright,
       });

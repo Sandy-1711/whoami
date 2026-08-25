@@ -6,7 +6,7 @@
 // the user to paste in — LinkedIn/GitHub edits stay manual.
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { LlmProvider } from '../ports/llm.js';
+import { LlmError, type Llm } from '@resume/llm';
 import type { Presenter } from '../ports/logger.js';
 import { drift } from '../profile/sources.js';
 import { loadCuration, applyCuration } from '../profile/curation.js';
@@ -33,7 +33,7 @@ export interface EnhanceServiceDeps {
 }
 
 export interface EnhanceRunContext {
-  provider: LlmProvider;
+  llm: Llm;
 }
 
 export class EnhanceService {
@@ -41,7 +41,8 @@ export class EnhanceService {
 
   async suggest(request: EnhanceRequest, ctx: EnhanceRunContext): Promise<EnhanceResult> {
     const { root, presenter } = this.deps;
-    const { provider } = ctx;
+    const { llm } = ctx;
+    const model = llm.describe();
     const target = (request.target || '').trim();
 
     const facts = await this.readJson<Facts>(join(root, 'profile', 'facts.json'));
@@ -56,18 +57,19 @@ export class EnhanceService {
     const d = await drift(root);
     if (d.lock && !d.synced) presenter.warn(`Sources changed since last sync: ${d.changed.join(', ')} — suggestions may lag the live profile.`);
 
-    const spin = presenter.spinner(`Asking ${provider.label} (${provider.model}) to compare your profiles to the fact base…`);
+    const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to compare your profiles to the fact base…`);
     let parsed: EnhanceResponse;
     try {
-      parsed = await provider.generateJson<EnhanceResponse>({
+      ({ object: parsed } = await llm.generateJson({
+        operation: 'enhance',
         prompt: enhancePrompt({ facts, linkedin, github, target }),
         schema: ENHANCE_SCHEMA,
-      });
+      }));
       if (!parsed?.linkedin_headline) throw new Error('empty suggestions');
-      spin.succeed(`${provider.label} produced profile suggestions.`);
+      spin.succeed(`${model.label} produced profile suggestions.`);
     } catch (err) {
-      spin.fail(`${provider.label} failed: ${(err as Error).message}`);
-      throw new Error(`Check the ${provider.label} API key / quota / model name and retry.`);
+      spin.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
+      throw err;
     }
 
     const result: EnhanceResult = {
