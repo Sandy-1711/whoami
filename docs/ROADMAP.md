@@ -14,7 +14,7 @@ code).
 | --- | --- | --- |
 | 0 | Handoff docs | done |
 | 1 | One LLM path, instrumented | done — one live-trace check outstanding, see below |
-| 2 | Flexible tools, unconfusing MCP | not started |
+| 2 | Flexible tools, unconfusing MCP | in progress — surface reshaped, see below |
 | 3 | Résumé as structured data | not started |
 | 4 | Web studio | not started |
 | 5 | Formatter, linter, comment pass | not started |
@@ -142,6 +142,11 @@ about without getting lost.
 a three-process launch chain, and errors that all look the same. "Tools are too rigid" traces to
 `jd: z.string()` everywhere.
 
+The sharper statement of the problem, from the session that started this phase: *an agent holding
+these tools never knows what to use or when.* Nineteen tools, five of which drafted copy from the
+same fact base, two of which had to be called together, and no signal anywhere about what a call
+costs or what follows it. Rigid inputs are one layer of that; the shape of the surface is the rest.
+
 **How:**
 
 - `packages/agent/src/tools/inputs.ts` — one resolver taking `{ jd?, jdPath?, jdUrl? }`, applied
@@ -161,15 +166,59 @@ a three-process launch chain, and errors that all look the same. "Tools are too 
   `confirm: async () => true` and delegates entirely to the MCP client's prompt — one "always
   allow" and mail goes out unchecked.
 
+### Surface decisions taken mid-phase
+
+These came from working the surface rather than reading it, and they override the tool list the
+rest of this document assumed:
+
+- **The Wellfound tools are gone.** The per-JD note is now `outreach_message`'s `wellfound_note`
+  kind — `kind` was the only axis that ever varied between five drafting tools. The standing
+  Wellfound profile left the agent surface entirely: it is a document regenerated when the fact
+  base changes, not something to reach for mid-conversation. `pnpm wellfound-profile` still
+  writes it. **Open:** whether the note kind should survive either, or whether all Wellfound copy
+  belongs outside the agent.
+- **The profile enhancer is gone**, tool and service. The `resume-outreach` skill already does
+  that comparison for free, down to the same `linkedin-updates.md`.
+- **The tracker must stop being a tool the model remembers to call.** It never worked in practice,
+  and over MCP the client's model has no reason to know it exists. Logging has to be *hardcoded
+  into the actions*: tailoring a résumé, drafting a note, sending an email each record themselves.
+  The store becomes the system's own memory — every action appended, so later sessions can answer
+  "what happened with this company?" without asking anyone to have been diligent. `log_application`
+  survives only for the status changes a human knows about (interviewing, offer, ghosted).
+- **Outreach is a message plus configuration**, not a genre per tool: how polite, how long, who it
+  is for. Those belong in the tool's arguments and in the prompt.
+- **A tool for the model to ask the user for that configuration.** When the model needs a
+  preference it cannot infer — tone, length, which of two angles — it should call a tool that puts
+  a concrete question to the user and returns the answer, rather than guessing or asking vaguely
+  in prose. In chat that prompts the terminal; over MCP it returns the questions for the client to
+  put to the human.
+- **GitHub needs read actions, not only the push.** Read a repo's README or description, read the
+  user, search where the API allows it. The agent currently pushes to GitHub but cannot look at it.
+- **Email is fine as it stands** — draft, then send through the confirm gate.
+
 **Verify:** score a JD by path without pasting; restart the MCP server and send a draft from a
 previous session; call `mcp__resume__profile_status` and `mcp__resume__score_jd` from Claude Code
 after the `.mcp.json` switch.
 
-- [ ] Input resolver applied everywhere
-- [ ] Tool surface consolidated + `nextSteps`
+- [x] Input resolver applied everywhere (`jd` / `jdPath` / `jdUrl`)
+- [x] `opt()` rejects a flag-shaped value
+- [x] Grounding reads merged into `read_profile`
+- [x] Wellfound tools collapsed; profile enhancer deleted
+- [ ] Automatic activity log; tracker stops depending on the model
+- [ ] Outreach configuration + a tool that asks the user for it
+- [ ] GitHub read/search actions
+- [ ] Uniform tool descriptions (cost, when, when-not, what follows) + `nextSteps`
+- [ ] `send_application_email` falls back to the saved draft file
+- [ ] `update_facts` batch; `check_resume` scope enum + CLI naming
 - [ ] `tailor_plan` / `tailor_render` split
 - [ ] `dist` build + `.mcp.json` switch
 - [ ] Explicit confirm argument
+
+**Open question — CLI equivalents vs MCP.** Every capability currently exists twice: a `pnpm`
+command and an MCP tool, with skills as a third, unpaid path. That split was deliberate — a Claude
+Code session writing the copy costs nothing where the API costs credits — but it works against the
+project's own vision of one agent driving one toolkit, and it is why the skills tell agents *not*
+to call half the tools. Deciding what the CLI is for once MCP exists is deferred, not settled.
 
 ---
 
