@@ -206,15 +206,30 @@ after the `.mcp.json` switch.
 - [x] `opt()` rejects a flag-shaped value
 - [x] Grounding reads merged into `read_profile`
 - [x] Wellfound tools removed; note generalized to any platform; profile enhancer deleted
-- [ ] Automatic activity log; tracker stops depending on the model
-- [ ] Outreach configuration + a tool that asks the user for it
-- [ ] GitHub read/search actions
-- [ ] Uniform tool descriptions (cost, when, when-not, what follows) + `nextSteps`
-- [ ] `send_application_email` falls back to the saved draft file
-- [ ] `update_facts` batch; `check_resume` scope enum + CLI naming
+- [x] Automatic activity log; tracker stops depending on the model
+- [x] Outreach configuration (tone, length) + `ask_user`
+- [x] GitHub read/search actions
+- [x] Uniform tool descriptions (cost, when, when-not, what follows) + `nextSteps`
+- [x] `send_application_email` falls back to the saved draft file
+- [x] `update_facts` batch; `check_resume` scope enum + CLI naming
 - [ ] `tailor_plan` / `tailor_render` split
 - [ ] `dist` build + `.mcp.json` switch
 - [ ] Explicit confirm argument
+
+**Open question — should drafting be a tool at all?** Raised mid-phase and not yet decided. What
+the toolkit uniquely provides is not prose: it is the grounding (fact base + evidence), the
+deterministic JD classification (`missing` is computed, and it is what stops invention), the filing,
+and the recording. The prose is the one part any capable model can do — and in chat the drafting
+model *is* the agent, while over MCP the client's model is usually stronger than the cheap one the
+tool pays for. What a tool does guarantee is that the house rules and the filing happen even for a
+client that ignores instructions.
+
+The shape that keeps the guarantee without the second model: `draft_context({ kind, jd?, company? })`
+returning facts, evidence, classification, house-style rules, word budget and the destination path;
+`save_draft({ kind, company, platform?, text })` validating the text against the fact base, writing
+it to the canonical path and recording it. Both free. `outreach_message` survives as the "write it
+for me" fallback rather than the main path. **Decide before Phase 3**, since Phase 3's tailoring
+faces the same question for résumé bullets.
 
 **Open question — CLI equivalents vs MCP.** Every capability currently exists twice: a `pnpm`
 command and an MCP tool, with skills as a third, unpaid path. That split was deliberate — a Claude
