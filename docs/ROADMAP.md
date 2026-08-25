@@ -162,6 +162,12 @@ costs or what follows it. Rigid inputs are one layer of that; the shape of the s
   guards), so no MCP call sits near a client timeout. Keep a wrapper for the CLI.
 - Tool results carry `nextSteps`. The `MCPServer` description states the typical flow.
 - Build `apps/cli/dist/`; `.mcp.json` invokes `node apps/cli/dist/main.js mcp` directly.
+  **Landed differently:** `.mcp.json` runs `node --import tsx apps/cli/src/main.ts mcp`, which is
+  the one process the item was after, without a build. A bundle was written and thrown away: the
+  workspace packages export TypeScript source, so they must be bundled, while their dependencies
+  are pnpm-isolated under `packages/*/node_modules` where a bundle at `apps/cli/dist` cannot
+  resolve them — and bundling those too means bundling `@libsql`'s native bindings. Revisit only
+  if tsx's startup transpile becomes the problem.
 - Outward-facing tools require an explicit `confirm: true` argument. `runMcp` sets
   `confirm: async () => true` and delegates entirely to the MCP client's prompt — one "always
   allow" and mail goes out unchecked.
@@ -212,9 +218,9 @@ after the `.mcp.json` switch.
 - [x] Uniform tool descriptions (cost, when, when-not, what follows) + `nextSteps`
 - [x] `send_application_email` falls back to the saved draft file
 - [x] `update_facts` batch; `check_resume` scope enum + CLI naming
-- [ ] `tailor_plan` / `tailor_render` split
-- [ ] `dist` build + `.mcp.json` switch
-- [ ] Explicit confirm argument
+- [x] `tailor_plan` / `tailor_render` split
+- [x] One-process MCP launch (no `dist` — see above)
+- [x] Explicit confirm argument
 
 **Open question — should drafting be a tool at all?** Raised mid-phase and not yet decided. What
 the toolkit uniquely provides is not prose: it is the grounding (fact base + evidence), the

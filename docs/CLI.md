@@ -80,7 +80,9 @@ brings the model and decides which tools to call.
 
 The repo ships a project-scoped [`.mcp.json`](../.mcp.json), so **Claude Code auto-discovers the
 server** when you open this repo — just approve it (`/mcp` to check status). For other clients, point
-them at the command `pnpm mcp` (working directory = repo root). Env (`GEMINI_API_KEY`, `GMAIL_*`, …)
+them at `node --import tsx apps/cli/src/main.ts mcp` (working directory = repo root) — that is what
+`.mcp.json` runs, and it is deliberately one process rather than going through `pnpm`, which added a
+launch chain in front of every session. Env (`GEMINI_API_KEY`, `GMAIL_*`, …)
 is read from `.env` at the repo root exactly like the CLI — nothing to configure per client.
 
 - **Transport:** stdio. `stdout` carries the JSON-RPC stream; all logs/progress go to `stderr`.
