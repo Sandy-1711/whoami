@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "resume": {
-      "command": "pnpm",
-      "args": ["mcp"]
+      "command": "node",
+      "args": ["--import", "tsx", "apps/cli/src/main.ts", "mcp"]
     }
   }
 }
