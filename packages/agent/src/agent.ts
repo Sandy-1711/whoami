@@ -11,7 +11,6 @@ import { buildObservability } from './observability.js';
 import { RESUME_AGENT_INSTRUCTIONS } from './instructions.js';
 import { readOnlyTools } from './tools/readonly.js';
 import { pipelineTools } from './tools/pipeline.js';
-import { wellfoundTools } from './tools/wellfound.js';
 import { emailTools } from './tools/email.js';
 import { factsTools } from './tools/facts.js';
 import { enhanceTools } from './tools/enhance.js';
@@ -52,7 +51,6 @@ export function assembleTools(deps: AgentDeps) {
   return {
     ...readOnlyTools(deps),
     ...pipelineTools(deps),
-    ...wellfoundTools(deps),
     ...emailTools(deps),
     ...factsTools(deps),
     ...enhanceTools(deps),

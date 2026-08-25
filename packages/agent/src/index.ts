@@ -11,7 +11,6 @@ export { buildAgent, assembleTools, type BuiltAgent, type BuildAgentOptions } fr
 export { buildMcpServer } from './mcp.js';
 export { readOnlyTools } from './tools/readonly.js';
 export { pipelineTools } from './tools/pipeline.js';
-export { wellfoundTools } from './tools/wellfound.js';
 export { emailTools } from './tools/email.js';
 export { factsTools } from './tools/facts.js';
 export { enhanceTools } from './tools/enhance.js';
