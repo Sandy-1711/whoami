@@ -4,6 +4,7 @@
 //   resume                         interactive menu
 //   resume tailor <jd> --company X [--role X] [--provider gemini|deepseek] [--model X]
 //   resume tailor --jd "text..." --company X
+//   resume note <jd> --company X [--platform Wellfound]
 //   resume sync [--force] [--linkedin]   refresh scraped GitHub (LinkedIn is opt-in)
 //   resume status                  show env, sources, outputs
 //   resume build                   compile resume.tex → apps/web/assets/resume.pdf
@@ -44,13 +45,14 @@ async function directTailor(cli: Cli): Promise<void> {
   });
 }
 
-async function directWellfound(cli: Cli): Promise<void> {
-  const { runWellfound } = await import('./commands/wellfound.js');
+async function directNote(cli: Cli, platform: string): Promise<void> {
+  const { runNote } = await import('./commands/note.js');
   const jd = opt('--jd') || (await fileJd(positionals()[0]));
-  await runWellfound(cli, {
+  await runNote(cli, {
     jd,
     company: opt('--company') || opt('--name'),
     role: opt('--role'),
+    platform: opt('--platform') || platform,
     provider: opt('--provider'),
     model: opt('--model'),
   });
@@ -88,7 +90,9 @@ function commands(cli: Cli): Record<string, () => Promise<unknown>> {
     mcp: async () => (await import('./commands/mcp.js')).runMcp(cli),
     tailor: () => directTailor(cli),
     email: () => directEmail(cli),
-    wellfound: () => directWellfound(cli),
+    note: () => directNote(cli, ''),
+    // Kept because the note started life Wellfound-only; it is the same note.
+    wellfound: () => directNote(cli, 'Wellfound'),
     'wellfound-profile': () => directWellfoundProfile(cli),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force'), linkedin: has('--linkedin') }),
     score: async () => {
@@ -115,7 +119,7 @@ function printHelp(): void {
     ${pc.cyan('mcp')}                                                       serve the tools over MCP (stdio) for Claude Code / Cursor
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
-    ${pc.cyan('wellfound')} <jd> --company <name> [--role <r>]              Wellfound application-box note (per JD)
+    ${pc.cyan('note')} <jd> --company <name> [--platform <where>] [--role <r>]   application-form note (per JD)
     ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
     ${pc.cyan('sync')} [--force] [--linkedin]                                refresh GitHub (LinkedIn opt-in via --linkedin)
     ${pc.cyan('score')} <jd-file> | --jd "text…"                             deterministic JD fit score — free, no LLM
@@ -142,7 +146,7 @@ async function interactive(cli: Cli): Promise<void> {
         { value: 'chat', label: 'Chat with the agent', hint: 'conversational — every capability as a tool' },
         { value: 'tailor', label: 'Tailor to a job description', hint: 'score → rewrite → PDF' },
         { value: 'email', label: 'Draft & send an application email', hint: 'JD → Gmail, on approval' },
-        { value: 'wellfound', label: 'Wellfound application note', hint: 'JD → the "why this role?" box' },
+        { value: 'note', label: 'Application-form note', hint: 'JD → the "why this role?" box' },
         { value: 'wellfound-profile', label: 'Build my Wellfound profile', hint: 'standing profile (one for every role)' },
         { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub (LinkedIn opt-in)' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
@@ -157,7 +161,7 @@ async function interactive(cli: Cli): Promise<void> {
       if (action === 'chat') { await (await import('./commands/chat.js')).runChat(cli); continue; }
       else if (action === 'tailor') await interactiveTailor(cli);
       else if (action === 'email') await interactiveEmail(cli);
-      else if (action === 'wellfound') await interactiveWellfound(cli);
+      else if (action === 'note') await interactiveNote(cli);
       else if (action === 'wellfound-profile') await interactiveWellfoundProfile(cli);
       else if (action === 'sync') {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
@@ -260,13 +264,19 @@ async function interactiveEmail(cli: Cli): Promise<void> {
   await runEmail(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
 }
 
-async function interactiveWellfound(cli: Cli): Promise<void> {
+async function interactiveNote(cli: Cli): Promise<void> {
   const company = await p.text({
     message: 'Company name',
     placeholder: 'Acme-AI',
     validate: (v) => (v && v.trim() ? undefined : 'Required — the note is filed by company.'),
   });
   if (p.isCancel(company)) return;
+
+  const platform = await p.text({
+    message: 'Where will you paste it? (optional — Wellfound, Work at a Startup, …)',
+    placeholder: 'Wellfound',
+  });
+  if (p.isCancel(platform)) return;
 
   const source = await p.select({
     message: 'How do you want to provide the JD?',
@@ -297,8 +307,10 @@ async function interactiveWellfound(cli: Cli): Promise<void> {
   const provider = await pickProvider(cli, 'Which model should draft the note?');
   if (provider === null) return;
 
-  const { runWellfound } = await import('./commands/wellfound.js');
-  await runWellfound(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
+  const { runNote } = await import('./commands/note.js');
+  await runNote(cli, {
+    jd, company: company.trim(), role: (role || '').trim(), platform: (platform || '').trim(), provider,
+  });
 }
 
 // The standing profile — no JD, just an optional focus.

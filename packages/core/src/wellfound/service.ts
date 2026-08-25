@@ -1,49 +1,21 @@
-// WellfoundService — two Wellfound artifacts, both grounded in the verified fact
-// base. Wellfound has no job-seeker API, so this stops at generating copy the
-// user pastes in.
+// WellfoundService — the STANDING Wellfound profile (one for every role, like
+// LinkedIn): headline, what-I'm-looking-for, about, skills, and a blurb per role,
+// written to a single root wellfound-profile.md. Wellfound has no job-seeker API,
+// so this stops at generating copy the user pastes in.
 //
-//   message()  — the per-JD note for the "What interests you about this role?"
-//                box. Written to tailored/<company>/wellfound-message.txt.
-//   profile()  — the STANDING profile (one for every role, like LinkedIn):
-//                headline, what-I'm-looking-for, about, skills, and a blurb per
-//                role. Written to a single root wellfound-profile.md.
-//
-// It renders nothing vendor- or terminal-specific and returns structured results
-// for the CLI to draw.
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+// The per-posting note is not here: it is the same note every application form
+// asks for, so it lives with the rest of the short copy in OutreachService.
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LlmError, type Llm } from '@resume/llm';
 import type { Presenter } from '../ports/logger.js';
-import {
-  extractJdKeywords, classify, scoreResume, latexToPlainText,
-} from '../tailor/core.js';
-import { slugCompany } from '../naming.js';
 import { drift } from '../profile/sources.js';
 import { loadProfileDigestText } from '../profile/loaders.js';
 import {
-  wellfoundMessagePrompt, WELLFOUND_MESSAGE_SCHEMA, type WellfoundMessageResponse,
   wellfoundProfilePrompt, WELLFOUND_PROFILE_SCHEMA, mapWellfoundProfile, WELLFOUND_BIO_MAX,
   type WellfoundProfileResponse,
 } from '../prompts.js';
-import type { Facts, Classification, Score, WellfoundProfile } from '../types.js';
-
-// ---- application-box note (per JD) -----------------------------------------
-
-export interface WellfoundMessageRequest {
-  jd: string;
-  company: string;
-  role?: string;
-}
-
-export interface WellfoundMessageResult {
-  role: string;
-  message: string;
-  wordCount: number;
-  rationale: string;
-  cls: Classification;
-  score: Score;
-  paths: { slug: string; dir: string; relDir: string; file: string };
-}
+import type { Facts, WellfoundProfile } from '../types.js';
 
 // ---- standing profile (one for every role) ---------------------------------
 
@@ -73,59 +45,6 @@ const wordCount = (s: string): number => (s.trim() ? s.trim().split(/\s+/).lengt
 
 export class WellfoundService {
   constructor(private readonly deps: WellfoundServiceDeps) {}
-
-  // The short note for the application box — specific to one JD.
-  async message(request: WellfoundMessageRequest, ctx: WellfoundRunContext): Promise<WellfoundMessageResult> {
-    const { root, presenter } = this.deps;
-    const { llm } = ctx;
-    const model = llm.describe();
-    const { jd, company, role: roleOverride = '' } = request;
-
-    if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
-    if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
-
-    const facts = await this.facts();
-    const resumeText = latexToPlainText(await readFile(join(root, 'resume.tex'), 'utf8'));
-    await this.warnDrift();
-
-    // Deterministic keyword read so the note leans on real matches, never a gap.
-    const jdKeywords = extractJdKeywords(jd);
-    const cls = classify(jdKeywords, resumeText, facts);
-    const score = scoreResume(cls);
-    const { extractRoleFromJd } = await import('../naming.js');
-    const role = roleOverride || extractRoleFromJd(jd) || 'Software Engineer';
-
-    // Ranked GitHub/LinkedIn evidence so the note cites real repos/PRs.
-    const digest = await loadProfileDigestText(root);
-
-    const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to draft the Wellfound note…`);
-    let message: string, rationale: string;
-    try {
-      const { object: parsed } = await llm.generateJson({
-        operation: 'wellfound-note',
-        prompt: wellfoundMessagePrompt({ jd, company, role: roleOverride, facts, classification: cls, digest }),
-        schema: WELLFOUND_MESSAGE_SCHEMA,
-      });
-      message = parsed.message.trim();
-      rationale = parsed.rationale.trim();
-      if (!message) throw new Error('empty message');
-      spin.succeed(`${model.label} drafted the application note (${wordCount(message)} words).`);
-    } catch (err) {
-      spin.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
-      throw err;
-    }
-
-    const slug = slugCompany(company);
-    const dir = join(root, 'tailored', slug);
-    const file = join(dir, 'wellfound-message.txt');
-    await mkdir(dir, { recursive: true });
-    await writeFile(file, message + '\n');
-
-    return {
-      role, message, wordCount: wordCount(message), rationale, cls, score,
-      paths: { slug, dir, relDir: `tailored/${slug}`, file },
-    };
-  }
 
   // The standing profile — one document for every role. Overwrites the single
   // master file so it improves as the fact base does.

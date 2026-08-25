@@ -84,13 +84,11 @@ external storage to read on each request.
 │   └── sources.lock.json       # file-drift hashes + scrape freshness/content hashes
 ├── packages/core/              # @resume/core — the domain, ports + adapters (DI)
 │   └── src/
-│       ├── ports/              # interfaces: llm · http · latex · logger · config · mailer
-│       ├── llm/                # LlmProviderRegistry + providers/gemini.ts, deepseek.ts
+│       ├── ports/              # interfaces: http · latex · logger · config · mailer
 │       ├── tailor/             # TailorService · core.ts (scoring/injection) · report.ts
 │       ├── email/              # EmailService — draft a JD email + send via the Mailer port
-│       ├── wellfound/          # WellfoundService — application-box note + standing profile
-│       ├── enhance/            # EnhanceService — profile copy vs the live scrape (paste-ready)
-│       ├── outreach/           # OutreachService — cold email / DM / follow-up / referral
+│       ├── wellfound/          # WellfoundService — the standing Wellfound profile
+│       ├── outreach/           # OutreachService — application-form note / cold email / DM / follow-up / referral
 │       ├── github/             # GithubProfileService — bio / repo-description / README writes
 │       ├── scrape/             # github.ts · linkedin.ts · refresh.ts (SourceRefresher)
 │       ├── check/              # source.ts · log.ts (width) · pdf.ts (unpdf seam)
@@ -108,7 +106,7 @@ external storage to read on each request.
 │   └── src/
 │       ├── main.ts             # entrypoint (interactive menu + dispatch)
 │       ├── container.ts        # composition root — wires adapters + registers providers
-│       ├── commands/           # chat · tailor · email · wellfound · wellfound-profile · sync · status · build · check
+│       ├── commands/           # chat · tailor · email · note · wellfound-profile · sync · status · build · check
 │       ├── adapters/           # http · latex · config (dotenv) · presenter (clack) · mailer (nodemailer/Gmail)
 │       └── build-pdf.ts check-resume.ts ui.ts args.ts paths.ts
 ├── apps/web/                   # @resume/web — Vercel app (self-contained; deploy root)
@@ -285,7 +283,7 @@ pnpm mcp                      # serve the tools over MCP (stdio) to Claude Code 
 pnpm resume                   # interactive menu (clack) — the same commands, guided
 pnpm tailor -- jd.txt --company "Acme-AI" [--role "AI Dev Engineer"]
 pnpm email  -- jd.txt --company "Northwind AI"   # draft + send a Gmail application email
-pnpm wellfound -- jd.txt --company "Acme AI"     # the "why this role?" application-box note
+pnpm note -- jd.txt --company "Acme AI"          # the "why this role?" application-form note
 pnpm score -- jd.txt          # deterministic JD fit score — free, no LLM
 pnpm digest                   # ranked GitHub/LinkedIn evidence digest — free, no LLM
 pnpm sync -- --force          # re-scrape GitHub now (LinkedIn is opt-in: --linkedin)
@@ -318,8 +316,8 @@ stdio, so an **external agent drives them** — 15 tools in all. Free/read-only:
 `score_jd`, `read_profile`, `profile_status`, `list_outputs`,
 `list_applications`; local ops: `build_resume`, `check_resume`, `sync_profiles`,
 `update_facts`, `log_application`; **paid (LLM)**: `tailor_resume`,
-`draft_application_email`, `outreach_message` (Wellfound note, cold email, DM,
-follow-up, referral ask); confirm-gated outward actions: `send_application_email`,
+`draft_application_email`, `outreach_message` (application-form note, cold email,
+DM, follow-up, referral ask); confirm-gated outward actions: `send_application_email`,
 `update_github_profile`. It's a pure tool provider (no model, no chat memory): the
 connecting client brings the model and decides what to call. The repo ships a project-scoped
 [`.mcp.json`](.mcp.json), so **Claude Code auto-discovers it** when you open this repo — approve

@@ -155,15 +155,19 @@ through Gmail with a **Google App Password** (`GMAIL_USER` + `GMAIL_APP_PASSWORD
 
 On a real run the draft is written to `tailored/<company>/application-email.txt`.
 
-### `wellfound` — application-box note (per JD)
+### `note` — application-form note (per JD)
 
 ```
-resume wellfound <path/to/jd.txt> --company "Acme AI" [--role "AI Engineer"]
+resume note <path/to/jd.txt> --company "Acme AI" [--platform Wellfound] [--role "AI Engineer"]
 ```
 
-Writes the short "What interests you about this role?" note for Wellfound's
-application box — optimized for a human reply, not ATS keywords — grounded in the
-fact base and the JD. Saved under `tailored/<company>/`.
+Writes the short "What interests you about this role?" note that application forms
+ask for — Wellfound's box, Work at a Startup's intro, a Lever or Greenhouse field.
+Optimized for a human reply, not ATS keywords, and grounded in the fact base and the
+JD. Saved to `tailored/<company>/application-note[-platform].txt`, so notes for two
+platforms at the same company do not overwrite each other.
+
+`resume wellfound` is kept as an alias that passes `--platform Wellfound`.
 
 ### `wellfound-profile` — standing Wellfound profile
 
