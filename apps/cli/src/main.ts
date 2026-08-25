@@ -16,6 +16,7 @@ import * as p from '@clack/prompts';
 import * as ui from './ui.js';
 import { pc } from './ui.js';
 import { defaultProviderId, listProviders, startTracing } from '@resume/llm';
+import { COPY_TONES, COPY_LENGTHS } from '@resume/core';
 import { parseArgs } from './args.js';
 import { buildCli, type Cli } from './container.js';
 
@@ -24,6 +25,15 @@ const { cmd, has, opt, positionals } = parseArgs(process.argv.slice(2));
 function fail(err: unknown): never {
   console.error('\n' + ui.fail((err as Error)?.message || String(err)) + '\n');
   process.exit(1);
+}
+
+// A flag whose value must be one of a fixed set — rejected here rather than
+// carried into a prompt as a word the model will try to honour.
+function optEnum<T extends readonly string[]>(flag: string, allowed: T): T[number] | undefined {
+  const value = opt(flag);
+  if (!value) return undefined;
+  if (!allowed.includes(value)) throw new Error(`${flag} must be one of: ${allowed.join(', ')}`);
+  return value;
 }
 
 async function fileJd(file?: string): Promise<string> {
@@ -53,6 +63,8 @@ async function directNote(cli: Cli, platform: string): Promise<void> {
     company: opt('--company') || opt('--name'),
     role: opt('--role'),
     platform: opt('--platform') || platform,
+    tone: optEnum('--tone', COPY_TONES),
+    length: optEnum('--length', COPY_LENGTHS),
     provider: opt('--provider'),
     model: opt('--model'),
   });
@@ -109,7 +121,7 @@ function printHelp(): void {
     ${pc.cyan('mcp')}                                                       serve the tools over MCP (stdio) for Claude Code / Cursor
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
-    ${pc.cyan('note')} <jd> --company <name> [--platform <where>] [--role <r>]   application-form note (per JD)
+    ${pc.cyan('note')} <jd> --company <name> [--platform <where>] [--tone <t>] [--length <l>]   application-form note (per JD)
     ${pc.cyan('sync')} [--force] [--linkedin]                                refresh GitHub (LinkedIn opt-in via --linkedin)
     ${pc.cyan('score')} <jd-file> | --jd "text…"                             deterministic JD fit score — free, no LLM
     ${pc.cyan('digest')} [--json]                                            ranked GitHub/LinkedIn evidence digest — free, no LLM

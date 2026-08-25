@@ -145,6 +145,39 @@ export function mapTailorResponse(parsed: TailorResponse): TailorContent {
   };
 }
 
+// ---- copy configuration -----------------------------------------------------
+// The two things about a message that are the user's call rather than the fact
+// base's: how it sounds, and how long it runs. Every piece of short copy takes
+// them, so they are defined once.
+
+export const COPY_TONES = ['warm', 'direct', 'formal', 'casual'] as const;
+export const COPY_LENGTHS = ['shorter', 'standard', 'longer'] as const;
+
+export type CopyTone = typeof COPY_TONES[number];
+export type CopyLength = typeof COPY_LENGTHS[number];
+
+const TONE_LINE: Record<CopyTone, string> = {
+  warm: 'Warm and personable — write like someone who genuinely likes this work, without gushing.',
+  direct: 'Direct and plain — shortest path to the point, no throat-clearing. This is the default register.',
+  formal: 'Formal and professional — complete sentences, no contractions, no slang. Still specific, never stiff.',
+  casual: 'Casual, the way you would message a peer — contractions fine, one light aside at most.',
+};
+
+// Percentages rather than fractions: 0.7 is not exact in binary, and a budget
+// that reads as 59 where everyone expects 60 is the kind of thing someone comes
+// back to twice.
+const LENGTH_PERCENT: Record<CopyLength, number> = { shorter: 70, standard: 100, longer: 140 };
+
+// A caller's length preference against a kind's own budget, never in place of it:
+// LinkedIn still caps a DM at ~300 characters however "longer" is asked for.
+export function wordBudget(base: number, length?: CopyLength): number {
+  return Math.round((base * LENGTH_PERCENT[length ?? 'standard']) / 100);
+}
+
+export function toneLine(tone?: CopyTone): string {
+  return TONE_LINE[tone ?? 'direct'];
+}
+
 // ---- application-form note --------------------------------------------------
 // The short note an application form asks for in a free-text box — Wellfound's
 // "What interests you about this role?", Work at a Startup's intro, a Greenhouse
@@ -165,6 +198,8 @@ export function applicationNotePrompt({
   company,
   role,
   platform,
+  tone,
+  length,
   facts,
   classification,
   digest,
@@ -173,14 +208,18 @@ export function applicationNotePrompt({
   company: string;
   role: string;
   platform?: string;
+  tone?: CopyTone;
+  length?: CopyLength;
   facts: Facts;
   classification: Classification;
   digest?: string;
 }): string {
   const where = platform?.trim() ? `${platform.trim()}'s application form` : 'a job application form';
+  const words = wordBudget(85, length);
   return `You are helping a strong early-career engineer write the short intro note that goes in the free-text box on ${where} — the "What interests you about this role?" question. A founder or hiring manager reads it directly — this is NOT parsed by an ATS, so optimize for a human reply, not keyword density.
 
-GOAL: a 60-100 word note that makes the reader want to respond.
+GOAL: a note of about ${words} words that makes the reader want to respond.
+TONE: ${toneLine(tone)}
 
 STRICT RULES:
 - Use ONLY facts, metrics, projects, and skills present in the FACT BASE. Never invent employers, numbers, or technologies.
@@ -349,6 +388,8 @@ export function outreachPrompt({
   role,
   jd,
   context,
+  tone,
+  length,
   digest,
 }: {
   kind: OutreachKind;
@@ -357,13 +398,16 @@ export function outreachPrompt({
   role: string;
   jd: string;
   context: string;
+  tone?: CopyTone;
+  length?: CopyLength;
   digest?: string;
 }): string {
   const spec = OUTREACH_SPEC[kind];
   return `You write short, effective outreach messages for a strong early-career engineer's job search. A real person reads this — optimize for a reply, not keyword density.
 
 MESSAGE TYPE: ${kind} — ${spec.brief}
-LENGTH: about ${spec.words} words max.${spec.subject ? ' Include a short, specific subject line.' : ' No subject line (this is a DM).'}
+LENGTH: about ${wordBudget(spec.words, length)} words max.${spec.subject ? ' Include a short, specific subject line.' : ' No subject line (this is a DM).'}
+TONE: ${toneLine(tone)}
 
 STRICT RULES:
 - Use ONLY facts, metrics, projects, and skills in the FACT BASE. Never invent employers, numbers, or technologies.

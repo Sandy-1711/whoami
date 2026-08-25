@@ -2,7 +2,7 @@
 // box, for whichever platform the posting is on. The pipeline lives in
 // @resume/core; this wires config → provider → service and draws the result.
 import {
-  OutreachService, type ApplicationNoteResult,
+  OutreachService, type ApplicationNoteResult, type CopyTone, type CopyLength,
 } from '@resume/core';
 import { createLlm } from '@resume/llm';
 import * as ui from '../ui.js';
@@ -14,13 +14,15 @@ export interface RunNoteArgs {
   company: string;
   role?: string;
   platform?: string;
+  tone?: CopyTone;
+  length?: CopyLength;
   provider?: string;
   model?: string;
 }
 
 export async function runNote(
   cli: Cli,
-  { jd, company, role = '', platform = '', provider, model }: RunNoteArgs,
+  { jd, company, role = '', platform = '', tone, length, provider, model }: RunNoteArgs,
 ): Promise<void> {
   const llm = createLlm(cli.config.llm, { provider, model });
   const engine = llm.describe();
@@ -28,7 +30,7 @@ export async function runNote(
   console.log(ui.banner('Application Note', `JD → ${where} box · engine: ${engine.label} ${engine.modelId}`));
 
   const service = new OutreachService({ root: cli.root, presenter: cli.presenter });
-  const result = await service.note({ jd, company, role, platform }, { llm });
+  const result = await service.note({ jd, company, role, platform, tone, length }, { llm });
   render(result);
 }
 

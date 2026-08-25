@@ -4,7 +4,7 @@
 // than a tool apiece.
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { OutreachService } from '@resume/core';
+import { OutreachService, COPY_TONES, COPY_LENGTHS } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
 import { JD_INPUT_SHAPE, resolveJd, resolveOptionalJd } from './inputs.js';
@@ -20,6 +20,7 @@ export function outreachTools(deps: AgentDeps) {
       'Lever, Greenhouse — needs a JD and a company), a cold_email to a hiring manager or founder, ' +
       'a linkedin_dm, a followup after applying, or a referral_ask to a contact. Pass a JD to ' +
       'anchor it to a role and `context` for who it is to and what has already passed between you. ' +
+      '`tone` and `length` are the user\'s call — ask_user rather than guess when it matters. ' +
       'Saves under tailored/<company>/ when a company is given. For a full application email with ' +
       'the résumé attached, use draft_application_email instead.',
     inputSchema: z.object({
@@ -29,13 +30,15 @@ export function outreachTools(deps: AgentDeps) {
       platform: z.string().optional().describe('For application_note: where it will be pasted ("Wellfound", "Work at a Startup"). Names the destination and the file.'),
       ...JD_INPUT_SHAPE,
       context: z.string().optional().describe('Who it\'s to, prior touch, why now, etc.'),
+      tone: z.enum(COPY_TONES).optional().describe('How it should sound. Default: direct.'),
+      length: z.enum(COPY_LENGTHS).optional().describe('Scales the kind\'s own word budget; it never overrides a platform limit.'),
     }),
-    execute: async ({ kind, company, role, platform, context, ...jdInput }) => {
+    execute: async ({ kind, company, role, platform, context, tone, length, ...jdInput }) => {
       const service = new OutreachService({ root: deps.root, presenter: deps.presenter });
       if (kind === 'application_note') {
         if (!company?.trim()) throw new Error('An application_note is written for one posting — pass `company`.');
         const jd = await resolveJd(deps.root, jdInput);
-        const r = await service.note({ jd, company, role, platform }, { llm: deps.llm });
+        const r = await service.note({ jd, company, role, platform, tone, length }, { llm: deps.llm });
         return {
           kind, subject: null, message: r.message, wordCount: r.wordCount,
           platform: r.platform || null,
@@ -47,7 +50,7 @@ export function outreachTools(deps: AgentDeps) {
         };
       }
       const jd = await resolveOptionalJd(deps.root, jdInput);
-      const r = await service.generate({ kind, company, role, jd, context }, { llm: deps.llm });
+      const r = await service.generate({ kind, company, role, jd, context, tone, length }, { llm: deps.llm });
       return {
         kind: r.kind,
         subject: r.subject || null,

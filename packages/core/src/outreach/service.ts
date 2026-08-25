@@ -17,7 +17,7 @@ import {
 } from '../tailor/core.js';
 import {
   outreachPrompt, OUTREACH_SCHEMA, type OutreachResponse, type OutreachKind,
-  applicationNotePrompt, APPLICATION_NOTE_SCHEMA,
+  applicationNotePrompt, APPLICATION_NOTE_SCHEMA, type CopyTone, type CopyLength,
 } from '../prompts.js';
 import type { Facts, Classification, Score } from '../types.js';
 
@@ -28,6 +28,10 @@ export interface OutreachRequest {
   jd?: string;
   // Freeform context: who it's to, prior touch, why now, etc.
   context?: string;
+  // How it should sound and how long it runs — the user's call, not the fact
+  // base's. Length scales the kind's own budget rather than replacing it.
+  tone?: CopyTone;
+  length?: CopyLength;
 }
 
 export interface OutreachResult {
@@ -47,6 +51,8 @@ export interface ApplicationNoteRequest {
   jd: string;
   company: string;
   role?: string;
+  tone?: CopyTone;
+  length?: CopyLength;
   // Where the note will be pasted — "Wellfound", "Work at a Startup", "Lever".
   // Names the destination in the prompt and the filename; nothing branches on it.
   platform?: string;
@@ -81,7 +87,7 @@ export class OutreachService {
     const { root, presenter } = this.deps;
     const { llm } = ctx;
     const model = llm.describe();
-    const { kind, company = '', role: roleOverride = '', jd = '', context = '' } = request;
+    const { kind, company = '', role: roleOverride = '', jd = '', context = '', tone, length } = request;
 
     const facts: Facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
     const role = roleOverride || (jd ? extractRoleFromJd(jd) : '') || '';
@@ -93,7 +99,7 @@ export class OutreachService {
     try {
       ({ object: parsed } = await llm.generateJson({
         operation: `outreach-${kind}`,
-        prompt: outreachPrompt({ kind, facts, company, role, jd, context, digest }),
+        prompt: outreachPrompt({ kind, facts, company, role, jd, context, tone, length, digest }),
         schema: OUTREACH_SCHEMA,
       }));
       if (!parsed?.message?.trim()) throw new Error('empty message');
@@ -125,7 +131,7 @@ export class OutreachService {
     const { root, presenter } = this.deps;
     const { llm } = ctx;
     const model = llm.describe();
-    const { jd, company, role: roleOverride = '', platform = '' } = request;
+    const { jd, company, role: roleOverride = '', platform = '', tone, length } = request;
 
     if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
     if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
@@ -146,7 +152,7 @@ export class OutreachService {
     try {
       const { object: parsed } = await llm.generateJson({
         operation: 'application-note',
-        prompt: applicationNotePrompt({ jd, company, role: roleOverride, platform, facts, classification: cls, digest }),
+        prompt: applicationNotePrompt({ jd, company, role: roleOverride, platform, tone, length, facts, classification: cls, digest }),
         schema: APPLICATION_NOTE_SCHEMA,
       });
       message = parsed.message.trim();
