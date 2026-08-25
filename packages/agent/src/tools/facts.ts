@@ -15,39 +15,57 @@ const OPS = [
   'add_title_variant', 'remove_title_variant', 'set_identity',
 ] as const;
 
+const EDIT = z.object({
+  op: z.enum(OPS).describe('The edit operation.'),
+  value: z.string().describe('The keyword / skill / metric / title / identity value.'),
+  category: z.string().optional().describe('Skill category (for add_skill / remove_skill).'),
+  field: z.enum(IDENTITY_FIELDS).optional().describe('Identity field (for set_identity).'),
+});
+
 export function factsTools(deps: AgentDeps) {
   const update_facts = createTool({
     id: 'update_facts',
     description:
-      'Make ONE validated edit to the fact base (profile/facts.json): add/remove an ATS keyword, a ' +
-      'skill (needs a category), a headline metric, a title variant, or set an identity field. Only ' +
-      'add things that are TRUE — this file grounds the résumé and every draft; never invent. ' +
-      'Identity edits require the user\'s confirmation. After a change that affects résumé wording, ' +
-      'remind the user to edit resume.tex to match and to sync to re-baseline drift.',
+      'Edit the fact base (profile/facts.json): add or remove ATS keywords, skills (each needs a ' +
+      'category), headline metrics, title variants, or set an identity field. Pass several edits at ' +
+      'once — they apply together or not at all, so the file is never left half-updated. Only add ' +
+      'things that are TRUE: this file grounds the résumé and every draft, and nothing may be ' +
+      'claimed that is not in it. Identity edits require the user\'s confirmation. After a change ' +
+      'that affects résumé wording, tell the user to edit resume.tex to match and to sync so drift ' +
+      'is re-baselined.',
     inputSchema: z.object({
-      op: z.enum(OPS).describe('The edit operation.'),
-      value: z.string().describe('The keyword / skill / metric / title / identity value.'),
-      category: z.string().optional().describe('Skill category (for add_skill / remove_skill).'),
-      field: z.enum(IDENTITY_FIELDS).optional().describe('Identity field (for set_identity).'),
+      edits: z.array(EDIT).min(1).describe('The edits to apply, in order.'),
     }),
-    execute: async ({ op, value, category, field }) => {
+    execute: async ({ edits }) => {
       const path = join(deps.root, 'profile', 'facts.json');
-      const facts: Facts = JSON.parse(await readFile(path, 'utf8'));
-      const edit = { op, value, category, field } as FactsEdit;
-      const result = applyFactsEdit(facts, edit);
+      const original: Facts = JSON.parse(await readFile(path, 'utf8'));
 
-      if (result.identity && result.changed) {
-        const ok = await deps.confirm(`${result.summary} This edits your verified identity — proceed?`);
-        if (!ok) return { changed: false, summary: 'Cancelled — identity not changed.' };
+      // Fold every edit over an in-memory copy first: one invalid edit in the
+      // batch must not leave the earlier ones on disk.
+      let facts = original;
+      const applied: { summary: string; changed: boolean }[] = [];
+      let identityTouched = false;
+      for (const edit of edits) {
+        const result = applyFactsEdit(facts, edit as FactsEdit);
+        facts = result.facts;
+        identityTouched ||= (result.identity && result.changed);
+        applied.push({ summary: result.summary, changed: result.changed });
       }
 
-      if (result.changed) await writeFile(path, JSON.stringify(result.facts, null, 2) + '\n');
+      const changed = applied.some((a) => a.changed);
+      if (identityTouched) {
+        const ok = await deps.confirm(`${applied.map((a) => a.summary).join(' ')} This edits your verified identity — proceed?`);
+        if (!ok) return { changed: false, edits: applied, summary: 'Cancelled — nothing written.' };
+      }
+
+      if (changed) await writeFile(path, JSON.stringify(facts, null, 2) + '\n');
       return {
-        changed: result.changed,
-        summary: result.summary,
-        reminder: result.changed
-          ? 'If this affects résumé wording, edit resume.tex to match, then run sync_profiles to re-baseline drift.'
-          : undefined,
+        changed,
+        edits: applied,
+        summary: applied.map((a) => a.summary).join(' '),
+        nextSteps: changed
+          ? ['If this affects résumé wording, edit resume.tex to match, then run sync_profiles to re-baseline drift.']
+          : [],
       };
     },
   });
