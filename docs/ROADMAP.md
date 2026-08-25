@@ -13,7 +13,7 @@ code).
 | Phase | What | State |
 | --- | --- | --- |
 | 0 | Handoff docs | done |
-| 1 | One LLM path, instrumented | in progress — gateway + migration landed, Langfuse and the offline e2e test remain |
+| 1 | One LLM path, instrumented | in progress — gateway, migration and Langfuse landed; the offline e2e test remains |
 | 2 | Flexible tools, unconfusing MCP | not started |
 | 3 | Résumé as structured data | not started |
 | 4 | Web studio | not started |
@@ -101,14 +101,17 @@ the auth failure.
 - [x] `@resume/llm` package
 - [x] Prompts on Zod + `serializeFacts`
 - [x] Every call site migrated; `packages/core/src/llm` and `ports/llm.ts` deleted
-- [ ] Langfuse self-hosted and wired
+- [x] Langfuse self-hosted and wired
 - [x] Fake model (`createFakeLlm`)
 - [ ] Fake LaTeX/PDF adapters + offline end-to-end tailor test
 - [x] Config cleanup
 
 Landed so far: `docs:` handoff docs, `feat(llm)` gateway, `refactor(llm)` injectable
 interface, `test(llm)` fake + coverage, `fix(prompts)` truncation, `test(profile)`
-serialization, `refactor:` the migration, `feat(llm)` timeout setting.
+serialization, `refactor:` the migration, `feat(llm)` timeout setting,
+`feat(infra)` the Langfuse stack, `build(deps)` its packages, `feat(llm)` the
+tracer, `test(llm)` its coverage, `feat(cli)` the wiring, `feat(agent)` the Mastra
+instance.
 
 Two chat behaviours are preserved explicitly in `packages/agent/src/model.ts`
 because the gateway's defaults would otherwise revert them: chat prefers Gemini
@@ -116,6 +119,16 @@ even when `LLM_PROVIDER` is deepseek, and chat does not inherit `GEMINI_MODEL`.
 
 `OPENROUTER_API_KEY` is still in `.env`. Deleting a live credential to tidy up is
 not worth the risk; it is unused and harmless where it is.
+
+Tracing has two entry points, not one, because the pipelines and chat reach a model by
+different routes: `startTracing` in `@resume/llm` covers the plain AI SDK calls, and a
+`Mastra` instance in `packages/agent/` covers the chat loop. Both export to the same
+Langfuse project. `pnpm langfuse:up` starts the stack — see
+[../infra/langfuse/README.md](../infra/langfuse/README.md).
+
+**Still unverified:** everything above is covered by unit tests and by `pnpm status`, but no
+trace has been watched arriving in a running Langfuse — that needs the stack up and one real
+(paid) model call. Do that before trusting the trace list is empty for the right reason.
 
 ---
 

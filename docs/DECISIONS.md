@@ -36,6 +36,25 @@ if it proves too much — the tracing code does not care which it points at.
 Tracing must degrade to a no-op when Langfuse is down or `LANGFUSE_ENABLED` is unset. An
 observability outage must never fail a résumé run.
 
+## 2026-08-25 — Tracing has two entry points
+
+The Langfuse decision above assumed one place to attach tracing. There are two, because there
+are two ways a model gets called: the pipelines go straight through `@resume/llm` to the AI SDK,
+while chat goes through a Mastra `Agent`, and Mastra attaches observability to the *container*
+rather than to the agent.
+
+So `startTracing` in `@resume/llm` registers a global OpenTelemetry provider for the pipelines,
+and `packages/agent/` gained a `Mastra` instance carrying a `LangfuseExporter` for chat. Both
+point at the same Langfuse project, so the split is invisible in the UI.
+
+Spans from the pipelines carry OpenTelemetry `gen_ai.*` attributes. That is not decoration:
+Langfuse's exporter filters for exactly those names and silently drops spans without them.
+
+Both paths are off, and unloaded, unless `LANGFUSE_ENABLED` is set with both keys.
+
+The upstream self-host compose file is now Langfuse v4 rather than the v3 assumed above. Same
+Postgres + ClickHouse + Redis + MinIO stack, so nothing about the decision changes.
+
 ## 2026-08-25 — Résumé becomes structured data
 
 `resume.tex` declares three `TAILOR` anchors and only two are ever written; the `skills` anchor is
