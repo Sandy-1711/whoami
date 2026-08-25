@@ -32,56 +32,63 @@ export interface GenerateJsonRequest<T> {
   signal?: AbortSignal;
 }
 
+/**
+ * The model gateway domain code depends on. Injected like every other adapter in
+ * this repo, so a service can be tested against a fake with no network.
+ */
+export interface Llm {
+  generateJson<T>(request: GenerateJsonRequest<T>): Promise<LlmResult<T>>;
+}
+
 function withTimeout(timeoutMs: number, signal?: AbortSignal): AbortSignal {
   const timeout = AbortSignal.timeout(timeoutMs);
   return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }
 
 /**
- * Call a model and get back a validated object.
+ * Build the real gateway over a provider config.
  *
- * Every model call in the toolkit goes through here, so timeouts, error
- * classification, and tracing are applied in exactly one place. Retries are the
+ * Every model call in the toolkit goes through the returned object, so timeouts,
+ * error classification, and tracing apply in exactly one place. Retries are the
  * AI SDK's — it already backs off and honours `retry-after`.
- *
- * @throws {LlmError} classified by kind, carrying the provider's own message.
  */
-export async function generateJson<T>(
-  config: LlmConfig,
-  request: GenerateJsonRequest<T>,
-): Promise<LlmResult<T>> {
-  const {
-    prompt,
-    schema,
-    selection,
-    temperature = 0.3,
-    timeoutMs = DEFAULT_TIMEOUT_MS,
-    maxRetries = DEFAULT_MAX_RETRIES,
-    signal,
-  } = request;
+export function createLlm(config: LlmConfig): Llm {
+  return {
+    async generateJson<T>(request: GenerateJsonRequest<T>): Promise<LlmResult<T>> {
+      const {
+        prompt,
+        schema,
+        selection,
+        temperature = 0.3,
+        timeoutMs = DEFAULT_TIMEOUT_MS,
+        maxRetries = DEFAULT_MAX_RETRIES,
+        signal,
+      } = request;
 
-  const { providerId, modelId, model } = resolveModel(config, selection);
+      const { providerId, modelId, model } = resolveModel(config, selection);
 
-  try {
-    const result = await generateObject({
-      model,
-      schema,
-      prompt,
-      temperature,
-      maxRetries,
-      abortSignal: withTimeout(timeoutMs, signal),
-    });
+      try {
+        const result = await generateObject({
+          model,
+          schema,
+          prompt,
+          temperature,
+          maxRetries,
+          abortSignal: withTimeout(timeoutMs, signal),
+        });
 
-    return {
-      object: result.object,
-      providerId,
-      modelId,
-      usage: {
-        inputTokens: result.usage?.inputTokens ?? 0,
-        outputTokens: result.usage?.outputTokens ?? 0,
-      },
-    };
-  } catch (err) {
-    throw classifyLlmError(err, { provider: providerId, model: modelId });
-  }
+        return {
+          object: result.object,
+          providerId,
+          modelId,
+          usage: {
+            inputTokens: result.usage?.inputTokens ?? 0,
+            outputTokens: result.usage?.outputTokens ?? 0,
+          },
+        };
+      } catch (err) {
+        throw classifyLlmError(err, { provider: providerId, model: modelId });
+      }
+    },
+  };
 }
