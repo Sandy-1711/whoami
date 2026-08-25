@@ -106,7 +106,7 @@ function commands(cli: Cli): Record<string, () => Promise<unknown>> {
     status: async () => (await import('./commands/status.js')).runStatus(cli),
     build: async () => (await import('./commands/build.js')).runBuild(cli),
     check: async () => {
-      const scope = has('--pdf') ? '--pdf' : has('--width') ? '--log' : has('--source') ? '--source' : '';
+      const scope = has('--pdf') ? 'pdf' : has('--width') ? 'width' : has('--source') ? 'source' : 'all';
       return (await import('./commands/check.js')).runCheck(cli, { scope });
     },
     help: async () => printHelp(),

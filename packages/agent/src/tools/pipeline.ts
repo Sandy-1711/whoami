@@ -18,6 +18,16 @@ import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
 
+// The same names the CLI's `resume check --<scope>` takes.
+const CHECK_SCOPES = ['all', 'source', 'pdf', 'width'] as const;
+
+// Undefined means "every guard" to checkResume; the PDF guard pulls width along,
+// since an overfull line is a property of that render.
+function checkScope(scope?: typeof CHECK_SCOPES[number]): CheckScope | undefined {
+  if (!scope || scope === 'all') return undefined;
+  return { source: scope === 'source', pdf: scope === 'pdf', width: scope === 'width' || scope === 'pdf' };
+}
+
 export function pipelineTools(deps: AgentDeps) {
   const tailor_resume = createTool({
     id: 'tailor_resume',
@@ -124,17 +134,15 @@ export function pipelineTools(deps: AgentDeps) {
     id: 'check_resume',
     description:
       'Run the résumé guards: source structure, rendered-PDF structure (one page, required sections, ' +
-      'contact email), and width (overfull lines). Omit scope to run all (PDF/width skipped if not ' +
-      'built). Use before treating the résumé as ship-ready.',
+      'contact email), and width (overfull lines). Free — no LLM. Default scope "all" runs every ' +
+      'guard, skipping the two that need a build when there is no PDF yet. Use before treating the ' +
+      'résumé as ship-ready; run build_resume first if the PDF is stale.',
     inputSchema: z.object({
-      source: z.boolean().optional().describe('Run the source-structure guard.'),
-      pdf: z.boolean().optional().describe('Run the PDF-structure guard (also runs width).'),
-      width: z.boolean().optional().describe('Run the width guard.'),
+      scope: z.enum(CHECK_SCOPES).optional()
+        .describe('Which guard to run; "pdf" runs width too, since overflow is a property of that render. Default "all".'),
     }),
-    execute: async ({ source, pdf, width }) => {
-      const anyFlag = source || pdf || width;
-      const scope: CheckScope | undefined = anyFlag ? { source, pdf, width: width || pdf } : undefined;
-      const r = await checkResume({ root: deps.root, scope });
+    execute: async ({ scope }) => {
+      const r = await checkResume({ root: deps.root, scope: checkScope(scope) });
       return {
         pass: r.pass,
         source: r.source.ran ? r.source.problems : 'not run',

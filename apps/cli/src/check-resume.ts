@@ -5,8 +5,8 @@
 //
 //   tsx check-resume.ts            # source + PDF + width (PDF/width skipped if absent)
 //   tsx check-resume.ts --source   # source only (used by the git hook)
-//   tsx check-resume.ts --pdf       # PDF (+ width); fails if the PDF is missing
-//   tsx check-resume.ts --log       # width only
+//   tsx check-resume.ts --pdf      # PDF (+ width); fails if the PDF is missing
+//   tsx check-resume.ts --width    # width only
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -16,10 +16,10 @@ import { checkResume, type CheckScope, type GuardOutcome } from '@resume/core';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 const args = new Set(process.argv.slice(2));
-const onlyFlags = args.has('--source') || args.has('--pdf') || args.has('--log');
+const onlyFlags = args.has('--source') || args.has('--pdf') || args.has('--width');
 // --pdf pulls the width guard along, since overflow is a property of that render.
 const scope: CheckScope | undefined = onlyFlags
-  ? { source: args.has('--source'), pdf: args.has('--pdf'), width: args.has('--log') || args.has('--pdf') }
+  ? { source: args.has('--source'), pdf: args.has('--pdf'), width: args.has('--width') || args.has('--pdf') }
   : undefined;
 
 async function contactEmail(): Promise<string | undefined> {
