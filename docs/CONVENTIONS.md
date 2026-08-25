@@ -44,6 +44,10 @@ warning in `apps/cli/src/commands/mcp.ts`, the raw-mode note above `pasteJd` in
 - Each commit is self-consistent — a lockfile change belongs with the manifest that caused it.
 - Explain *why* in the body, not just what.
 - Formatting changes go in their own commit.
+- Write the message with a heredoc (`git commit -F - <<'EOF'`). A PowerShell here-string
+  (`@'…'@`) is not shell syntax in the Bash tool: it leaves a literal `@` as line one, which
+  silently becomes the commit subject.
+
 
 The repo is worked in parallel from another terminal. Re-read
 `git rev-parse --abbrev-ref HEAD` before committing rather than trusting the branch from earlier in
