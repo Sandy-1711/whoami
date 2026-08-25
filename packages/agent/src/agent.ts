@@ -11,6 +11,7 @@ import { buildObservability } from './observability.js';
 import { RESUME_AGENT_INSTRUCTIONS } from './instructions.js';
 import { recordTools } from './recording.js';
 import { readOnlyTools } from './tools/readonly.js';
+import { askTools } from './tools/ask.js';
 import { pipelineTools } from './tools/pipeline.js';
 import { emailTools } from './tools/email.js';
 import { factsTools } from './tools/facts.js';
@@ -53,6 +54,7 @@ export interface BuildAgentOptions {
 export function assembleTools(deps: AgentDeps) {
   return recordTools(deps.root, {
     ...readOnlyTools(deps),
+    ...askTools(deps),
     ...pipelineTools(deps),
     ...emailTools(deps),
     ...factsTools(deps),

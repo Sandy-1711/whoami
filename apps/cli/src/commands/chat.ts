@@ -88,6 +88,15 @@ function buildDeps(cli: Cli, out: Out, ask: (q: string) => Promise<string>): Age
       const a = (await ask('\n' + pc.yellow('? ') + question + pc.dim(' [y/N] '))).trim();
       return /^y(es)?$/i.test(a);
     },
+    ask: async (questions) => {
+      const answers = [];
+      for (const q of questions) {
+        if (q.why) out.line(pc.dim('  ' + q.why));
+        const hint = q.options?.length ? pc.dim(` [${q.options.join(' / ')}]`) : '';
+        answers.push({ id: q.id, answer: (await ask('\n' + pc.cyan('? ') + q.question + hint + ' ')).trim() });
+      }
+      return answers;
+    },
     playwright: havePlaywright(cli.root),
   };
 }
