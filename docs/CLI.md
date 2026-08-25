@@ -289,7 +289,7 @@ pnpm build:pdf     # apps/cli/src/build-pdf.ts
 pnpm check         # apps/cli/src/check-resume.ts (all guards)
 pnpm check:source  # --source (structure only, no LaTeX needed)
 pnpm check:pdf     # --pdf
-pnpm check:width   # --log
+pnpm check:width   # --width
 pnpm verify        # build:pdf then check
 ```
 

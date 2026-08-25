@@ -22,7 +22,7 @@
     "check": "tsx src/check-resume.ts",
     "check:source": "tsx src/check-resume.ts --source",
     "check:pdf": "tsx src/check-resume.ts --pdf",
-    "check:width": "tsx src/check-resume.ts --log",
+    "check:width": "tsx src/check-resume.ts --width",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "tsc --noEmit"
