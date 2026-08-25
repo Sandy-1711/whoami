@@ -5,6 +5,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { OutreachService } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
+import { JD_INPUT_SHAPE, resolveOptionalJd } from './inputs.js';
 
 export function outreachTools(deps: AgentDeps) {
   const outreach_message = createTool({
@@ -18,10 +19,11 @@ export function outreachTools(deps: AgentDeps) {
       kind: z.enum(['cold_email', 'linkedin_dm', 'followup', 'referral_ask']).describe('The kind of message.'),
       company: z.string().optional().describe('Company name — files the message when given.'),
       role: z.string().optional().describe('Target role; omit to infer from the JD.'),
-      jd: z.string().optional().describe('Optional job description to anchor the message.'),
+      ...JD_INPUT_SHAPE,
       context: z.string().optional().describe('Who it\'s to, prior touch, why now, etc.'),
     }),
-    execute: async ({ kind, company, role, jd, context }) => {
+    execute: async ({ kind, company, role, context, ...jdInput }) => {
+      const jd = await resolveOptionalJd(deps.root, jdInput);
       const service = new OutreachService({ root: deps.root, presenter: deps.presenter });
       const r = await service.generate({ kind, company, role, jd, context }, { llm: deps.llm });
       return {

@@ -11,6 +11,7 @@ import { EmailService, slugCompany, type EmailDraft, type EmailAttachment } from
 import type { AgentDeps } from '../deps.js';
 import { logApplication } from '../tracker.js';
 import { cap } from './shared.js';
+import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
 const preview = (body: string, n = 600): string => (body.length > n ? body.slice(0, n) + '…' : body);
@@ -28,14 +29,15 @@ export function emailTools(deps: AgentDeps) {
       'résumé PDF from tailored/<company>/ if present. Persists the draft and returns it for review. ' +
       'Does NOT send — always show the draft first, then use send_application_email.',
     inputSchema: z.object({
-      jd: z.string().describe('The full job description text.'),
+      ...JD_INPUT_SHAPE,
       company: z.string().describe('Company name — files the draft.'),
       role: z.string().optional().describe('Role override; omit to infer from the JD.'),
       to: z.string().optional().describe('Recipient override; omit to read the apply-to address from the JD.'),
       attach: z.string().optional().describe('Explicit résumé PDF path to attach.'),
       noAttach: z.boolean().optional().describe('Attach nothing.'),
     }),
-    execute: async ({ jd, company, role, to, attach, noAttach }) => {
+    execute: async ({ company, role, to, attach, noAttach, ...jdInput }) => {
+      const jd = await resolveJd(deps.root, jdInput);
       const draft = await service.draft(
         { jd, company, role: role || '', attach: noAttach ? false : attach || undefined },
         { llm: deps.llm, from: deps.config.gmail?.user || '', persist: true },

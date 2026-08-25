@@ -10,6 +10,7 @@ import {
 import { defaultProviderId, listProviders } from '@resume/llm';
 import type { AgentDeps } from '../deps.js';
 import { loadFacts, loadResumeText, cap } from './shared.js';
+import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
 
 const FACT_SECTIONS = [
   'identity', 'title_variants', 'seniority', 'allowed_keywords',
@@ -25,11 +26,9 @@ export function readOnlyTools(deps: AgentDeps) {
       'buckets: matched (already in the résumé), addable (TRUE facts to surface), and missing ' +
       '(the JD wants them but they are NOT in the fact base — never claim these). Use this to ' +
       'advise on fit before committing to a full tailor run.',
-    inputSchema: z.object({
-      jd: z.string().describe('The full job description text.'),
-    }),
-    execute: async ({ jd }) => {
-      if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
+    inputSchema: z.object(JD_INPUT_SHAPE),
+    execute: async (input) => {
+      const jd = await resolveJd(deps.root, input);
       const [facts, resumeText] = [await loadFacts(deps.root), await loadResumeText(deps.root)];
       const cls = classify(extractJdKeywords(jd), resumeText, facts);
       const score = scoreResume(cls);
