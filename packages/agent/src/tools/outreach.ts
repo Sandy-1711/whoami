@@ -8,21 +8,26 @@ import { OutreachService, COPY_TONES, COPY_LENGTHS } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
 import { JD_INPUT_SHAPE, resolveJd, resolveOptionalJd } from './inputs.js';
+import { describeTool } from './describe.js';
 
 const KINDS = ['application_note', 'cold_email', 'linkedin_dm', 'followup', 'referral_ask'] as const;
 
 export function outreachTools(deps: AgentDeps) {
   const outreach_message = createTool({
     id: 'outreach_message',
-    description:
-      'Write one short piece of job-search copy, grounded in the fact base: an application_note ' +
-      '(the free-text "What interests you about this role?" box on Wellfound, Work at a Startup, ' +
-      'Lever, Greenhouse — needs a JD and a company), a cold_email to a hiring manager or founder, ' +
-      'a linkedin_dm, a followup after applying, or a referral_ask to a contact. Pass a JD to ' +
-      'anchor it to a role and `context` for who it is to and what has already passed between you. ' +
-      '`tone` and `length` are the user\'s call — ask_user rather than guess when it matters. ' +
-      'Saves under tailored/<company>/ when a company is given. For a full application email with ' +
-      'the résumé attached, use draft_application_email instead.',
+    description: describeTool({
+      does:
+        'Write one short piece of job-search copy, grounded in the fact base: an application_note (the ' +
+        'free-text "What interests you about this role?" box on Wellfound, Work at a Startup, Lever, ' +
+        'Greenhouse), a cold_email to a hiring manager or founder, a linkedin_dm, a followup after ' +
+        'applying, or a referral_ask. Pass a JD to anchor it to the role, and `context` for who it is ' +
+        'to and what has already passed between you.',
+      cost: 'llm',
+      use: 'the user wants short copy to paste somewhere — a form, an inbox, a DM.',
+      avoid: 'a full application email with the résumé attached — that is draft_application_email.',
+      needs: "a JD and a company for application_note. `tone` and `length` are the user's call: ask_user rather than guess when it matters.",
+      then: 'show it to them. Saved under tailored/<company>/ when a company was given, and recorded automatically.',
+    }),
     inputSchema: z.object({
       kind: z.enum(KINDS).describe('The kind of message. application_note requires a JD and a company.'),
       company: z.string().optional().describe('Company name — files the message when given; required for application_note.'),
@@ -47,6 +52,9 @@ export function outreachTools(deps: AgentDeps) {
           grounding: cap([...r.cls.matched, ...r.cls.addable]),
           gaps: cap(r.cls.missing),
           file: r.paths.relPath,
+          nextSteps: r.cls.missing.length
+            ? [`The note claims none of: ${cap(r.cls.missing, 8).join(', ')} — the fact base cannot back them.`]
+            : [],
         };
       }
       const jd = await resolveOptionalJd(deps.root, jdInput);
@@ -57,6 +65,9 @@ export function outreachTools(deps: AgentDeps) {
         message: r.message,
         wordCount: r.wordCount,
         file: r.relPath,
+        nextSteps: r.relPath
+          ? ['Show it to the user. log_application once it actually goes out.']
+          : ['Show it to the user. Pass a company next time to file it under tailored/<company>/.'],
       };
     },
   });

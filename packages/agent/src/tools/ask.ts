@@ -9,6 +9,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import type { AgentDeps } from '../deps.js';
+import { describeTool } from './describe.js';
 
 // Four is already a lot to put to someone who asked for one note.
 const MAX_QUESTIONS = 4;
@@ -16,15 +17,20 @@ const MAX_QUESTIONS = 4;
 export function askTools(deps: AgentDeps) {
   const ask_user = createTool({
     id: 'ask_user',
-    description:
-      'Ask the user a small number of concrete questions and get their answers back — use this ' +
-      'when a choice is genuinely theirs and you would otherwise be guessing: how formal a message ' +
-      'should be, how long, which of two angles to lead with, whether to mention a referral, which ' +
-      'company an ambiguous name refers to. Offer `options` when the sensible answers are ' +
-      'enumerable, and say in `why` what the answer changes. Ask BEFORE spending a paid drafting ' +
-      'call, not after. Do not use it for anything you can read from the fact base, the JD, or the ' +
-      'files on disk, and do not use it to confirm an action — sending and pushing carry their own ' +
-      'confirmation.',
+    description: describeTool({
+      does:
+        'Ask the user a small number of concrete questions and get their answers back, keyed by id. ' +
+        'Offer `options` when the sensible answers are enumerable, and say in `why` what each answer ' +
+        'changes.',
+      cost: 'free',
+      use:
+        'a choice is genuinely theirs and you would otherwise guess: how formal, how long, which of ' +
+        'two angles, whether to mention a referral, which company an ambiguous name means. Ask BEFORE ' +
+        'spending a paid drafting call, not after.',
+      avoid:
+        'anything readable from the fact base, the JD, or disk; and confirming an action — sending ' +
+        'and pushing carry their own confirmation.',
+    }),
     inputSchema: z.object({
       questions: z.array(z.object({
         id: z.string().describe('Short stable key the answer comes back under, e.g. "tone".'),

@@ -1,9 +1,8 @@
 // Email tools — draft a JD-tailored application email, then send it ONLY through
-// the human confirm gate. draft_application_email produces and persists the
-// draft; send_application_email sends the exact drafted content (looked up from a
-// per-session cache, so the sent email is byte-for-byte what was shown — never a
-// re-generated variant). Sending is gated by deps.confirm, which the model
-// cannot answer for the user.
+// the human confirm gate. What is sent is always the drafted bytes, never a
+// re-generated variant: the session cache first, then the draft this company has
+// on disk. Sending is gated by deps.confirm, which the model cannot answer for
+// the user.
 import { relative, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createTool } from '@mastra/core/tools';
@@ -12,6 +11,7 @@ import { EmailService, slugCompany, type EmailDraft, type EmailAttachment } from
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
 import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
+import { describeTool } from './describe.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
 const preview = (body: string, n = 600): string => (body.length > n ? body.slice(0, n) + '…' : body);
@@ -27,11 +27,17 @@ export function emailTools(deps: AgentDeps) {
 
   const draft_application_email = createTool({
     id: 'draft_application_email',
-    description:
-      'Draft a JD-tailored job-application email from the fact base. Reads the apply-to address and ' +
-      'subject from the JD, appends a correct contact signature, and auto-attaches the tailored ' +
-      'résumé PDF from tailored/<company>/ if present. Persists the draft and returns it for review. ' +
-      'Does NOT send — always show the draft first, then use send_application_email.',
+    description: describeTool({
+      does:
+        'Draft a JD-tailored application email from the fact base: reads the apply-to address and a ' +
+        'subject out of the JD, appends the real contact signature, and attaches the tailored résumé ' +
+        'PDF for that company when one exists. Saves the draft and returns it for review.',
+      cost: 'llm',
+      use: 'applying by email, once the user has seen the fit and wants to go ahead.',
+      avoid: 'short copy pasted into a form or a DM — that is outreach_message.',
+      needs: 'a company name. Sending additionally needs GMAIL_USER and GMAIL_APP_PASSWORD.',
+      then: 'SHOW the draft to the user. Only send_application_email after they have read it and asked.',
+    }),
     inputSchema: z.object({
       ...JD_INPUT_SHAPE,
       company: z.string().describe('Company name — files the draft.'),
@@ -55,22 +61,30 @@ export function emailTools(deps: AgentDeps) {
         grounding: cap([...draft.cls.matched, ...draft.cls.addable]),
         gmailConfigured: deps.mailer.available,
         file: rel(deps.root, draft.paths.file),
-        note: deps.mailer.available
-          ? 'Review, then send_application_email to send (a confirmation is required).'
-          : 'Gmail not configured — drafting only. Set GMAIL_USER + GMAIL_APP_PASSWORD to send.',
+        nextSteps: [
+          'Show this draft to the user before anything else.',
+          deps.mailer.available
+            ? 'send_application_email sends it once they ask; a confirmation of the recipient is required.'
+            : 'Gmail is not configured, so this can only be drafted. Set GMAIL_USER and GMAIL_APP_PASSWORD to send.',
+        ],
       };
     },
   });
 
   const send_application_email = createTool({
     id: 'send_application_email',
-    description:
-      'Send an application email. Sends the exact content drafted for this company: the draft from ' +
-      'this session if there is one, otherwise the saved tailored/<company>/application-email.txt — ' +
-      'so a draft written before a restart, or edited by hand afterwards, is still sendable. Pass ' +
-      '`path` to send a specific draft file instead. Requires Gmail configured, and passes through a ' +
-      'confirmation of the recipient that you cannot bypass. Use only after the user has seen the ' +
-      'draft and asked to send.',
+    description: describeTool({
+      does:
+        'Send an application email, transmitting exactly what was drafted for this company: the draft ' +
+        'from this session if there is one, otherwise the saved ' +
+        'tailored/<company>/application-email.txt — so a draft written before a restart, or edited by ' +
+        'hand afterwards, still goes out as written. `path` sends a specific file instead.',
+      cost: 'outward',
+      use: 'the user has read the draft and asked for it to go out. Never on your own initiative.',
+      avoid: 'anything you have not shown them first.',
+      needs: 'Gmail configured, and a confirmation of the recipient that you cannot bypass.',
+      then: 'the send records itself. log_application only when a human learns something new — a reply, an interview.',
+    }),
     inputSchema: z.object({
       company: z.string().describe('Company whose draft to send / label under which the send is logged.'),
       to: z.string().optional().describe('Recipient override; else the drafted apply-to address.'),
@@ -113,6 +127,7 @@ export function emailTools(deps: AgentDeps) {
         sent: true, company, role: src.role, to: recipient,
         messageId: res.messageId, accepted: res.accepted, rejected: res.rejected,
         artifacts: src.resumeRelPath ? [src.resumeRelPath] : [],
+        nextSteps: ['Recorded against this company automatically. log_application when they reply or an interview is set.'],
       };
     },
   });

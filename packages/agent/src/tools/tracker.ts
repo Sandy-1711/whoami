@@ -8,16 +8,21 @@ import type { AgentDeps } from '../deps.js';
 import { logApplication, listApplications } from '../tracker.js';
 import { readActivity } from '../activity.js';
 import { cap } from './shared.js';
+import { describeTool } from './describe.js';
 
 export function trackerTools(deps: AgentDeps) {
   const log_application = createTool({
     id: 'log_application',
-    description:
-      'Record a change in an application that this toolkit cannot see for itself: a reply, a ' +
-      'scheduled interview, a rejection, an offer, going quiet. Upserts by company (+ role), so ' +
-      'logging the same one again advances it instead of duplicating it. You do NOT need to call ' +
-      'this after tailoring, drafting or sending — those record themselves, including the files ' +
-      'they produced. Use list_applications to see what is already known.',
+    description: describeTool({
+      does:
+        'Record a change in an application that this toolkit cannot observe for itself: a reply, a ' +
+        'scheduled interview, a rejection, an offer, going quiet. Upserts by company and role, so ' +
+        'logging the same one again advances it instead of duplicating it.',
+      cost: 'local',
+      use: 'the user tells you something happened off-machine.',
+      avoid: 'anything the toolkit just did — tailoring, drafting and sending record themselves, with the files they produced.',
+      then: 'list_applications shows the state you just wrote.',
+    }),
     inputSchema: z.object({
       company: z.string().describe('Company name.'),
       role: z.string().optional().describe('Role applied for.'),
@@ -34,12 +39,16 @@ export function trackerTools(deps: AgentDeps) {
 
   const list_applications = createTool({
     id: 'list_applications',
-    description:
-      'List tracked job applications, newest activity first — every company this toolkit has ' +
-      'tailored for, drafted to, or sent to, plus whatever was logged by hand. Filter by company ' +
-      'substring or exact status. Set `activity` to also get the recorded history of what was ' +
-      'actually done for each one (with timestamps and the files produced). Use to answer "where ' +
-      'am I with X?" and "what have I applied to?" before starting anything new.',
+    description: describeTool({
+      does:
+        'List tracked applications, newest activity first — every company this toolkit has tailored ' +
+        'for, drafted to or sent to, plus whatever was logged by hand. Filter by company substring or ' +
+        'exact status; set `activity` for the recorded history of what was actually done for each, ' +
+        'with timestamps and the files produced.',
+      cost: 'free',
+      use: 'answering "where am I with X?" or "what have I applied to?", and before starting work for a company — it may already have been done.',
+      avoid: 'listing generated files — that is list_outputs.',
+    }),
     inputSchema: z.object({
       company: z.string().optional().describe('Case-insensitive company substring.'),
       status: z.string().optional().describe('Exact status to filter by.'),

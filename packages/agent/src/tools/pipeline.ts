@@ -15,6 +15,7 @@ import {
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
 import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
+import { describeTool } from './describe.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
 
@@ -31,12 +32,18 @@ function checkScope(scope?: typeof CHECK_SCOPES[number]): CheckScope | undefined
 export function pipelineTools(deps: AgentDeps) {
   const tailor_resume = createTool({
     id: 'tailor_resume',
-    description:
-      'Tailor the résumé to a job description and render a one-page ATS-optimized PDF. Refreshes ' +
-      'stale sources, rewrites the summary/subtitle from the VERIFIED fact base only (never invents ' +
-      'facts), compiles, and runs the page/width guards (auto-tightening on overflow). Requires the ' +
-      'company name (files the output) and an LLM key. Returns the before/after ATS score, detected ' +
-      'role, remaining gaps, and the PDF path. Needs a working LaTeX toolchain (Docker/latexmk).',
+    description: describeTool({
+      does:
+        'Tailor the résumé to a job description and render a one-page ATS-optimized PDF. Refreshes ' +
+        'stale sources, rewrites the summary and subtitle from the VERIFIED fact base only, compiles, ' +
+        'and runs the page and width guards — re-asking for tighter copy when one fails. Returns the ' +
+        'before/after score, the detected role, the remaining gaps, and the PDF path.',
+      cost: 'llm',
+      use: 'the user has decided to apply somewhere and wants the PDF for it.',
+      avoid: 'judging fit or answering "should I apply?" — score_jd does that for free.',
+      needs: 'a company name, an LLM key, and a LaTeX toolchain (Docker running, or latexmk).',
+      then: 'draft_application_email or outreach_message. The application records itself; no need to log it.',
+    }),
     inputSchema: z.object({
       ...JD_INPUT_SHAPE,
       company: z.string().describe('Company name — the output is filed and named by it.'),
@@ -67,17 +74,25 @@ export function pipelineTools(deps: AgentDeps) {
         widthProblems: r.guards.width,
         summary: r.summaryText,
         subtitle: r.subtitle,
+        nextSteps: result.guardsPass
+          ? ['The PDF passed its guards. draft_application_email attaches it; outreach_message writes the shorter copy.']
+          : [`NOT ship-ready: ${r.guards.pages} page(s), ${r.guards.width.length} overflowing line(s). Say so; do not send it.`],
       };
     },
   });
 
   const sync_profiles = createTool({
     id: 'sync_profiles',
-    description:
-      'Refresh the scraped profile sources into profile/*.json when stale, then re-baseline the drift ' +
-      'hashes so tailoring stops warning about stale facts. Refreshes GitHub by default; the LinkedIn ' +
-      'scrape is automated against their ToS (account-ban risk) so it is OPT-IN — set `linkedin: true` ' +
-      'only when the user explicitly asks to scrape LinkedIn. `force` ignores the freshness TTL.',
+    description: describeTool({
+      does:
+        'Refresh the scraped profile sources into profile/*.json when stale, then re-baseline the drift ' +
+        'hashes so tailoring stops warning that the fact base may be behind.',
+      cost: 'network',
+      use: 'profile_status reports drift or stale sources, or the user just shipped something public.',
+      avoid: 'the LinkedIn half unless the user explicitly asks: that scrape is automated against their ToS and risks the account. GitHub alone is the default.',
+      needs: 'GITHUB_TOKEN for a complete GitHub read; the LinkedIn scrape needs a cookie and Playwright.',
+      then: 'read_profile to see what changed before drafting from it.',
+    }),
     inputSchema: z.object({
       force: z.boolean().optional().describe('Re-scrape even if sources are still fresh.'),
       linkedin: z.boolean().optional().describe('Opt in to the LinkedIn scrape (default off — ToS/ban risk). Only when the user explicitly asks.'),
@@ -95,18 +110,26 @@ export function pipelineTools(deps: AgentDeps) {
         log: (r) => deps.presenter.info(`${r.source}: ${r.status}`),
       });
       await writeLock(deps.root, await hashSources(deps.root));
+      const failed = results.filter((r) => r.status === 'error');
       return {
         sources: results.map((r) => ({ source: r.source, status: r.status, error: r.error })),
+        nextSteps: failed.length
+          ? [`${failed.map((r) => r.source).join(', ')} did not refresh — the cached copy is still in use, so anything drafted now may be behind.`]
+          : ['Sources are current. update_facts if the scrape shows something true that the fact base lacks.'],
       };
     },
   });
 
   const build_resume = createTool({
     id: 'build_resume',
-    description:
-      'Compile the canonical resume.tex → apps/web/assets/resume.pdf, mirroring CI. Use after editing ' +
-      'the résumé source, or when status shows the canonical PDF is missing/stale. Needs a LaTeX ' +
-      'toolchain (Docker daemon running, or latexmk).',
+    description: describeTool({
+      does: 'Compile the canonical resume.tex to apps/web/assets/resume.pdf, exactly as CI does.',
+      cost: 'local',
+      use: 'after editing resume.tex, or when profile_status says the canonical PDF is missing or stale.',
+      avoid: 'producing a per-company PDF — that is tailor_resume.',
+      needs: 'a LaTeX toolchain: the Docker daemon running, or latexmk installed.',
+      then: 'check_resume — a build that compiles can still fail the guards.',
+    }),
     inputSchema: z.object({}),
     execute: async () => {
       const reason = deps.latex.availability();
@@ -126,28 +149,42 @@ export function pipelineTools(deps: AgentDeps) {
       await mkdir(join(deps.root, 'apps', 'web', 'assets'), { recursive: true });
       await copyFile(built, dest);
       spin.succeed('Built resume.pdf → apps/web/assets/resume.pdf');
-      return { built: true, engine: res.engine, pdf: rel(deps.root, dest) };
+      return {
+        built: true, engine: res.engine, pdf: rel(deps.root, dest),
+        nextSteps: ['check_resume — compiling is not the same as passing the guards.'],
+      };
     },
   });
 
   const check_resume = createTool({
     id: 'check_resume',
-    description:
-      'Run the résumé guards: source structure, rendered-PDF structure (one page, required sections, ' +
-      'contact email), and width (overfull lines). Free — no LLM. Default scope "all" runs every ' +
-      'guard, skipping the two that need a build when there is no PDF yet. Use before treating the ' +
-      'résumé as ship-ready; run build_resume first if the PDF is stale.',
+    description: describeTool({
+      does:
+        'Run the résumé guards: source structure, rendered-PDF structure (one page, required sections, ' +
+        'contact email), and width (overfull lines). Scope "all" runs every guard and skips the two ' +
+        'that need a build when no PDF exists yet.',
+      cost: 'local',
+      use: 'before treating the résumé as ship-ready, and after any edit to resume.tex.',
+      needs: 'a built PDF for the pdf and width scopes — run build_resume first, or they are skipped.',
+      then: 'if a guard fails the résumé is NOT ship-ready; say so rather than sending it.',
+    }),
     inputSchema: z.object({
       scope: z.enum(CHECK_SCOPES).optional()
         .describe('Which guard to run; "pdf" runs width too, since overflow is a property of that render. Default "all".'),
     }),
     execute: async ({ scope }) => {
       const r = await checkResume({ root: deps.root, scope: checkScope(scope) });
+      const skipped = r.pdf.skipped || r.width.skipped;
       return {
         pass: r.pass,
         source: r.source.ran ? r.source.problems : 'not run',
         pdf: r.pdf.skipped ? 'skipped (not built)' : r.pdf.ran ? r.pdf.problems : 'not run',
         width: r.width.skipped ? 'skipped (not built)' : r.width.ran ? r.width.problems : 'not run',
+        nextSteps: r.pass
+          ? skipped
+            ? ['The guards that need a built PDF were skipped — run build_resume, then check again for a full answer.']
+            : ['Every guard passed.']
+          : ['Fix the problems above in resume.tex, rebuild, and check again. A failing résumé is not ship-ready.'],
       };
     },
   });

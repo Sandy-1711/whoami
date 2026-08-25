@@ -11,6 +11,7 @@ import { defaultProviderId, listProviders } from '@resume/llm';
 import type { AgentDeps } from '../deps.js';
 import { loadFacts, loadResumeText, cap } from './shared.js';
 import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
+import { describeTool } from './describe.js';
 
 const FACT_SECTIONS = [
   'identity', 'title_variants', 'seniority', 'allowed_keywords',
@@ -24,12 +25,18 @@ const PROFILE_SECTIONS = [...FACT_SECTIONS, 'evidence'] as const;
 export function readOnlyTools(deps: AgentDeps) {
   const score_jd = createTool({
     id: 'score_jd',
-    description:
-      'Deterministically score how well the current résumé matches a job description (JD). ' +
-      'Fast — no LLM, no PDF. Returns the ATS score before/after tailoring and three keyword ' +
-      'buckets: matched (already in the résumé), addable (TRUE facts to surface), and missing ' +
-      '(the JD wants them but they are NOT in the fact base — never claim these). Use this to ' +
-      'advise on fit before committing to a full tailor run.',
+    description: describeTool({
+      does:
+        'Score how well the current résumé matches a job description, by keyword matching — no model ' +
+        'is involved, so the number is the same every time. Returns the ATS score before and after ' +
+        'tailoring, and three keyword buckets: matched (already on the résumé), addable (TRUE facts ' +
+        'the fact base has but the résumé does not surface), and missing (the JD wants them and the ' +
+        'fact base cannot back them — these may NEVER be claimed).',
+      cost: 'free',
+      use: 'judging fit, and always before committing to a paid tailor run.',
+      avoid: 'producing a tailored PDF — that is tailor_resume.',
+      then: 'tailor_resume if the fit is worth it; otherwise report the gaps and stop.',
+    }),
     inputSchema: z.object(JD_INPUT_SHAPE),
     execute: async (input) => {
       const jd = await resolveJd(deps.root, input);
@@ -41,17 +48,29 @@ export function readOnlyTools(deps: AgentDeps) {
         matched: cap(cls.matched),
         addable: cap(cls.addable),
         missing: cap(cls.missing),
+        nextSteps: [
+          cls.missing.length
+            ? `${cls.missing.length} JD keyword(s) are not in the fact base — say so plainly; never claim them.`
+            : 'Nothing the JD asks for is missing from the fact base.',
+          'tailor_resume renders a PDF for this JD (spends credits, needs Docker or latexmk).',
+        ],
       };
     },
   });
 
   const profile_status = createTool({
     id: 'profile_status',
-    description:
-      'Report the résumé studio status: which LLM keys are set and active, whether the LaTeX ' +
-      'toolchain can render, scraped-source freshness and drift, whether the canonical PDF is ' +
-      'built, and the most recent tailored outputs. Use to answer "what is set up?" and to ' +
-      'decide whether a sync or build is needed first.',
+    description: describeTool({
+      does:
+        'Report the state of the toolkit itself: which LLM keys are set and which is active, whether ' +
+        'a LaTeX toolchain can render (and what is blocking it), how fresh the scraped sources are ' +
+        'and whether they have drifted, whether the canonical PDF is built, and the most recent ' +
+        'tailored outputs.',
+      cost: 'free',
+      use: 'answering "what is set up?", and before anything that needs Docker, a key, or fresh sources.',
+      avoid: 'reading the candidate\'s facts or evidence — that is read_profile.',
+      then: 'sync_profiles if sources drifted; build_resume if the canonical PDF is missing.',
+    }),
     inputSchema: z.object({}),
     execute: async () => {
       const report = await collectStatus({
@@ -79,13 +98,17 @@ export function readOnlyTools(deps: AgentDeps) {
 
   const read_profile = createTool({
     id: 'read_profile',
-    description:
-      'Read everything known about the candidate: the verified fact base (profile/facts.json) — ' +
-      'the ONLY source of allowed claims — together with a ranked digest of his public evidence ' +
-      '(top GitHub repos, merged external PRs with titles, LinkedIn roles). Call this once before ' +
-      'drafting anything: the facts say what may be asserted, the evidence says which of those ' +
-      'facts to lead with and lets you cite real repos and PRs. Scope to one section for a ' +
-      'targeted lookup. If something is not in here, it must not be claimed.',
+    description: describeTool({
+      does:
+        'Read everything known about the candidate: the verified fact base (profile/facts.json), which ' +
+        'is the ONLY source of allowed claims, together with a ranked digest of his public evidence — ' +
+        'top GitHub repos, merged external PRs with titles, LinkedIn roles. The facts say what may be ' +
+        'asserted; the evidence says which of them to lead with and lets you cite real repos and PRs. ' +
+        'Scope to one section for a targeted lookup.',
+      cost: 'free',
+      use: 'once, before drafting or advising anything about the candidate. If a claim is not in here, it is not true for our purposes.',
+      avoid: "reading a company's GitHub — that is read_github. Toolchain and freshness are profile_status.",
+    }),
     inputSchema: z.object({
       section: z.enum(PROFILE_SECTIONS).optional()
         .describe("One section for a narrow lookup ('identity', 'skills', …, or 'evidence' for the digest alone); omit for everything."),
@@ -100,10 +123,12 @@ export function readOnlyTools(deps: AgentDeps) {
 
   const list_outputs = createTool({
     id: 'list_outputs',
-    description:
-      'List tailored résumé PDFs and drafts already generated on disk (under tailored/), newest ' +
-      'first. Optionally filter by company. Use to find an existing tailored PDF to attach to an ' +
-      'email, or to check what has already been produced for a company.',
+    description: describeTool({
+      does: 'List the résumé PDFs and drafts already generated under tailored/, newest first, optionally filtered by company.',
+      cost: 'free',
+      use: 'finding an existing tailored PDF to attach, or checking what has already been produced for a company.',
+      avoid: 'asking what was DONE for a company and when — that history is list_applications with activity.',
+    }),
     inputSchema: z.object({
       company: z.string().optional().describe('Case-insensitive substring to filter the company folder by.'),
     }),
