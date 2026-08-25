@@ -13,7 +13,6 @@ import { readOnlyTools } from './tools/readonly.js';
 import { pipelineTools } from './tools/pipeline.js';
 import { emailTools } from './tools/email.js';
 import { factsTools } from './tools/facts.js';
-import { enhanceTools } from './tools/enhance.js';
 import { githubTools } from './tools/github.js';
 import { outreachTools } from './tools/outreach.js';
 import { trackerTools } from './tools/tracker.js';
@@ -53,7 +52,6 @@ export function assembleTools(deps: AgentDeps) {
     ...pipelineTools(deps),
     ...emailTools(deps),
     ...factsTools(deps),
-    ...enhanceTools(deps),
     ...githubTools(deps),
     ...outreachTools(deps),
     ...trackerTools(deps),

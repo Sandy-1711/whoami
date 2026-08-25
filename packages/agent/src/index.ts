@@ -13,7 +13,6 @@ export { readOnlyTools } from './tools/readonly.js';
 export { pipelineTools } from './tools/pipeline.js';
 export { emailTools } from './tools/email.js';
 export { factsTools } from './tools/facts.js';
-export { enhanceTools } from './tools/enhance.js';
 export { githubTools } from './tools/github.js';
 export { outreachTools } from './tools/outreach.js';
 export { trackerTools } from './tools/tracker.js';
