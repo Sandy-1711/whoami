@@ -65,7 +65,7 @@ Services surface `LlmError.kind` and the original message. Nothing flattens a pr
 a generic sentence — under MCP that made every failure look identical, because the real message went
 to stderr where the client discards it.
 
-## Tracing [planned — Phase 1]
+## Tracing [built]
 
 One OTel tracer, exported to a self-hosted Langfuse. The Mastra agent attaches observability at the
 `Mastra` container level; `packages/llm` emits spans on the same tracer, so a chat turn that
