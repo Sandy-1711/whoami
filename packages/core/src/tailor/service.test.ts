@@ -1,0 +1,229 @@
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createFakeLlm, type FakeLlm } from '@resume/llm/testing';
+import { afterEach, describe, expect, it } from 'vitest';
+import { silentPresenter } from '../ports/logger.js';
+import { recordScrape } from '../profile/sources.js';
+import { SourceRefresher } from '../scrape/refresh.js';
+import { fakeLatexCompiler, fakePdfInspector, overfullLog } from '../testing/index.js';
+import { TailorService, type TailorRunContext } from './service.js';
+
+const FACTS = {
+  identity: { name: 'Sandeep Singh', github: 'https://github.com/Sandy-1711' },
+  title_variants: ['AI Engineer'],
+  allowed_keywords: ['RAG', 'FastAPI', 'TypeScript'],
+  skills: { AI: ['RAG', 'FastAPI'], Languages: ['TypeScript'] },
+  headline_metrics: ['16 merged PRs into Mastra', '10,000+ users'],
+  experience: [{ company: 'AiRA', role: 'AI Engineer', bullets: ['Shipped RAG agents on FastAPI.'] }],
+  projects: [{ name: 'Mastra', bullets: ['16 merged PRs into the agent runtime.'] }],
+};
+
+// Only the two blocks the tailor rewrites; the rest of the preamble is irrelevant
+// to the pipeline and would only make a failure harder to read.
+const RESUME_TEX = `\\documentclass{article}
+\\begin{document}
+\\begin{center}
+    %% >>>TAILOR:subtitle (replaced per JD)
+    {\\large AI Engineer $|$ Agent Infrastructure $|$ Full-Stack Engineer} \\\\ \\vspace{4pt}
+    %% <<<TAILOR:subtitle
+    %% >>>TAILOR:summary (replaced per JD)
+   \\textbf{AI Engineer} building agentic LLM systems.
+    %% <<<TAILOR:summary
+\\end{center}
+\\end{document}
+`;
+
+const GITHUB = {
+  _comment: 'test fixture',
+  scrapedAt: new Date().toISOString(),
+  username: 'Sandy-1711',
+  profileUrl: 'https://github.com/Sandy-1711',
+  totals: { publicRepos: 1, totalStars: 36, mergedPRs: 16, externalRepos: 1 },
+  repos: [{
+    name: 'agent-runtime', description: 'RAG agents on FastAPI', url: 'https://github.com/Sandy-1711/agent-runtime',
+    homepage: '', stars: 36, language: 'TypeScript', topics: ['rag'], archived: false,
+    pushedAt: new Date().toISOString(), fork: false, readmeSize: 4096,
+  }],
+  contributions: [{
+    repo: 'mastra-ai/mastra', url: 'https://github.com/mastra-ai/mastra',
+    merged: 16, open: 0, closedUnmerged: 0, stars: 27000, samplePRs: [],
+  }],
+};
+
+const JD = [
+  'We are hiring an AI Dev Engineer to build RAG agents with FastAPI and TypeScript.',
+  'Remote. Kubernetes experience a plus.',
+].join('\n');
+
+const DRAFT = {
+  role_title: 'AI Dev Engineer',
+  tailored_summary_text: 'AI Engineer shipping RAG agents on FastAPI, with 16 merged PRs into Mastra.',
+  tailored_subtitle: 'AI Engineer | RAG Systems | TypeScript',
+  bold_terms: ['RAG', '16 merged PRs'],
+  rationale: 'Leads with the RAG and FastAPI overlap.',
+};
+
+const TIGHTER = {
+  ...DRAFT,
+  tailored_summary_text: 'AI Engineer shipping RAG agents on FastAPI.',
+  rationale: 'Cut to fit one page.',
+};
+
+const roots: string[] = [];
+
+// A root the refresher will leave alone: github.json already on disk with a
+// just-recorded scrape, so it reports "fresh" instead of reaching the network.
+// LinkedIn is gated behind liveLinkedin and skips itself.
+async function makeRoot(): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), 'tailor-'));
+  roots.push(root);
+  await mkdir(join(root, 'profile'), { recursive: true });
+  await writeFile(join(root, 'profile', 'facts.json'), JSON.stringify(FACTS));
+  await writeFile(join(root, 'profile', 'github.json'), JSON.stringify(GITHUB));
+  await recordScrape(root, 'github', 'cached-hash');
+  await writeFile(join(root, 'resume.tex'), RESUME_TEX);
+  return root;
+}
+
+afterEach(async () => {
+  await Promise.all(roots.splice(0).map((r) => rm(r, { recursive: true, force: true })));
+});
+
+function context(llm: FakeLlm): TailorRunContext {
+  return { llm, refresher: new SourceRefresher({ githubToken: '', linkedinCookie: '', ttlHours: 12 }) };
+}
+
+describe('TailorService.run', () => {
+  it('tailors, renders, and reports without touching a model twice when the guards pass', async () => {
+    const root = await makeRoot();
+    const latex = fakeLatexCompiler();
+    const pdf = fakePdfInspector({ pages: [1] });
+    const llm = createFakeLlm({ responses: [DRAFT] });
+
+    const result = await new TailorService({ root, latex, pdf, presenter: silentPresenter })
+      .run({ jd: JD, company: 'Acme AI' }, context(llm));
+
+    expect(llm.calls.map((c) => c.operation)).toEqual(['tailor']);
+    expect(result.role).toBe('AI Dev Engineer');
+    expect(result.guardsPass).toBe(true);
+    expect(result.paths.slug).toBe('acme_ai');
+
+    // The artifacts the user is told to open must actually be there.
+    expect(existsSync(result.paths.pdf)).toBe(true);
+    expect(existsSync(result.paths.tex)).toBe(true);
+    const report = await readFile(result.paths.report, 'utf8');
+    expect(report).toContain(DRAFT.tailored_summary_text);
+    // Named gaps are the point of the report: they are what must not be claimed.
+    expect(report).toContain('Kubernetes');
+
+    // The model's copy reached the LaTeX that was compiled, in both anchors.
+    expect(latex.compiled[0]).toContain('shipping \\textbf{RAG} agents on FastAPI');
+    expect(latex.compiled[0]).toContain('AI Engineer $|$ RAG Systems $|$ TypeScript');
+  });
+
+  it('grounds the prompt in the JD and the fact base', async () => {
+    const root = await makeRoot();
+    const llm = createFakeLlm({ responses: [DRAFT] });
+
+    await new TailorService({
+      root, latex: fakeLatexCompiler(), pdf: fakePdfInspector(), presenter: silentPresenter,
+    }).run({ jd: JD, company: 'Acme AI' }, context(llm));
+
+    const prompt = llm.calls[0]!.prompt;
+    expect(prompt).toContain('RAG agents with FastAPI');
+    expect(prompt).toContain('16 merged PRs into Mastra');
+  });
+
+  it('asks for a tighter draft when the résumé overflows, and reports the draft that fit', async () => {
+    const root = await makeRoot();
+    const latex = fakeLatexCompiler();
+    const pdf = fakePdfInspector({ pages: [2, 1] });
+    const llm = createFakeLlm({ responses: [DRAFT, TIGHTER] });
+
+    const result = await new TailorService({ root, latex, pdf, presenter: silentPresenter })
+      .run({ jd: JD, company: 'Acme AI' }, context(llm));
+
+    expect(llm.calls.map((c) => c.operation)).toEqual(['tailor', 'tailor-fix']);
+    expect(llm.calls[1]!.prompt).toContain('overflowed to 2 pages');
+    expect(result.guardsPass).toBe(true);
+    // The report describes what finally rendered, not the draft that overflowed.
+    expect(result.report.summaryText).toBe(TIGHTER.tailored_summary_text);
+    expect(latex.compiled).toHaveLength(2);
+  });
+
+  it('treats a line running past the text width as a guard failure', async () => {
+    const root = await makeRoot();
+    const llm = createFakeLlm({ responses: [DRAFT] });
+
+    const result = await new TailorService({
+      root,
+      latex: fakeLatexCompiler({ logs: [overfullLog()] }),
+      pdf: fakePdfInspector({ pages: [1] }),
+      presenter: silentPresenter,
+    }).run({ jd: JD, company: 'Acme AI' }, context(llm));
+
+    expect(result.guardsPass).toBe(false);
+    expect(result.report.guards.width[0]).toContain('past the page width');
+  });
+
+  it('gives up after the fix budget and still returns a usable result', async () => {
+    const root = await makeRoot();
+    const llm = createFakeLlm({ responses: [DRAFT, TIGHTER] });
+
+    const result = await new TailorService({
+      root,
+      latex: fakeLatexCompiler(),
+      pdf: fakePdfInspector({ pages: [2] }),
+      presenter: silentPresenter,
+    }).run({ jd: JD, company: 'Acme AI' }, context(llm));
+
+    expect(llm.calls.map((c) => c.operation)).toEqual(['tailor', 'tailor-fix', 'tailor-fix']);
+    expect(result.guardsPass).toBe(false);
+    expect(existsSync(result.paths.pdf)).toBe(true);
+  });
+
+  it('fails before spending a model call when nothing can render', async () => {
+    const root = await makeRoot();
+    const llm = createFakeLlm({ responses: [DRAFT] });
+
+    await expect(
+      new TailorService({
+        root,
+        latex: fakeLatexCompiler({ availability: 'docker-daemon-down' }),
+        pdf: fakePdfInspector(),
+        presenter: silentPresenter,
+      }).run({ jd: JD, company: 'Acme AI' }, context(llm)),
+    ).rejects.toThrow(/Docker daemon is down/);
+
+    expect(llm.calls).toHaveLength(0);
+  });
+
+  it('surfaces a compile failure rather than reporting on a PDF that was never written', async () => {
+    const root = await makeRoot();
+    const llm = createFakeLlm({ responses: [DRAFT] });
+
+    await expect(
+      new TailorService({
+        root,
+        latex: fakeLatexCompiler({ failCompiles: [1] }),
+        pdf: fakePdfInspector(),
+        presenter: silentPresenter,
+      }).run({ jd: JD, company: 'Acme AI' }, context(llm)),
+    ).rejects.toThrow(/Compilation error/);
+  });
+
+  it('rejects a JD too short to analyze before doing any work', async () => {
+    const root = await makeRoot();
+    const llm = createFakeLlm({ responses: [DRAFT] });
+
+    await expect(
+      new TailorService({
+        root, latex: fakeLatexCompiler(), pdf: fakePdfInspector(), presenter: silentPresenter,
+      }).run({ jd: 'too short', company: 'Acme AI' }, context(llm)),
+    ).rejects.toThrow(/too short/);
+
+    expect(llm.calls).toHaveLength(0);
+  });
+});
