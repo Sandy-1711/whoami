@@ -60,6 +60,18 @@ describe("OutreachService.note", () => {
         expect(llm.calls[0]?.prompt).toContain("Lever's application form");
     });
 
+    it("carries the caller's tone and length into the prompt", async () => {
+        const root = await makeRoot();
+        const svc = new OutreachService({ root, presenter: silentPresenter });
+        const llm = createFakeLlm({ responses: [NOTE] });
+        await svc.note({ jd: JD, company: "Acme AI", tone: "formal", length: "shorter" }, { llm });
+
+        const prompt = llm.calls[0]!.prompt;
+        expect(prompt).toMatch(/TONE: Formal/);
+        // 85 words scaled by the "shorter" factor.
+        expect(prompt).toContain("about 60 words");
+    });
+
     it("rejects a too-short JD and a missing company", async () => {
         const root = await makeRoot();
         const svc = new OutreachService({ root, presenter: silentPresenter });
@@ -80,6 +92,20 @@ describe("OutreachService.generate", () => {
         expect(res.subject).toContain("Mastra");
         expect(res.wordCount).toBeGreaterThan(0);
         expect(await readFile(res.file!, "utf8")).toContain("Subject: ");
+    });
+
+    it("scales the kind's own word budget rather than replacing it", async () => {
+        const root = await makeRoot();
+        const svc = new OutreachService({ root, presenter: silentPresenter });
+        const llm = createFakeLlm({ responses: [MESSAGE, MESSAGE] });
+        await svc.generate({ kind: "linkedin_dm" }, { llm });
+        await svc.generate({ kind: "linkedin_dm", length: "longer" }, { llm });
+
+        // A DM's 60-word budget, then the same budget stretched — the ~300-char
+        // platform cap in the brief still applies either way.
+        expect(llm.calls[0]!.prompt).toContain("about 60 words");
+        expect(llm.calls[1]!.prompt).toContain("about 84 words");
+        expect(llm.calls[1]!.prompt).toContain("300 chars");
     });
 
     it("keeps an ad-hoc message in memory when no company is given", async () => {
