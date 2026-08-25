@@ -1,10 +1,13 @@
 // buildAgent — the composition point. Resolves the chat model, builds memory,
 // assembles every tool group over the injected deps, and returns a ready Mastra
 // Agent plus the metadata the CLI shows (which model, whether recall is on).
+import { Mastra } from '@mastra/core';
 import { Agent } from '@mastra/core/agent';
+import type { Observability } from '@mastra/observability';
 import type { AgentDeps } from './deps.js';
 import { resolveAgentModel, type AgentModelOverride } from './model.js';
 import { buildMemory, type AgentMemory } from './memory.js';
+import { buildObservability } from './observability.js';
 import { RESUME_AGENT_INSTRUCTIONS } from './instructions.js';
 import { readOnlyTools } from './tools/readonly.js';
 import { pipelineTools } from './tools/pipeline.js';
@@ -16,10 +19,18 @@ import { githubTools } from './tools/github.js';
 import { outreachTools } from './tools/outreach.js';
 import { trackerTools } from './tools/tracker.js';
 
+// The agent's id, also the key it is registered under on the Mastra container.
+const AGENT_ID = 'resume-agent';
+
 export interface BuiltAgent {
   agent: Agent;
   model: { providerId: string; modelId: string; label: string };
   memory: AgentMemory;
+  // The container the agent is registered on. Holds the tracing pipeline, so a
+  // caller that wants the last turn's trace to arrive flushes it before exiting.
+  mastra: Mastra;
+  // Undefined when Langfuse is off. Pass it back on a rebuild.
+  observability?: Observability;
 }
 
 export interface BuildAgentOptions {
@@ -28,6 +39,9 @@ export interface BuildAgentOptions {
   // Reuse an already-open memory (e.g. when switching models mid-session) so we
   // don't reopen the libSQL store — the thread + working memory carry over.
   memory?: AgentMemory;
+  // Reuse the tracing pipeline across a rebuild, for the same reason: a second
+  // one would mean a second exporter shipping to the same Langfuse project.
+  observability?: Observability;
 }
 
 // Every capability the toolkit exposes, as one Mastra tool map keyed by tool id.
@@ -51,11 +65,12 @@ export function assembleTools(deps: AgentDeps) {
 export function buildAgent(deps: AgentDeps, opts: BuildAgentOptions = {}): BuiltAgent {
   const resolved = resolveAgentModel(deps.config, opts.modelOverride);
   const mem = opts.memory ?? buildMemory(deps.root, deps.config);
+  const observability = opts.observability ?? buildObservability(deps.config);
 
   const tools = assembleTools(deps);
 
   const agent = new Agent({
-    id: 'resume-agent',
+    id: AGENT_ID,
     name: 'Résumé Agent',
     instructions: RESUME_AGENT_INSTRUCTIONS,
     model: resolved.model,
@@ -63,9 +78,16 @@ export function buildAgent(deps: AgentDeps, opts: BuildAgentOptions = {}): Built
     memory: mem.memory,
   });
 
+  // Registering the agent on a Mastra container is what puts tracing behind it:
+  // observability is a container-level concern, and the constructor wires this
+  // instance into the agent it was handed.
+  const mastra = new Mastra({ agents: { [AGENT_ID]: agent }, observability });
+
   return {
     agent,
     model: { providerId: resolved.providerId, modelId: resolved.modelId, label: resolved.label },
     memory: mem,
+    mastra,
+    observability,
   };
 }
