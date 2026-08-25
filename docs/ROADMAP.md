@@ -12,8 +12,8 @@ code).
 
 | Phase | What | State |
 | --- | --- | --- |
-| 0 | Handoff docs | in progress |
-| 1 | One LLM path, instrumented | not started |
+| 0 | Handoff docs | done |
+| 1 | One LLM path, instrumented | in progress — gateway + migration landed, Langfuse and the offline e2e test remain |
 | 2 | Flexible tools, unconfusing MCP | not started |
 | 3 | Résumé as structured data | not started |
 | 4 | Web studio | not started |
@@ -57,7 +57,7 @@ codebase.
 **How:** this file carries status and per-phase what/why/how; the others carry the stable
 background. Keep them short enough that reading all four is cheap.
 
-- [ ] Four docs written
+- [x] Four docs written
 
 ---
 
@@ -98,11 +98,24 @@ real tailor run appears as a trace at `localhost:3000` with prompt, response, to
 still completes with `LANGFUSE_ENABLED` unset; a bad `GEMINI_API_KEY` produces an error that names
 the auth failure.
 
-- [ ] `@resume/llm` package
-- [ ] Prompts on Zod + `serializeFacts`
+- [x] `@resume/llm` package
+- [x] Prompts on Zod + `serializeFacts`
+- [x] Every call site migrated; `packages/core/src/llm` and `ports/llm.ts` deleted
 - [ ] Langfuse self-hosted and wired
-- [ ] Fake model + offline end-to-end tailor test
-- [ ] Config cleanup
+- [x] Fake model (`createFakeLlm`)
+- [ ] Fake LaTeX/PDF adapters + offline end-to-end tailor test
+- [x] Config cleanup
+
+Landed so far: `docs:` handoff docs, `feat(llm)` gateway, `refactor(llm)` injectable
+interface, `test(llm)` fake + coverage, `fix(prompts)` truncation, `test(profile)`
+serialization, `refactor:` the migration, `feat(llm)` timeout setting.
+
+Two chat behaviours are preserved explicitly in `packages/agent/src/model.ts`
+because the gateway's defaults would otherwise revert them: chat prefers Gemini
+even when `LLM_PROVIDER` is deepseek, and chat does not inherit `GEMINI_MODEL`.
+
+`OPENROUTER_API_KEY` is still in `.env`. Deleting a live credential to tidy up is
+not worth the risk; it is unused and harmless where it is.
 
 ---
 
