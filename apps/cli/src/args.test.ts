@@ -20,6 +20,17 @@ describe("parseArgs", () => {
         expect(a.opt("--role")).toBe("AI Engineer");
         expect(a.opt("--model", "gemini-2.5-flash")).toBe("gemini-2.5-flash");
     });
+    it("should reject a flag-shaped value instead of consuming the next flag", () => {
+        const a = parseArgs(["tailor", "--company", "--role", "AI Engineer"]);
+        expect(() => a.opt("--company")).toThrow(/--company needs a value/);
+    });
+    it("should reject a flag left dangling at the end of argv", () => {
+        expect(() => parseArgs(["tailor", "--company"]).opt("--company")).toThrow(/needs a value/);
+    });
+    it("should accept a value that merely starts with dashes", () => {
+        const a = parseArgs(["score", "--jd", "--- Senior Engineer ---"]);
+        expect(a.opt("--jd")).toBe("--- Senior Engineer ---");
+    });
     it("should collect positionals, excluding flags and their values", () => {
         const a = parseArgs(["tailor", "jd.txt", "--company", "Acme", "--force"]);
         expect(a.positionals()).toEqual(["jd.txt"]);
