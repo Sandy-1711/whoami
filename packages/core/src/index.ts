@@ -18,10 +18,7 @@ export * from './tailor/core.js';
 export * from './tailor/report.js';
 export * from './tailor/service.js';
 
-// Wellfound (application-box note + profile refresh).
-export * from './wellfound/service.js';
-
-// Outreach messages (cold email / LinkedIn DM / follow-up / referral ask).
+// Outreach copy (application-form note / cold email / LinkedIn DM / follow-up / referral ask).
 export * from './outreach/service.js';
 
 // Job-application email (draft + send via the Mailer port).

@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
     tailorPrompt, mapTailorResponse, linkedinPrompt, TAILOR_SCHEMA, type TailorResponse,
-    applicationNotePrompt, wellfoundProfilePrompt, mapWellfoundProfile, clampBio, WELLFOUND_BIO_MAX,
-    APPLICATION_NOTE_SCHEMA, WELLFOUND_PROFILE_SCHEMA, type WellfoundProfileResponse,
+    applicationNotePrompt, APPLICATION_NOTE_SCHEMA,
     emailPrompt, outreachPrompt,
 } from "./prompts.js";
 import type { Facts, Classification } from "./types.js";
@@ -90,74 +89,14 @@ describe("applicationNotePrompt", () => {
     });
 });
 
-describe("wellfoundProfilePrompt", () => {
-    it("should embed the fact base and optional target context", () => {
-        const prompt = wellfoundProfilePrompt({ facts, target: "agent infrastructure role" });
-        expect(prompt).toContain("Sandeep Singh");
-        expect(prompt).toContain("agent infrastructure role");
-        expect(prompt).toMatch(/headline/);
-        expect(prompt).toMatch(/skills/);
-        expect(prompt).toContain(String(WELLFOUND_BIO_MAX)); // states the bio char cap
-    });
-    it("should default target to empty when omitted", () => {
-        const prompt = wellfoundProfilePrompt({ facts });
-        expect(prompt).toContain("TARGET FOCUS");
-    });
-});
-
-describe("mapWellfoundProfile", () => {
-    // The mapper only ever sees schema-parsed input, so the tests go through the
-    // schema too — that is what applies the list defaults it relies on.
-    const mapParsed = (raw: unknown) => mapWellfoundProfile(WELLFOUND_PROFILE_SCHEMA.parse(raw));
-
-    it("should map snake_case looking_for + bio + achievements + experience", () => {
-        expect(mapParsed({
-            headline: "AI Engineer", bio: "Ships agents.", looking_for: "remote AI work",
-            achievements: ["12 merged Mastra PRs"], skills: ["RAG"],
-            experience: [{ label: "AiRA — AI Engineer", blurb: "Built agents." }],
-        })).toEqual({
-            headline: "AI Engineer", bio: "Ships agents.", lookingFor: "remote AI work",
-            achievements: ["12 merged Mastra PRs"], skills: ["RAG"],
-            experience: [{ label: "AiRA — AI Engineer", blurb: "Built agents." }],
-        });
-        const bare = mapParsed({ headline: "x", bio: "y", looking_for: "z" });
-        expect(bare.skills).toEqual([]);
-        expect(bare.achievements).toEqual([]);
-        expect(bare.experience).toEqual([]);
-    });
-    it("should drop experience entries with neither label nor blurb", () => {
-        const mapped = mapParsed({
-            headline: "x", bio: "y", looking_for: "z",
-            experience: [{ label: "", blurb: "" }, { label: "Real", blurb: "text" }],
-        });
-        expect(mapped.experience).toEqual([{ label: "Real", blurb: "text" }]);
-    });
-    it("should hard-clamp an over-long bio to the Wellfound limit at a word boundary", () => {
-        const long = "word ".repeat(60).trim(); // ~299 chars
-        const bio = mapParsed({ headline: "x", bio: long, looking_for: "z" }).bio;
-        expect(bio.length).toBeLessThanOrEqual(WELLFOUND_BIO_MAX);
-        expect(bio.endsWith(" ")).toBe(false);
-    });
-});
-
-describe("clampBio", () => {
-    it("leaves a short bio untouched but trims whitespace", () => {
-        expect(clampBio("  hi   there  ")).toBe("hi there");
-    });
-    it("never exceeds the limit", () => {
-        expect(clampBio("x".repeat(500)).length).toBeLessThanOrEqual(WELLFOUND_BIO_MAX);
-    });
-});
-
 describe("evidence digest injection", () => {
     const digest = "GitHub (sandy): 24 repos · 56★\n- mastra-ai/mastra — 12 merged";
 
-    it("appears in all five copy prompts when passed", () => {
+    it("appears in every copy prompt when passed", () => {
         expect(tailorPrompt({ jd: "x", facts, classification, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
         expect(tailorPrompt({ jd: "x", facts, classification, digest })).toContain("12 merged");
         expect(applicationNotePrompt({ jd: "x", company: "A", role: "", facts, classification, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
         expect(emailPrompt({ jd: "x", company: "A", role: "", facts, classification, candidateName: "S", hasResume: false, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
-        expect(wellfoundProfilePrompt({ facts, digest })).toContain("VERIFIED PUBLIC EVIDENCE");
         expect(outreachPrompt({ kind: "cold_email", facts, company: "A", role: "", jd: "", context: "", digest })).toContain("VERIFIED PUBLIC EVIDENCE");
     });
 
@@ -174,24 +113,9 @@ describe("evidence digest injection", () => {
     });
 });
 
-describe("note & profile schemas", () => {
-    it("note schema requires a message and defaults the rationale", () => {
+describe("application-note schema", () => {
+    it("requires a message and defaults the rationale", () => {
         expect(APPLICATION_NOTE_SCHEMA.safeParse({ rationale: "r" }).success).toBe(false);
         expect(APPLICATION_NOTE_SCHEMA.parse({ message: "m" }).rationale).toBe("");
-    });
-
-    it("profile schema requires the fields a founder actually reads", () => {
-        for (const missing of ["headline", "bio", "looking_for"]) {
-            const payload: Record<string, string> = { headline: "h", bio: "b", looking_for: "l" };
-            delete payload[missing];
-            expect(WELLFOUND_PROFILE_SCHEMA.safeParse(payload).success).toBe(false);
-        }
-    });
-
-    it("profile schema defaults the list fields so the mapper never sees undefined", () => {
-        const parsed = WELLFOUND_PROFILE_SCHEMA.parse({ headline: "h", bio: "b", looking_for: "l" });
-        expect(parsed.achievements).toEqual([]);
-        expect(parsed.skills).toEqual([]);
-        expect(parsed.experience).toEqual([]);
     });
 });

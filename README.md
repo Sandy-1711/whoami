@@ -87,7 +87,6 @@ external storage to read on each request.
 │       ├── ports/              # interfaces: http · latex · logger · config · mailer
 │       ├── tailor/             # TailorService · core.ts (scoring/injection) · report.ts
 │       ├── email/              # EmailService — draft a JD email + send via the Mailer port
-│       ├── wellfound/          # WellfoundService — the standing Wellfound profile
 │       ├── outreach/           # OutreachService — application-form note / cold email / DM / follow-up / referral
 │       ├── github/             # GithubProfileService — bio / repo-description / README writes
 │       ├── scrape/             # github.ts · linkedin.ts · refresh.ts (SourceRefresher)
@@ -106,7 +105,7 @@ external storage to read on each request.
 │   └── src/
 │       ├── main.ts             # entrypoint (interactive menu + dispatch)
 │       ├── container.ts        # composition root — wires adapters + registers providers
-│       ├── commands/           # chat · tailor · email · note · wellfound-profile · sync · status · build · check
+│       ├── commands/           # chat · tailor · email · note · sync · status · build · check
 │       ├── adapters/           # http · latex · config (dotenv) · presenter (clack) · mailer (nodemailer/Gmail)
 │       └── build-pdf.ts check-resume.ts ui.ts args.ts paths.ts
 ├── apps/web/                   # @resume/web — Vercel app (self-contained; deploy root)

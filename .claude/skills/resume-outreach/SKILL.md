@@ -1,12 +1,12 @@
 ---
 name: resume-outreach
-description: Draft job-search copy yourself (in Claude Code, no API spend) grounded in the fact base — application-form notes (Wellfound, Work at a Startup, Lever), the standing Wellfound profile, cold emails, LinkedIn DMs, follow-ups, referral asks, and LinkedIn/GitHub profile-copy suggestions. Use when the user asks for "a note for X", "a cold email", "a DM", "a follow-up", "a referral message", or better LinkedIn/GitHub copy — instead of running `pnpm note`/`pnpm email` (which call Gemini/DeepSeek).
+description: Draft job-search copy yourself (in Claude Code, no API spend) grounded in the fact base — application-form notes (Wellfound, Work at a Startup, Lever), the standing Wellfound profile, cold emails, LinkedIn DMs, follow-ups, referral asks, and LinkedIn/GitHub profile-copy suggestions. Use when the user asks for "a note for X", "a cold email", "a DM", "a follow-up", "a referral message", a Wellfound profile, or better LinkedIn/GitHub copy — instead of running `pnpm note`/`pnpm email` (which call Gemini/DeepSeek).
 ---
 
 # Outreach & profile copy (you draft it — no API)
 
-The paid CLI/agent generate these with Gemini/DeepSeek (`pnpm note`,
-`pnpm email`, `pnpm wellfound-profile`). Draft them yourself here instead — same
+The paid CLI/agent generate the per-JD ones with Gemini/DeepSeek (`pnpm note`,
+`pnpm email`). Draft them yourself here instead — same
 grounding rules, same output files, no API spend.
 
 **Always first:** read `profile/facts.json` AND run `pnpm digest` (free, no
@@ -56,7 +56,8 @@ After drafting a note for a JD, offer to log it in the tracker (see `job-copilot
 and mention the timezone overlap if the role lists collaboration hours (he's IST).
 
 ## Standing Wellfound profile (`wellfound-profile.md`)
-One doc for every role (like LinkedIn), grounded in facts.json. Sections:
+There is no command for this one — you write it. One doc for every role (like
+LinkedIn), grounded in facts.json. Sections:
 headline (≤60 chars); bio (**≤160 chars — Wellfound's hard cap**, metric-led,
 one line); "What I'm looking for"; achievements (4–6 bullets, each ≤120 chars);
 skills (tags, most important first); a short blurb per experience role. Note it's

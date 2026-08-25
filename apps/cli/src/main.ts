@@ -75,15 +75,6 @@ async function directEmail(cli: Cli): Promise<void> {
   });
 }
 
-async function directWellfoundProfile(cli: Cli): Promise<void> {
-  const { runWellfoundProfile } = await import('./commands/wellfound.js');
-  await runWellfoundProfile(cli, {
-    target: opt('--target') || opt('--focus'),
-    provider: opt('--provider'),
-    model: opt('--model'),
-  });
-}
-
 function commands(cli: Cli): Record<string, () => Promise<unknown>> {
   return {
     chat: async () => (await import('./commands/chat.js')).runChat(cli, { fresh: has('--new') }),
@@ -93,7 +84,6 @@ function commands(cli: Cli): Record<string, () => Promise<unknown>> {
     note: () => directNote(cli, ''),
     // Kept because the note started life Wellfound-only; it is the same note.
     wellfound: () => directNote(cli, 'Wellfound'),
-    'wellfound-profile': () => directWellfoundProfile(cli),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force'), linkedin: has('--linkedin') }),
     score: async () => {
       const { runScore } = await import('./commands/score.js');
@@ -120,7 +110,6 @@ function printHelp(): void {
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
     ${pc.cyan('note')} <jd> --company <name> [--platform <where>] [--role <r>]   application-form note (per JD)
-    ${pc.cyan('wellfound-profile')} [--target <focus>]                      standing Wellfound profile → wellfound-profile.md
     ${pc.cyan('sync')} [--force] [--linkedin]                                refresh GitHub (LinkedIn opt-in via --linkedin)
     ${pc.cyan('score')} <jd-file> | --jd "text…"                             deterministic JD fit score — free, no LLM
     ${pc.cyan('digest')} [--json]                                            ranked GitHub/LinkedIn evidence digest — free, no LLM
@@ -147,7 +136,6 @@ async function interactive(cli: Cli): Promise<void> {
         { value: 'tailor', label: 'Tailor to a job description', hint: 'score → rewrite → PDF' },
         { value: 'email', label: 'Draft & send an application email', hint: 'JD → Gmail, on approval' },
         { value: 'note', label: 'Application-form note', hint: 'JD → the "why this role?" box' },
-        { value: 'wellfound-profile', label: 'Build my Wellfound profile', hint: 'standing profile (one for every role)' },
         { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub (LinkedIn opt-in)' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
         { value: 'build', label: 'Build canonical résumé', hint: 'resume.tex → PDF' },
@@ -162,7 +150,6 @@ async function interactive(cli: Cli): Promise<void> {
       else if (action === 'tailor') await interactiveTailor(cli);
       else if (action === 'email') await interactiveEmail(cli);
       else if (action === 'note') await interactiveNote(cli);
-      else if (action === 'wellfound-profile') await interactiveWellfoundProfile(cli);
       else if (action === 'sync') {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
         if (p.isCancel(force)) continue;
@@ -311,21 +298,6 @@ async function interactiveNote(cli: Cli): Promise<void> {
   await runNote(cli, {
     jd, company: company.trim(), role: (role || '').trim(), platform: (platform || '').trim(), provider,
   });
-}
-
-// The standing profile — no JD, just an optional focus.
-async function interactiveWellfoundProfile(cli: Cli): Promise<void> {
-  const target = await p.text({
-    message: 'Focus (optional — blank = use your fact base as-is)',
-    placeholder: 'remote agent-infrastructure roles',
-  });
-  if (p.isCancel(target)) return;
-
-  const provider = await pickProvider(cli, 'Which model should build the profile?');
-  if (provider === null) return;
-
-  const { runWellfoundProfile } = await import('./commands/wellfound.js');
-  await runWellfoundProfile(cli, { target: (target || '').trim(), provider });
 }
 
 // Ask which model to use, but only when more than one provider has a key. Returns
