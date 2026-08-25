@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { GithubProfileService, GithubReader, githubUsername } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { loadFacts, cap } from './shared.js';
-import { describeTool } from './describe.js';
+import { describeTool, CONFIRM_ARG } from './describe.js';
 
 export function githubTools(deps: AgentDeps) {
   const read_github = createTool({
@@ -57,16 +57,24 @@ export function githubTools(deps: AgentDeps) {
       cost: 'outward',
       use: 'the user has seen the new copy and asked for it to go live.',
       avoid: 'reading anything — that is read_github. And never push copy the user has not read.',
-      needs: 'GITHUB_TOKEN (the bio needs its `user` scope), and a confirmation showing the current→new change that you cannot bypass.',
+      needs: 'GITHUB_TOKEN (the bio needs its `user` scope), `confirm: true`, and a confirmation showing the current→new change that you cannot bypass.',
     }),
     inputSchema: z.object({
       target: z.enum(['bio', 'repo_description', 'profile_readme']).describe('What to update.'),
+      confirm: z.boolean().describe(CONFIRM_ARG),
       bio: z.string().optional().describe('New bio (for target=bio).'),
       repo: z.string().optional().describe('Repo name (for target=repo_description).'),
       description: z.string().optional().describe('New repo description (for target=repo_description).'),
       readme: z.string().optional().describe('Full new README markdown (for target=profile_readme).'),
     }),
-    execute: async ({ target, bio, repo, description, readme }) => {
+    execute: async ({ target, confirm, bio, repo, description, readme }) => {
+      if (!confirm) {
+        return {
+          pushed: false,
+          reason: 'Not pushed — `confirm` was not true.',
+          nextSteps: ['Show the user the exact copy you would publish, then call again with confirm: true only if they approve it.'],
+        };
+      }
       if (!deps.config.githubToken) return { pushed: false, reason: 'GITHUB_TOKEN not set — add one to .env to push.' };
       const facts = await loadFacts(deps.root);
       const owner = githubUsername(facts.identity?.github || 'Sandy-1711');

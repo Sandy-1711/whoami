@@ -38,6 +38,16 @@ export interface ToolDoc {
   then?: string;
 }
 
+/**
+ * The argument an outward-facing tool requires before it will act. It is not the
+ * human gate — deps.confirm is — but a second, in-band signal: the intent to
+ * send or publish appears in the tool call itself, where an MCP client renders
+ * it for the user, and a half-formed call cannot reach the network by accident.
+ */
+export const CONFIRM_ARG =
+  'Must be true, and only after the user has SEEN what this will do and asked for it. ' +
+  'Setting it yourself to get past this is a serious error.';
+
 /** Render a tool description in the shape every tool in this package uses. */
 export function describeTool(doc: ToolDoc): string {
   const lines = [doc.does.trim(), COST_LINE[doc.cost], `USE WHEN: ${doc.use}`];

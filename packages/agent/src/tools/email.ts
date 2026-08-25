@@ -11,7 +11,7 @@ import { EmailService, slugCompany, type EmailDraft, type EmailAttachment } from
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
 import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
-import { describeTool } from './describe.js';
+import { describeTool, CONFIRM_ARG } from './describe.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
 const preview = (body: string, n = 600): string => (body.length > n ? body.slice(0, n) + '…' : body);
@@ -82,16 +82,24 @@ export function emailTools(deps: AgentDeps) {
       cost: 'outward',
       use: 'the user has read the draft and asked for it to go out. Never on your own initiative.',
       avoid: 'anything you have not shown them first.',
-      needs: 'Gmail configured, and a confirmation of the recipient that you cannot bypass.',
+      needs: 'Gmail configured, `confirm: true`, and a confirmation of the recipient that you cannot bypass.',
       then: 'the send records itself. log_application only when a human learns something new — a reply, an interview.',
     }),
     inputSchema: z.object({
       company: z.string().describe('Company whose draft to send / label under which the send is logged.'),
+      confirm: z.boolean().describe(CONFIRM_ARG),
       to: z.string().optional().describe('Recipient override; else the drafted apply-to address.'),
       path: z.string().optional().describe('A specific saved draft .txt (To:/From:/Subject: headers + body) to send verbatim.'),
       attach: z.string().optional().describe('Explicit PDF path to attach when sending from `path` (a file draft carries no attachment on its own).'),
     }),
-    execute: async ({ company, to, path, attach }) => {
+    execute: async ({ company, confirm, to, path, attach }) => {
+      if (!confirm) {
+        return {
+          sent: false,
+          reason: 'Not sent — `confirm` was not true.',
+          nextSteps: ['Show the user the draft, ask whether to send it, and call again with confirm: true only if they say yes.'],
+        };
+      }
       if (!deps.mailer.available) {
         return { sent: false, reason: 'Gmail not configured — set GMAIL_USER and GMAIL_APP_PASSWORD in .env.' };
       }
