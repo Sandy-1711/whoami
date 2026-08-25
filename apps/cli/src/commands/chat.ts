@@ -312,7 +312,11 @@ export async function runChat(cli: Cli, args: RunChatArgs = {}): Promise<void> {
     const chosen = models[idx - 1]!;
     if (chosen.modelId === built.model.modelId) { out.line(pc.dim('  Already on that model.')); return; }
     try {
-      built = buildAgent(deps, { modelOverride: { providerId: chosen.providerId, modelId: chosen.modelId }, memory: built.memory });
+      built = buildAgent(deps, {
+        modelOverride: { providerId: chosen.providerId, modelId: chosen.modelId },
+        memory: built.memory,
+        observability: built.observability,
+      });
       out.line(pc.dim('  Now using ') + modelLine());
     } catch (err) {
       out.line(ui.fail((err as Error).message));
@@ -404,5 +408,7 @@ export async function runChat(cli: Cli, args: RunChatArgs = {}): Promise<void> {
   }
 
   rl.close();
+  // The last turn's spans are still buffered; without this they never arrive.
+  await built.observability?.shutdown().catch(() => {});
   console.log(pc.dim('\nBye 👋\n'));
 }
