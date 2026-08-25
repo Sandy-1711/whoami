@@ -313,8 +313,8 @@ command + slash-command reference.
 ### MCP — serve the tools to Claude Code / Cursor (`pnpm mcp`)
 
 The same tools, exposed over the [Model Context Protocol](https://modelcontextprotocol.io) on
-stdio, so an **external agent drives them** — 19 tools in all. Free/read-only:
-`score_jd`, `read_facts`, `read_profile_digest`, `profile_status`, `list_outputs`,
+stdio, so an **external agent drives them** — 18 tools in all. Free/read-only:
+`score_jd`, `read_profile`, `profile_status`, `list_outputs`,
 `list_applications`; local ops: `build_resume`, `check_resume`, `sync_profiles`,
 `update_facts`, `log_application`; **paid (LLM)**: `tailor_resume`,
 `draft_application_email`, `outreach_message`, `wellfound_note`, `wellfound_profile`,

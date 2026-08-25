@@ -269,7 +269,7 @@ export async function runChat(cli: Cli, args: RunChatArgs = {}): Promise<void> {
       out.line(ui.kv('experience', pc.dim(`${(f.experience ?? []).length} roles`)));
       out.line(ui.kv('projects', pc.dim(`${(f.projects ?? []).length} projects`)));
       out.line(ui.kv('keywords', pc.dim(`${(f.allowed_keywords ?? []).length} allowed`)));
-      out.line(pc.dim('  Ask the agent (or use read_facts) for the full detail.'));
+      out.line(pc.dim('  Ask the agent (or use read_profile) for the full detail.'));
     }).catch(() => out.line(ui.fail('Could not read facts.json.')));
   }
 

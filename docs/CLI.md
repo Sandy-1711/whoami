@@ -89,10 +89,10 @@ is read from `.env` at the repo root exactly like the CLI — nothing to configu
   because the MCP client prompts you before each tool call — that prompt is the human-in-the-loop.
   Approve sends/pushes deliberately; declining the client's prompt is how you say no.
 - **Cost:** the pipeline/draft tools call the LLM (Gemini/DeepSeek) and spend credits when invoked,
-  just as they do from the CLI. The read-only tools (`score_jd`, `profile_status`, `read_facts`,
-  `read_profile_digest`, `list_outputs`, `list_applications`) are free.
+  just as they do from the CLI. The read-only tools (`score_jd`, `profile_status`, `read_profile`,
+  `list_outputs`, `list_applications`) are free.
 - **Policy for agents:** if the deliverable is *text* (résumé content, emails, notes), the
-  MCP client should draft it itself — grounded in `read_facts` + `read_profile_digest` — and
+  MCP client should draft it itself — grounded in `read_profile` — and
   use the free/local tools to apply, build, check, and send. Reserve the paid drafting tools
   for when the user explicitly asks. (The `.claude/skills/job-copilot` skill spells this out.)
 
@@ -200,7 +200,7 @@ external contributions with merged-PR counts and sample titles (cap 5), and one 
 LinkedIn role. This is exactly the evidence block injected into the drafting prompts
 (tailor/email/outreach/wellfound) — `facts.json` remains the only source of claims.
 `--json` emits the structured form. Output is plain (no banner) so agents can consume it.
-Same data over MCP: the `read_profile_digest` tool.
+Same data over MCP: `read_profile` (whole) or `read_profile` scoped to `evidence`.
 
 ### `sync` — refresh scraped profile sources
 

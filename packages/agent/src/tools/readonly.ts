@@ -17,6 +17,10 @@ const FACT_SECTIONS = [
   'skills', 'experience', 'projects', 'headline_metrics',
 ] as const;
 
+// The fact base's own sections plus the ranked public evidence, which is not a
+// section of facts.json but is read for the same reason and in the same breath.
+const PROFILE_SECTIONS = [...FACT_SECTIONS, 'evidence'] as const;
+
 export function readOnlyTools(deps: AgentDeps) {
   const score_jd = createTool({
     id: 'score_jd',
@@ -73,19 +77,24 @@ export function readOnlyTools(deps: AgentDeps) {
     },
   });
 
-  const read_facts = createTool({
-    id: 'read_facts',
+  const read_profile = createTool({
+    id: 'read_profile',
     description:
-      'Read the verified fact base (profile/facts.json) — the ONLY source of truth for the ' +
-      'candidate. Optionally scope to one section. Use before drafting anything so claims stay ' +
-      'grounded; if a fact is missing here, it must not be asserted.',
+      'Read everything known about the candidate: the verified fact base (profile/facts.json) — ' +
+      'the ONLY source of allowed claims — together with a ranked digest of his public evidence ' +
+      '(top GitHub repos, merged external PRs with titles, LinkedIn roles). Call this once before ' +
+      'drafting anything: the facts say what may be asserted, the evidence says which of those ' +
+      'facts to lead with and lets you cite real repos and PRs. Scope to one section for a ' +
+      'targeted lookup. If something is not in here, it must not be claimed.',
     inputSchema: z.object({
-      section: z.enum(FACT_SECTIONS).optional().describe('Limit to one section; omit for the whole fact base.'),
+      section: z.enum(PROFILE_SECTIONS).optional()
+        .describe("One section for a narrow lookup ('identity', 'skills', …, or 'evidence' for the digest alone); omit for everything."),
     }),
     execute: async ({ section }) => {
+      if (section === 'evidence') return { evidence: await evidenceText(deps.root) };
       const facts = await loadFacts(deps.root);
       if (section) return { section, value: (facts as Record<string, unknown>)[section] ?? null };
-      return facts;
+      return { facts, evidence: await evidenceText(deps.root) };
     },
   });
 
@@ -108,26 +117,11 @@ export function readOnlyTools(deps: AgentDeps) {
     },
   });
 
-  const read_profile_digest = createTool({
-    id: 'read_profile_digest',
-    description:
-      'FREE, read-only, no LLM. A compact ranked digest of the candidate\'s verified public ' +
-      'evidence: top GitHub repos (curation pins first; forks, archived, and banned repos ' +
-      'excluded), external PR contributions with merged counts and sample PR titles, and ' +
-      'LinkedIn role one-liners. Call this alongside read_facts before drafting or curating — ' +
-      'it tells you which TRUE facts to emphasize and lets you cite real repos/PRs. The fact ' +
-      'base remains the only source of allowed claims.',
-    inputSchema: z.object({
-      format: z.enum(['text', 'json']).optional()
-        .describe("'json' for the structured digest; default 'text' returns the compact prompt-ready rendering."),
-    }),
-    execute: async ({ format }) => {
-      const digest = await loadProfileDigest(deps.root);
-      if (format === 'json') return digest;
-      const text = renderProfileDigest(digest);
-      return { digest: text || '(no scrape data — run sync_profiles first)' };
-    },
-  });
+  return { score_jd, profile_status, read_profile, list_outputs };
+}
 
-  return { score_jd, profile_status, read_facts, list_outputs, read_profile_digest };
+// Curation pins first; forks, archived, and banned repos already excluded.
+async function evidenceText(root: string): Promise<string> {
+  const text = renderProfileDigest(await loadProfileDigest(root));
+  return text || '(no scrape data — run sync_profiles first)';
 }
