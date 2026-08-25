@@ -3,7 +3,19 @@
 // This module is pure (no network, no I/O): it builds strings/objects and maps
 // raw responses into typed results. The transport is any LlmProvider.
 import type { JsonSchema } from './ports/llm.js';
+import { serializeFacts } from './profile/serialize.js';
 import type { Facts, Classification, TailorContent, LinkedinProfile, WellfoundProfile, GithubData, LinkedinData } from './types.js';
+
+// The fact base as a prompt block. When a section cannot fit, the block says so
+// rather than letting the model believe it received everything — several prompts
+// instruct it to draw from sections by name.
+function factsBlock(facts: Facts): string {
+  const { json, dropped } = serializeFacts(facts);
+  const note = dropped.length
+    ? `\n(Omitted for size — do not reference: ${dropped.join(', ')}.)`
+    : '';
+  return `"""${json}"""${note}`;
+}
 
 // The rendered profile digest (see profile/digest.ts) injected into the copy
 // prompts as evidence. It steers WHICH true facts get emphasized — top repos,
@@ -72,7 +84,7 @@ JOB DESCRIPTION:
 """${jd.slice(0, 6000)}"""
 
 FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 12000)}"""
+${factsBlock(facts)}
 ${evidenceSection(digest)}
 KEYWORD ANALYSIS (already computed):
 - JD keywords the resume already covers: ${classification.matched.join(', ') || '(none)'}
@@ -121,7 +133,7 @@ JOB DESCRIPTION:
 """${jd.slice(0, 6000)}"""
 
 FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 12000)}"""
+${factsBlock(facts)}
 
 KEYWORD PRIORITIES:
 - Already covered: ${classification.matched.join(', ') || '(none)'}
@@ -197,7 +209,7 @@ JOB DESCRIPTION:
 """${jd.slice(0, 6000)}"""
 
 FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 12000)}"""
+${factsBlock(facts)}
 ${evidenceSection(digest)}
 KEYWORD ANALYSIS (already computed):
 - Proven on the résumé (matched): ${classification.matched.join(', ') || '(none)'}
@@ -277,7 +289,7 @@ JOB DESCRIPTION:
 """${jd.slice(0, 6000)}"""
 
 FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 12000)}"""
+${factsBlock(facts)}
 ${evidenceSection(digest)}
 KEYWORD ANALYSIS (already computed):
 - Proven on the résumé (matched): ${classification.matched.join(', ') || '(none)'}
@@ -356,7 +368,7 @@ TARGET FOCUS (optional — may be empty):
 """${target.slice(0, 2000)}"""
 
 FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 14000)}"""
+${factsBlock(facts)}
 ${evidenceSection(digest)}
 Return JSON matching the schema. "rationale" is 1-2 lines for the candidate on the positioning choices — not pasted into the profile.`;
 }
@@ -498,7 +510,7 @@ STRICT RULES:
 - stale_or_missing: concrete observations where a live surface contradicts or omits the fact base (e.g. "LinkedIn headline omits Mastra", "GitHub bio missing"). Each item one short line.
 
 FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 12000)}"""
+${factsBlock(facts)}
 
 CURRENT LINKEDIN (scraped):
 """${JSON.stringify(li).slice(0, 4000)}"""
@@ -573,7 +585,7 @@ COMPANY: ${company || '(unspecified)'}
 TARGET ROLE: ${role || '(unspecified)'}
 ${context ? `EXTRA CONTEXT (from the user): ${context}\n` : ''}${jd ? `JOB DESCRIPTION:\n"""${jd.slice(0, 4000)}"""\n` : ''}
 FACT BASE (the only truth you may use):
-"""${JSON.stringify(facts).slice(0, 12000)}"""
+${factsBlock(facts)}
 ${evidenceSection(digest)}
 Return JSON: { ${spec.subject ? '"subject": the subject line, ' : ''}"message": the message to send, "rationale": 1-2 lines on why this framing works (for the candidate, not sent) }.`;
 }

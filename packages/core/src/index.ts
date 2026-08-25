@@ -43,6 +43,7 @@ export * from './profile/facts-editor.js';
 export * from './profile/curation.js';
 export * from './profile/digest.js';
 export * from './profile/loaders.js';
+export * from './profile/serialize.js';
 
 // GitHub profile writes (bio, repo descriptions, profile README).
 export * from './github/profile.js';
