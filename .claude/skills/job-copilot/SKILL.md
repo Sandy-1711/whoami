@@ -21,7 +21,7 @@ LLM systems), anchored on his open-source Mastra work.
   copy → **you draft it in your own words**, grounded in `profile/facts.json` +
   the profile digest (`pnpm digest` here; `read_profile` over MCP), and
   put the text into the file (or the send tool) yourself. Do NOT call the paid
-  LLM tools — `tailor_resume`, `draft_application_email`, `outreach_message`,
+  LLM tools — `tailor_plan`/`tailor_render`, `draft_application_email`, `outreach_message`,
   (or their CLI equivalents `pnpm tailor/email/note`)
   — unless the user explicitly asks to spend API credits.
 - JD scoring, PDF builds, structure/width checks, source sync, actually sending
@@ -75,14 +75,15 @@ call Gemini/DeepSeek — do that drafting yourself instead. All are `pnpm <scrip
 
 ## The MCP server (`pnpm mcp`)
 The toolkit is also exposed over MCP (stdio) for Claude Code / Cursor / Claude
-Desktop — 15 tools, same implementations the chat agent uses. The POLICY above
+Desktop — 18 tools, same implementations the chat agent uses. The POLICY above
 applies verbatim to MCP clients. Cost split:
 - **Free / read-only:** `score_jd`, `read_profile` (fact base + evidence digest),
-  `profile_status`, `list_outputs`, `list_applications`.
+  `profile_status`, `list_outputs`, `list_applications`, `read_github` (any public
+  account — read the company before writing to them), `ask_user`.
 - **Free / local writes & builds:** `update_facts` (identity edits confirm-gated),
   `log_application`, `build_resume`, `check_resume` (LaTeX toolchain, no LLM),
   `sync_profiles` (GitHub API; LinkedIn opt-in — its structuring uses Gemini).
-- **PAID (LLM):** `tailor_resume`, `draft_application_email`, `outreach_message`
+- **PAID (LLM):** `tailor_plan` + `tailor_render`, `draft_application_email`, `outreach_message`
   (kinds: application_note, cold_email, linkedin_dm, followup, referral_ask).
 - **Outward-facing / confirm-gated:** `send_application_email` (SMTP),
   `update_github_profile` (GitHub push).

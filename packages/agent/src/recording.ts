@@ -21,7 +21,8 @@ interface Executable {
 // genuinely advance an application appear here; everything else is activity, not
 // a status change.
 const ADVANCES: Record<string, (input: Bag, result: Bag) => { status: string; channel?: string } | null> = {
-  tailor_resume: () => ({ status: 'tailored' }),
+  tailor_render: () => ({ status: 'tailored' }),
+  tailor_plan: () => ({ status: 'drafted' }),
   draft_application_email: () => ({ status: 'drafted', channel: 'email' }),
   send_application_email: (_input, result) => (result.sent ? { status: 'sent', channel: 'email' } : null),
   outreach_message: (input) => ({ status: 'drafted', channel: outreachChannel(input) }),
@@ -45,7 +46,8 @@ const OUTREACH_CHANNEL: Record<string, string> = {
 // rather than a list of names. Anything absent here records the call alone.
 const DETAIL: Record<string, (result: Bag) => string | undefined> = {
   score_jd: (r) => `score ${r.score?.current}/${r.score?.max}, ${r.missing?.length ?? 0} gaps`,
-  tailor_resume: (r) => `score ${r.score?.current}→${r.score?.tailored}, guards ${r.guardsPass ? 'pass' : 'FAIL'} → ${r.pdf}`,
+  tailor_plan: (r) => `score ${r.score?.current}→${r.score?.tailored}, role ${r.role}`,
+  tailor_render: (r) => `guards ${r.guardsPass ? 'pass' : 'FAIL'} → ${r.pdf}`,
   build_resume: (r) => `built ${r.pdf}`,
   check_resume: (r) => `guards ${r.pass ? 'pass' : 'FAIL'}`,
   sync_profiles: (r) => (r.sources ?? []).map((s: Bag) => `${s.source}:${s.status}`).join(' '),

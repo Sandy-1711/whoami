@@ -311,13 +311,15 @@ command + slash-command reference.
 ### MCP — serve the tools to Claude Code / Cursor (`pnpm mcp`)
 
 The same tools, exposed over the [Model Context Protocol](https://modelcontextprotocol.io) on
-stdio, so an **external agent drives them** — 15 tools in all. Free/read-only:
+stdio, so an **external agent drives them** — 18 tools in all. Free/read-only:
 `score_jd`, `read_profile`, `profile_status`, `list_outputs`,
-`list_applications`; local ops: `build_resume`, `check_resume`, `sync_profiles`,
-`update_facts`, `log_application`; **paid (LLM)**: `tailor_resume`,
-`draft_application_email`, `outreach_message` (application-form note, cold email,
-DM, follow-up, referral ask); confirm-gated outward actions: `send_application_email`,
-`update_github_profile`. It's a pure tool provider (no model, no chat memory): the
+`list_applications`, `ask_user`, `read_github`; local ops: `build_resume`,
+`check_resume`, `sync_profiles`, `update_facts`, `log_application`; **paid (LLM)**:
+`tailor_plan` + `tailor_render`, `draft_application_email`, `outreach_message`
+(application-form note, cold email, DM, follow-up, referral ask); confirm-gated
+outward actions: `send_application_email`, `update_github_profile`.
+Every description opens with a COST line, so a client can see what a call spends
+before making it. It's a pure tool provider (no model, no chat memory): the
 connecting client brings the model and decides what to call. The repo ships a project-scoped
 [`.mcp.json`](.mcp.json), so **Claude Code auto-discovers it** when you open this repo — approve
 it and run `/mcp` to check status. Env is read from `.env` at the repo root, same as the CLI.

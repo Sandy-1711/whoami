@@ -30,19 +30,23 @@ function checkScope(scope?: typeof CHECK_SCOPES[number]): CheckScope | undefined
 }
 
 export function pipelineTools(deps: AgentDeps) {
-  const tailor_resume = createTool({
-    id: 'tailor_resume',
+  const service = (): TailorService => new TailorService({
+    root: deps.root, latex: deps.latex, pdf: deps.pdf, presenter: deps.presenter,
+  });
+
+  const tailor_plan = createTool({
+    id: 'tailor_plan',
     description: describeTool({
       does:
-        'Tailor the résumé to a job description and render a one-page ATS-optimized PDF. Refreshes ' +
-        'stale sources, rewrites the summary and subtitle from the VERIFIED fact base only, compiles, ' +
-        'and runs the page and width guards — re-asking for tighter copy when one fails. Returns the ' +
-        'before/after score, the detected role, the remaining gaps, and the PDF path.',
+        'First half of tailoring: refresh stale sources, score the JD, and ask the model for a ' +
+        'summary and subtitle drawn from the VERIFIED fact base only. Returns the proposed copy, the ' +
+        'before/after score, the detected role and the remaining gaps, and saves the plan for ' +
+        'tailor_render. Renders nothing, so it needs no LaTeX toolchain.',
       cost: 'llm',
-      use: 'the user has decided to apply somewhere and wants the PDF for it.',
+      use: 'the user has decided to apply somewhere. Show them the proposed copy before rendering it.',
       avoid: 'judging fit or answering "should I apply?" — score_jd does that for free.',
-      needs: 'a company name, an LLM key, and a LaTeX toolchain (Docker running, or latexmk).',
-      then: 'draft_application_email or outreach_message. The application records itself; no need to log it.',
+      needs: 'a company name and an LLM key.',
+      then: 'tailor_render turns the plan into the PDF.',
     }),
     inputSchema: z.object({
       ...JD_INPUT_SHAPE,
@@ -57,16 +61,51 @@ export function pipelineTools(deps: AgentDeps) {
         ttlHours: deps.config.scrapeTtlHours,
         llm: deps.llm,
       });
-      const service = new TailorService({
-        root: deps.root, latex: deps.latex, pdf: deps.pdf, presenter: deps.presenter,
-      });
-      const result = await service.run({ jd, company, role: role || '' }, { llm: deps.llm, refresher });
+      const { plan, paths } = await service().plan({ jd, company, role: role || '' }, { llm: deps.llm, refresher });
+      const blocked = deps.latex.availability();
+      return {
+        company: paths.slug,
+        role: plan.role,
+        score: { current: plan.score.before, tailored: plan.score.after },
+        matched: cap(plan.cls.matched),
+        gaps: cap(plan.cls.missing),
+        summary: plan.summaryText,
+        subtitle: plan.subtitle,
+        rationale: plan.rationale,
+        nextSteps: [
+          'Show the user this copy — it is what will go on the PDF.',
+          blocked
+            ? `tailor_render cannot run yet: ${blocked === 'docker-daemon-down' ? 'the Docker daemon is down' : 'no LaTeX engine is installed'}.`
+            : `tailor_render with company "${company}" compiles it and runs the guards.`,
+        ],
+      };
+    },
+  });
+
+  const tailor_render = createTool({
+    id: 'tailor_render',
+    description: describeTool({
+      does:
+        'Second half of tailoring: compile the saved plan into the one-page PDF and run the page and ' +
+        'width guards, re-asking the model for tighter copy when one fails. Returns the PDF path and ' +
+        'the guard results.',
+      cost: 'llm',
+      use: 'straight after tailor_plan, once the user has seen the copy.',
+      avoid: 'a company that has no plan yet — run tailor_plan first.',
+      needs: 'a LaTeX toolchain (Docker running, or latexmk). Tightening a failed guard costs another model call.',
+      then: 'draft_application_email or outreach_message. The application records itself; no need to log it.',
+    }),
+    inputSchema: z.object({
+      company: z.string().describe('Company whose plan to render, as passed to tailor_plan.'),
+    }),
+    execute: async ({ company }) => {
+      const svc = service();
+      const result = await svc.render(await svc.loadPlan(company), { llm: deps.llm });
       const r = result.report;
       return {
         company: result.paths.slug,
         role: result.role,
         score: { current: r.score.before, tailored: r.score.after },
-        matched: cap(r.cls.matched),
         gaps: cap(r.cls.missing),
         pdf: rel(deps.root, result.paths.pdf),
         guardsPass: result.guardsPass,
@@ -126,7 +165,7 @@ export function pipelineTools(deps: AgentDeps) {
       does: 'Compile the canonical resume.tex to apps/web/assets/resume.pdf, exactly as CI does.',
       cost: 'local',
       use: 'after editing resume.tex, or when profile_status says the canonical PDF is missing or stale.',
-      avoid: 'producing a per-company PDF — that is tailor_resume.',
+      avoid: 'producing a per-company PDF — that is tailor_plan then tailor_render.',
       needs: 'a LaTeX toolchain: the Docker daemon running, or latexmk installed.',
       then: 'check_resume — a build that compiles can still fail the guards.',
     }),
@@ -189,5 +228,5 @@ export function pipelineTools(deps: AgentDeps) {
     },
   });
 
-  return { tailor_resume, sync_profiles, build_resume, check_resume };
+  return { tailor_plan, tailor_render, sync_profiles, build_resume, check_resume };
 }
