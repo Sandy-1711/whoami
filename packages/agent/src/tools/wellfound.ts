@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { WellfoundService } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
+import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
 
@@ -19,11 +20,12 @@ export function wellfoundTools(deps: AgentDeps) {
       'box), grounded in the fact base. Saves to tailored/<company>/wellfound-message.txt. Returns ' +
       'the note, its word count, and the JD keywords it can truthfully lean on.',
     inputSchema: z.object({
-      jd: z.string().describe('The full job description text.'),
+      ...JD_INPUT_SHAPE,
       company: z.string().describe('Company name — files the note.'),
       role: z.string().optional().describe('Role override; omit to infer from the JD.'),
     }),
-    execute: async ({ jd, company, role }) => {
+    execute: async ({ company, role, ...jdInput }) => {
+      const jd = await resolveJd(deps.root, jdInput);
       const r = await service.message({ jd, company, role: role || '' }, { llm: deps.llm });
       return {
         note: r.message,

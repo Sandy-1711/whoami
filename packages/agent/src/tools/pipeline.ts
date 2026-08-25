@@ -14,6 +14,7 @@ import {
 } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
+import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
 
@@ -27,11 +28,12 @@ export function pipelineTools(deps: AgentDeps) {
       'company name (files the output) and an LLM key. Returns the before/after ATS score, detected ' +
       'role, remaining gaps, and the PDF path. Needs a working LaTeX toolchain (Docker/latexmk).',
     inputSchema: z.object({
-      jd: z.string().describe('The full job description text.'),
+      ...JD_INPUT_SHAPE,
       company: z.string().describe('Company name — the output is filed and named by it.'),
       role: z.string().optional().describe('Override the role title; omit to infer from the JD.'),
     }),
-    execute: async ({ jd, company, role }) => {
+    execute: async ({ company, role, ...jdInput }) => {
+      const jd = await resolveJd(deps.root, jdInput);
       const refresher = new SourceRefresher({
         githubToken: deps.config.githubToken,
         linkedinCookie: deps.config.linkedinCookie,
