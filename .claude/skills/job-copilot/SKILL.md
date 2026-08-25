@@ -19,7 +19,7 @@ LLM systems), anchored on his open-source Mastra work.
 > operation, use the repo's tool path.**
 - Résumé section content, application emails, DMs, Wellfound notes, profile
   copy → **you draft it in your own words**, grounded in `profile/facts.json` +
-  the profile digest (`pnpm digest` here; `read_profile_digest` over MCP), and
+  the profile digest (`pnpm digest` here; `read_profile` over MCP), and
   put the text into the file (or the send tool) yourself. Do NOT call the paid
   LLM tools — `tailor_resume`, `draft_application_email`, `outreach_message`,
   `wellfound_note`, `wellfound_profile`, `profile_enhancer` (or their CLI
@@ -77,9 +77,9 @@ yourself instead. All are `pnpm <script>` from the repo root.
 
 ## The MCP server (`pnpm mcp`)
 The toolkit is also exposed over MCP (stdio) for Claude Code / Cursor / Claude
-Desktop — 19 tools, same implementations the chat agent uses. The POLICY above
+Desktop — 18 tools, same implementations the chat agent uses. The POLICY above
 applies verbatim to MCP clients. Cost split:
-- **Free / read-only:** `score_jd`, `read_facts`, `read_profile_digest`,
+- **Free / read-only:** `score_jd`, `read_profile` (fact base + evidence digest),
   `profile_status`, `list_outputs`, `list_applications`.
 - **Free / local writes & builds:** `update_facts` (identity edits confirm-gated),
   `log_application`, `build_resume`, `check_resume` (LaTeX toolchain, no LLM),
@@ -106,7 +106,7 @@ Local state in `.agent/applications.json` (gitignored) — a JSON array of
   external contributions with merged-PR counts + titles, LinkedIn role
   one-liners. **Run it before drafting or judging fit** — it tells you which
   TRUE facts to emphasize and lets you cite real repos/PRs. It grants no new
-  claims. (`--json` for the structured form; over MCP: `read_profile_digest`.)
+  claims. (`--json` for the structured form; over MCP: `read_profile`.)
 - `profile/github.json`, `profile/linkedin.json` — the raw scraped sources
   (64+ repos — prefer the digest; go to the raw files only to verify a specific
   detail). Refresh with `pnpm sync` (GitHub API, no LLM; LinkedIn only with
