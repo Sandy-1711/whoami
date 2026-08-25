@@ -4,7 +4,8 @@
 // per-session cache, so the sent email is byte-for-byte what was shown — never a
 // re-generated variant). Sending is gated by deps.confirm, which the model
 // cannot answer for the user.
-import { relative } from 'node:path';
+import { relative, join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { EmailService, slugCompany, type EmailDraft, type EmailAttachment } from '@resume/core';
@@ -14,6 +15,10 @@ import { JD_INPUT_SHAPE, resolveJd } from './inputs.js';
 
 const rel = (root: string, p: string): string => relative(root, p).replace(/\\/g, '/');
 const preview = (body: string, n = 600): string => (body.length > n ? body.slice(0, n) + '…' : body);
+
+// Where EmailService.draft persists every draft it writes.
+const savedDraftPath = (root: string, company: string): string =>
+  join(root, 'tailored', slugCompany(company), 'application-email.txt');
 
 export function emailTools(deps: AgentDeps) {
   const service = new EmailService({ root: deps.root, presenter: deps.presenter });
@@ -60,15 +65,16 @@ export function emailTools(deps: AgentDeps) {
   const send_application_email = createTool({
     id: 'send_application_email',
     description:
-      'Send an application email. By default sends the exact content PREVIOUSLY drafted for this ' +
-      'company (via draft_application_email). Pass `path` to instead send a saved draft file ' +
-      '(tailored/<company>/application-email.txt) verbatim — the escape hatch when you hand-edited ' +
-      'the draft after drafting. Requires Gmail configured and passes through a terminal confirmation ' +
-      'of the recipient — you cannot bypass it. Use only after the user has seen the draft and asked to send.',
+      'Send an application email. Sends the exact content drafted for this company: the draft from ' +
+      'this session if there is one, otherwise the saved tailored/<company>/application-email.txt — ' +
+      'so a draft written before a restart, or edited by hand afterwards, is still sendable. Pass ' +
+      '`path` to send a specific draft file instead. Requires Gmail configured, and passes through a ' +
+      'confirmation of the recipient that you cannot bypass. Use only after the user has seen the ' +
+      'draft and asked to send.',
     inputSchema: z.object({
       company: z.string().describe('Company whose draft to send / label under which the send is logged.'),
       to: z.string().optional().describe('Recipient override; else the drafted apply-to address.'),
-      path: z.string().optional().describe('Path to a saved draft .txt (To:/From:/Subject: headers + body) to send verbatim, instead of the session-cached draft. Use after hand-editing the draft file.'),
+      path: z.string().optional().describe('A specific saved draft .txt (To:/From:/Subject: headers + body) to send verbatim.'),
       attach: z.string().optional().describe('Explicit PDF path to attach when sending from `path` (a file draft carries no attachment on its own).'),
     }),
     execute: async ({ company, to, path, attach }) => {
@@ -76,16 +82,20 @@ export function emailTools(deps: AgentDeps) {
         return { sent: false, reason: 'Gmail not configured — set GMAIL_USER and GMAIL_APP_PASSWORD in .env.' };
       }
 
-      // Source the email either from a saved file (sent byte-for-byte — the fix
-      // for a hand-edited draft diverging from the cache) or the session cache.
+      // Source the email either from a file — sent byte-for-byte, which is what
+      // makes a hand-edited draft survive — or from this session's cache.
       let src: { from: string; to: string; subject: string; body: string; attachments: EmailAttachment[]; resumeRelPath: string | null; role: string };
-      if (path) {
-        const fd = await service.loadFileDraft(path, { attach });
+      const file = path || savedDraftPath(deps.root, company);
+      const cached = path ? undefined : drafts.get(slugCompany(company));
+      if (cached) {
+        src = { from: cached.from, to: cached.to, subject: cached.subject, body: cached.body, attachments: cached.attachments, resumeRelPath: cached.resumeRelPath, role: cached.role };
+      } else if (path || existsSync(file)) {
+        // The draft this company already has on disk. Without this, restarting
+        // the MCP server made a draft written minutes ago unsendable.
+        const fd = await service.loadFileDraft(file, { attach });
         src = { from: fd.from, to: fd.to, subject: fd.subject, body: fd.body, attachments: fd.attachments, resumeRelPath: fd.resumeRelPath, role: '' };
       } else {
-        const draft = drafts.get(slugCompany(company));
-        if (!draft) throw new Error(`No draft for "${company}" this session — call draft_application_email first, or pass \`path\` to send a saved draft file.`);
-        src = { from: draft.from, to: draft.to, subject: draft.subject, body: draft.body, attachments: draft.attachments, resumeRelPath: draft.resumeRelPath, role: draft.role };
+        throw new Error(`No draft for "${company}" — none in this session and no ${rel(deps.root, file)} on disk. Call draft_application_email first, or write that file yourself.`);
       }
 
       const recipient = (to || src.to || '').trim();
