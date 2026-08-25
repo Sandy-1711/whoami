@@ -24,11 +24,17 @@ const ADVANCES: Record<string, (input: Bag, result: Bag) => { status: string; ch
   tailor_resume: () => ({ status: 'tailored' }),
   draft_application_email: () => ({ status: 'drafted', channel: 'email' }),
   send_application_email: (_input, result) => (result.sent ? { status: 'sent', channel: 'email' } : null),
-  outreach_message: (input) => ({ status: 'drafted', channel: OUTREACH_CHANNEL[input.kind] ?? 'other' }),
+  outreach_message: (input) => ({ status: 'drafted', channel: outreachChannel(input) }),
 };
 
+// An application note names the form it was written for, so the platform is a
+// better channel than the generic "portal".
+function outreachChannel(input: Bag): string {
+  if (input.kind === 'application_note') return str(input.platform)?.toLowerCase() ?? 'portal';
+  return OUTREACH_CHANNEL[input.kind] ?? 'other';
+}
+
 const OUTREACH_CHANNEL: Record<string, string> = {
-  wellfound_note: 'wellfound',
   linkedin_dm: 'linkedin',
   cold_email: 'email',
   followup: 'email',

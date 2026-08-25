@@ -18,7 +18,7 @@
     "mcp": "pnpm --filter @resume/cli run mcp",
     "tailor": "pnpm --filter @resume/cli run tailor",
     "email": "pnpm --filter @resume/cli run email",
-    "wellfound": "pnpm --filter @resume/cli run wellfound",
+    "note": "pnpm --filter @resume/cli run note",
     "wellfound-profile": "pnpm --filter @resume/cli run wellfound-profile",
     "sync": "pnpm --filter @resume/cli run sync",
     "score": "pnpm --filter @resume/cli run score",

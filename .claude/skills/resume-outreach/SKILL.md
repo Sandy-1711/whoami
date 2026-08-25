@@ -1,11 +1,11 @@
 ---
 name: resume-outreach
-description: Draft job-search copy yourself (in Claude Code, no API spend) grounded in the fact base — Wellfound application-box notes, the standing Wellfound profile, cold emails, LinkedIn DMs, follow-ups, referral asks, and LinkedIn/GitHub profile-copy suggestions. Use when the user asks for "a note for X", "a cold email", "a DM", "a follow-up", "a referral message", or better LinkedIn/GitHub copy — instead of running `pnpm wellfound`/`pnpm email` (which call Gemini/DeepSeek).
+description: Draft job-search copy yourself (in Claude Code, no API spend) grounded in the fact base — application-form notes (Wellfound, Work at a Startup, Lever), the standing Wellfound profile, cold emails, LinkedIn DMs, follow-ups, referral asks, and LinkedIn/GitHub profile-copy suggestions. Use when the user asks for "a note for X", "a cold email", "a DM", "a follow-up", "a referral message", or better LinkedIn/GitHub copy — instead of running `pnpm note`/`pnpm email` (which call Gemini/DeepSeek).
 ---
 
 # Outreach & profile copy (you draft it — no API)
 
-The paid CLI/agent generate these with Gemini/DeepSeek (`pnpm wellfound`,
+The paid CLI/agent generate these with Gemini/DeepSeek (`pnpm note`,
 `pnpm email`, `pnpm wellfound-profile`). Draft them yourself here instead — same
 grounding rules, same output files, no API spend.
 
@@ -24,7 +24,7 @@ not gaps (the "missing" bucket is off-limits).
 ## Message specs (match these exactly)
 | Kind | Length | Subject? | Brief |
 |---|---|---|---|
-| **Wellfound note** | ~80–110 words | no | The "What interests you about this role?" box. Lead with the single most relevant proof point; tie to the company's real product/stack; one soft close. |
+| **application_note** | ~80–110 words | no | The "What interests you about this role?" box on any application form (Wellfound, Work at a Startup, Lever). Lead with the single most relevant proof point; tie to the company's real product/stack; one soft close. |
 | **cold_email** | ≤130 words | yes | To a hiring manager/founder. One clear ask (a quick chat or to be considered). Lead with the strongest proof point. |
 | **linkedin_dm** | ≤60 words | no | Connection/DM note. LinkedIn caps ~300 chars. Warm, specific, one hook, one soft ask. |
 | **followup** | ≤90 words | yes | After applying / an unanswered message. Reference the prior touch, add one new proof point, restate the ask lightly. Not pushy. |
@@ -34,7 +34,8 @@ If early-career relative to the ask, frame as "already shipping in this exact
 stack, reviewed by maintainers" — do not apologize.
 
 ## Output file conventions (write to the same paths the CLI uses)
-- **Wellfound note:** `tailored/<company-slug>/wellfound-message.txt` — just the
+- **Application-form note:** `tailored/<company-slug>/application-note.txt` (or
+  `application-note-<platform>.txt` when written for a named platform) — just the
   message text + trailing newline. Slug = company lowercased, non-alphanumeric → `_`
   (e.g. "Tax Pilot" → `tax_pilot`, "Acme-AI" → `acme_ai`).
 - **Cold email / DM / follow-up / referral:** show it in chat. If the user wants

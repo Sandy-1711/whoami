@@ -12,7 +12,7 @@
     "mcp": "tsx src/main.ts mcp",
     "tailor": "tsx src/main.ts tailor",
     "email": "tsx src/main.ts email",
-    "wellfound": "tsx src/main.ts wellfound",
+    "note": "tsx src/main.ts note",
     "wellfound-profile": "tsx src/main.ts wellfound-profile",
     "sync": "tsx src/main.ts sync",
     "score": "tsx src/main.ts score",

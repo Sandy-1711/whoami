@@ -58,7 +58,7 @@ LLM systems), anchored on his open-source Mastra work.
 |---|---|---|
 | Score a JD's ATS fit | `pnpm score -- jd.txt` (deterministic, no LLM) → `resume-ats` skill | — (`pnpm tailor` also scores, but drafts via LLM) |
 | See the ranked GitHub/LinkedIn evidence | `pnpm digest` (no LLM) | — |
-| Draft a Wellfound note / cold email / DM / follow-up | **you draft it** → `resume-outreach` skill | `pnpm wellfound` / `pnpm email` / agent |
+| Draft an application-form note / cold email / DM / follow-up | **you draft it** → `resume-outreach` skill | `pnpm note` / `pnpm email` / agent |
 | Tailor the résumé summary/skills to a JD | **you edit `resume.tex`** → `resume-latex` + `resume-ats` | `pnpm tailor` |
 | LinkedIn / GitHub profile copy | **you draft it** → `resume-outreach` | `pnpm wellfound-profile` |
 | Add/remove a fact, keyword, skill | **you edit `facts.json`** → `resume-facts` | agent's update_facts |
@@ -71,12 +71,12 @@ Commands that only compute or check (`score`, `digest`, `build:pdf`, `check`,
 `status`) don't call an LLM — run them freely via Bash. `pnpm sync` hits the
 GitHub API (no LLM) and scrapes LinkedIn **only with `--linkedin`** (that
 structuring step uses Gemini). Commands that *draft* (`tailor`, `email`,
-`wellfound`, `wellfound-profile`) call Gemini/DeepSeek — do that drafting
+`note`, `wellfound-profile`) call Gemini/DeepSeek — do that drafting
 yourself instead. All are `pnpm <script>` from the repo root.
 
 ## The MCP server (`pnpm mcp`)
 The toolkit is also exposed over MCP (stdio) for Claude Code / Cursor / Claude
-Desktop — 18 tools, same implementations the chat agent uses. The POLICY above
+Desktop — 15 tools, same implementations the chat agent uses. The POLICY above
 applies verbatim to MCP clients. Cost split:
 - **Free / read-only:** `score_jd`, `read_profile` (fact base + evidence digest),
   `profile_status`, `list_outputs`, `list_applications`.
@@ -84,7 +84,7 @@ applies verbatim to MCP clients. Cost split:
   `log_application`, `build_resume`, `check_resume` (LaTeX toolchain, no LLM),
   `sync_profiles` (GitHub API; LinkedIn opt-in — its structuring uses Gemini).
 - **PAID (LLM):** `tailor_resume`, `draft_application_email`, `outreach_message`
-  (kinds: wellfound_note, cold_email, linkedin_dm, followup, referral_ask).
+  (kinds: application_note, cold_email, linkedin_dm, followup, referral_ask).
 - **Outward-facing / confirm-gated:** `send_application_email` (SMTP),
   `update_github_profile` (GitHub push).
 
@@ -92,11 +92,15 @@ applies verbatim to MCP clients. Cost split:
 Local state in `.agent/applications.json` (gitignored) — a JSON array of
 `{ id, company, role, channel, status, date, updatedAt, artifacts[], notes }`.
 - `channel`: email | wellfound | linkedin | referral | portal | other
-- `status`: drafted | sent | applied | interviewing | rejected | offer | ghosted
+- `status`: drafted | tailored | sent | applied | interviewing | rejected | offer | ghosted
 - **Upsert by company (+ role):** to advance an application, find the existing
   entry and update its `status`/`notes`/`updatedAt` — don't add a duplicate.
-- Log after something is actually sent/applied, and whenever a status changes.
-  Keep it honest. Read it to answer "where am I with X?" / "what have I applied to?"
+- The agent/MCP tools write this themselves: tailoring, drafting and sending each
+  record the application and the file they produced, and append to
+  `.agent/activity.jsonl` (an append-only log of every tool call). Automatic
+  writes only advance a status, never walk one back.
+- Working in this session instead, edit `applications.json` by hand after
+  something is actually sent or applied. Read it to answer "where am I with X?"
 
 ## Where truth lives
 - `profile/facts.json` — hand-verified fact base; the ONLY source you may claim from.

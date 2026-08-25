@@ -1,17 +1,25 @@
-// OutreachService — short human-to-human messages for reaching out: a cold
-// email, a LinkedIn DM, a follow-up, or a referral ask. Grounded in the fact
-// base, optionally anchored to a JD. When a company is given, the message is
-// saved to tailored/<company>/outreach-<kind>.txt for reuse.
+// OutreachService — the short copy a job search needs a human to read: a cold
+// email, a LinkedIn DM, a follow-up, a referral ask, and the note an application
+// form asks for in its free-text box. All grounded in the fact base, optionally
+// anchored to a JD, and saved under tailored/<company>/ when a company is given.
+//
+// The note is the one that scores the JD first, because it is written against a
+// specific posting and reports what it could truthfully lean on.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LlmError, type Llm } from '@resume/llm';
 import type { Presenter } from '../ports/logger.js';
 import { slugCompany, extractRoleFromJd } from '../naming.js';
 import { loadProfileDigestText } from '../profile/loaders.js';
+import { drift } from '../profile/sources.js';
+import {
+  extractJdKeywords, classify, scoreResume, latexToPlainText,
+} from '../tailor/core.js';
 import {
   outreachPrompt, OUTREACH_SCHEMA, type OutreachResponse, type OutreachKind,
+  applicationNotePrompt, APPLICATION_NOTE_SCHEMA,
 } from '../prompts.js';
-import type { Facts } from '../types.js';
+import type { Facts, Classification, Score } from '../types.js';
 
 export interface OutreachRequest {
   kind: OutreachKind;
@@ -31,6 +39,28 @@ export interface OutreachResult {
   // Written only when a company was given (else the message is ad-hoc).
   file: string | null;
   relPath: string | null;
+}
+
+// ---- application-form note (per JD) ----------------------------------------
+
+export interface ApplicationNoteRequest {
+  jd: string;
+  company: string;
+  role?: string;
+  // Where the note will be pasted — "Wellfound", "Work at a Startup", "Lever".
+  // Names the destination in the prompt and the filename; nothing branches on it.
+  platform?: string;
+}
+
+export interface ApplicationNoteResult {
+  role: string;
+  platform: string;
+  message: string;
+  wordCount: number;
+  rationale: string;
+  cls: Classification;
+  score: Score;
+  paths: { slug: string; dir: string; relDir: string; file: string; relPath: string };
 }
 
 export interface OutreachServiceDeps {
@@ -88,5 +118,63 @@ export class OutreachService {
     }
 
     return { kind, subject, message, wordCount: wordCount(message), rationale: (parsed.rationale || '').trim(), file, relPath };
+  }
+
+  // The free-text note an application form asks for, written against one posting.
+  async note(request: ApplicationNoteRequest, ctx: OutreachRunContext): Promise<ApplicationNoteResult> {
+    const { root, presenter } = this.deps;
+    const { llm } = ctx;
+    const model = llm.describe();
+    const { jd, company, role: roleOverride = '', platform = '' } = request;
+
+    if (!jd || jd.trim().length < 20) throw new Error('JD text looks too short to analyze.');
+    if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
+
+    const facts: Facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
+    const resumeText = latexToPlainText(await readFile(join(root, 'resume.tex'), 'utf8'));
+    await this.warnDrift();
+
+    // Deterministic keyword read so the note leans on real matches, never a gap.
+    const cls = classify(extractJdKeywords(jd), resumeText, facts);
+    const score = scoreResume(cls);
+    const role = roleOverride || extractRoleFromJd(jd) || 'Software Engineer';
+    const digest = await loadProfileDigestText(root);
+
+    const where = platform.trim() || 'the application form';
+    const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to draft the note for ${where}…`);
+    let message: string, rationale: string;
+    try {
+      const { object: parsed } = await llm.generateJson({
+        operation: 'application-note',
+        prompt: applicationNotePrompt({ jd, company, role: roleOverride, platform, facts, classification: cls, digest }),
+        schema: APPLICATION_NOTE_SCHEMA,
+      });
+      message = parsed.message.trim();
+      rationale = parsed.rationale.trim();
+      if (!message) throw new Error('empty message');
+      spin.succeed(`${model.label} drafted the note (${wordCount(message)} words).`);
+    } catch (err) {
+      spin.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
+      throw err;
+    }
+
+    const slug = slugCompany(company);
+    const dir = join(root, 'tailored', slug);
+    const name = platform.trim() ? `application-note-${slugCompany(platform)}.txt` : 'application-note.txt';
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, name), message + '\n');
+
+    return {
+      role, platform: platform.trim(), message, wordCount: wordCount(message), rationale, cls, score,
+      paths: { slug, dir, relDir: `tailored/${slug}`, file: join(dir, name), relPath: `tailored/${slug}/${name}` },
+    };
+  }
+
+  // The copy is only as fresh as facts.json — warn if the sources drifted.
+  private async warnDrift(): Promise<void> {
+    const { root, presenter } = this.deps;
+    const d = await drift(root);
+    if (!d.lock) presenter.note('No sync baseline yet — run `sync` after profile edits.');
+    else if (!d.synced) presenter.warn(`Profile sources changed since last sync: ${d.changed.join(', ')}. Fact base may be stale.`);
   }
 }

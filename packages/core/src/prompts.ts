@@ -145,22 +145,26 @@ export function mapTailorResponse(parsed: TailorResponse): TailorContent {
   };
 }
 
-// ---- Wellfound application message ------------------------------------------
-// The short note that goes in Wellfound's "What interests you about this role?"
-// box. It is read by a founder/hiring manager, not an ATS — so this optimizes
-// for a reply, not keyword density. Draws only on the verified fact base.
+// ---- application-form note --------------------------------------------------
+// The short note an application form asks for in a free-text box — Wellfound's
+// "What interests you about this role?", Work at a Startup's intro, a Greenhouse
+// or Lever "why here?" field. A founder or hiring manager reads it directly, not
+// an ATS, so this optimizes for a reply, not keyword density. Draws only on the
+// verified fact base. `platform` only names where it will be pasted; the shape of
+// the note is the same everywhere.
 
-export const WELLFOUND_MESSAGE_SCHEMA = z.object({
+export const APPLICATION_NOTE_SCHEMA = z.object({
   message: z.string(),
   rationale: z.string().default(''),
 });
 
-export type WellfoundMessageResponse = z.infer<typeof WELLFOUND_MESSAGE_SCHEMA>;
+export type ApplicationNoteResponse = z.infer<typeof APPLICATION_NOTE_SCHEMA>;
 
-export function wellfoundMessagePrompt({
+export function applicationNotePrompt({
   jd,
   company,
   role,
+  platform,
   facts,
   classification,
   digest,
@@ -168,19 +172,21 @@ export function wellfoundMessagePrompt({
   jd: string;
   company: string;
   role: string;
+  platform?: string;
   facts: Facts;
   classification: Classification;
   digest?: string;
 }): string {
-  return `You are helping a strong early-career engineer write the short intro note that goes in Wellfound's "What interests you about this role?" application box. A startup founder or hiring manager reads it directly — this is NOT parsed by an ATS, so optimize for a human reply, not keyword density.
+  const where = platform?.trim() ? `${platform.trim()}'s application form` : 'a job application form';
+  return `You are helping a strong early-career engineer write the short intro note that goes in the free-text box on ${where} — the "What interests you about this role?" question. A founder or hiring manager reads it directly — this is NOT parsed by an ATS, so optimize for a human reply, not keyword density.
 
-GOAL: a 60-100 word note that makes the founder want to respond.
+GOAL: a 60-100 word note that makes the reader want to respond.
 
 STRICT RULES:
 - Use ONLY facts, metrics, projects, and skills present in the FACT BASE. Never invent employers, numbers, or technologies.
 - Open with the single most relevant proof point for THIS role — prefer something the JD explicitly asks for (a "matched" or "surface" keyword below), stated with its metric.
 - Say something concrete about why THIS company/role: reference the actual product area, stack, or problem from the JD. Generic enthusiasm is a fail.
-- First person, confident, conversational. NO greeting line ("Hi", "Dear hiring manager") and NO sign-off/signature — Wellfound already shows the candidate's name and photo.
+- First person, confident, conversational. NO greeting line ("Hi", "Dear hiring manager") and NO sign-off/signature — the form already carries the candidate's name and profile.
 - No buzzword stuffing, no "I am passionate about", no clichés. One sharp hook beats three adjectives.
 - If the candidate is early-career relative to the ask, do NOT apologize or hedge — frame it as "already shipping in this exact stack, reviewed by maintainers".
 - Plain text only. One or two short paragraphs. No markdown, no bullet points.
@@ -204,7 +210,7 @@ Return JSON: { "message": the note to paste, "rationale": 1-2 lines on why this 
 
 // ---- job-application email --------------------------------------------------
 // A full plain-text application email sent to a recruiter/hiring inbox. Unlike
-// the Wellfound note it has a subject and a sign-off, and it references the
+// the application-form note it has a subject and a sign-off, and it references the
 // attached résumé. Read by a human, so it optimizes for a reply, not keyword
 // density. Draws only on the verified fact base. The contact-link signature is
 // appended deterministically by the service, so the model must NOT invent links.
