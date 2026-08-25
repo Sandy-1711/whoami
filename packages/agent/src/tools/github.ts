@@ -7,18 +7,22 @@ import { z } from 'zod';
 import { GithubProfileService, GithubReader, githubUsername } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { loadFacts, cap } from './shared.js';
+import { describeTool } from './describe.js';
 
 export function githubTools(deps: AgentDeps) {
   const read_github = createTool({
     id: 'read_github',
-    description:
-      'Read anything public on GitHub — most usefully the COMPANY you are applying to or writing ' +
-      'to, so the copy can name what they actually build. `repos` lists an account\'s repositories ' +
-      'by most recent activity, `repo` reads one, `readme` returns a repository\'s README (the best ' +
-      'single source on what a project does), `user` reads an account, and `search` finds ' +
-      'repositories by query. Costs no LLM credits; it is a network call against the public API. ' +
-      'For the candidate\'s OWN shipped work use read_profile instead — that digest is already ' +
-      'ranked and curated.',
+    description: describeTool({
+      does:
+        "Read anything public on GitHub. `repos` lists an account's repositories by most recent " +
+        "activity, `repo` reads one, `readme` returns a repository's README (the best single source " +
+        'on what a project actually does), `user` reads an account, `search` finds repositories.',
+      cost: 'network',
+      use: 'researching the COMPANY before writing to them, so the copy names what they really build.',
+      avoid: "the candidate's own shipped work — read_profile already carries that, ranked and curated.",
+      needs: 'nothing; GITHUB_TOKEN only raises the rate limit.',
+      then: 'outreach_message or draft_application_email, now able to reference something real.',
+    }),
     inputSchema: z.object({
       target: z.enum(['repos', 'repo', 'readme', 'user', 'search']).describe('What to read.'),
       owner: z.string().optional().describe('GitHub user or org (for repos/repo/readme/user). Defaults to the candidate.'),
@@ -46,11 +50,15 @@ export function githubTools(deps: AgentDeps) {
 
   const update_github_profile = createTool({
     id: 'update_github_profile',
-    description:
-      'Push an update to GitHub: the account bio, a repository description, or the profile README ' +
-      '(the <user>/<user> repo). Draft the new copy first (grounded in the fact base), then call this ' +
-      'to push it — a terminal confirmation showing the current→new change is REQUIRED, and you cannot ' +
-      'bypass it. Needs GITHUB_TOKEN; the bio needs the token\'s `user` scope.',
+    description: describeTool({
+      does:
+        "Push an update to the candidate's own GitHub: the account bio, a repository description, or " +
+        'the profile README (the <user>/<user> repo).',
+      cost: 'outward',
+      use: 'the user has seen the new copy and asked for it to go live.',
+      avoid: 'reading anything — that is read_github. And never push copy the user has not read.',
+      needs: 'GITHUB_TOKEN (the bio needs its `user` scope), and a confirmation showing the current→new change that you cannot bypass.',
+    }),
     inputSchema: z.object({
       target: z.enum(['bio', 'repo_description', 'profile_readme']).describe('What to update.'),
       bio: z.string().optional().describe('New bio (for target=bio).'),

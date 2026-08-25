@@ -17,11 +17,30 @@ export function buildMcpServer(deps: AgentDeps): MCPServer {
     id: 'resume-agent',
     name: 'Résumé Toolkit',
     version: '1.0.0',
-    description:
-      "Sandeep's job-search toolkit as MCP tools: score a JD against the résumé, tailor " +
-      'and build it, draft/send outreach (Wellfound notes, cold emails), read and edit the ' +
-      'verified fact base, refresh scraped GitHub/LinkedIn sources, and track applications. ' +
-      'Every claim is grounded in the fact base (profile/facts.json) — nothing is invented.',
+    description: SERVER_DESCRIPTION,
     tools: assembleTools(deps),
   });
 }
+
+// What a client reads before it has called anything. Every tool description
+// carries its own cost and neighbours; this says how they fit together, because
+// the usual mistake is not picking the wrong tool but starting in the wrong
+// place — drafting before grounding, or paying to tailor before knowing the fit.
+const SERVER_DESCRIPTION = [
+  "Sandeep's job-search toolkit: score a job description against his résumé, tailor and build the " +
+  'PDF, draft and send applications and outreach, read and edit the verified fact base, research a ' +
+  'company on GitHub, and track where every application stands.',
+  '',
+  'GROUNDING: profile/facts.json is the only source of claims about the candidate. Call read_profile ' +
+  'first and assert nothing it does not carry — a plausible-sounding invention is the worst possible ' +
+  'output here.',
+  '',
+  'TYPICAL FLOW: read_profile → score_jd (free, decides whether to bother) → tailor_resume (spends ' +
+  'credits, renders the PDF) → draft_application_email or outreach_message → show the user → ' +
+  'send_application_email. Every step records itself; log_application is only for what happens ' +
+  'off-machine, like a reply.',
+  '',
+  'COST: each description opens with a COST line. score_jd, read_profile, list_applications and the ' +
+  'status tools are free; tailoring and drafting spend API credits; sending mail and pushing to ' +
+  'GitHub leave this machine and cannot be taken back.',
+].join('\n');

@@ -8,6 +8,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { applyFactsEdit, IDENTITY_FIELDS, type Facts, type FactsEdit } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
+import { describeTool } from './describe.js';
 
 const OPS = [
   'add_keyword', 'remove_keyword', 'add_skill', 'remove_skill',
@@ -25,14 +26,19 @@ const EDIT = z.object({
 export function factsTools(deps: AgentDeps) {
   const update_facts = createTool({
     id: 'update_facts',
-    description:
-      'Edit the fact base (profile/facts.json): add or remove ATS keywords, skills (each needs a ' +
-      'category), headline metrics, title variants, or set an identity field. Pass several edits at ' +
-      'once — they apply together or not at all, so the file is never left half-updated. Only add ' +
-      'things that are TRUE: this file grounds the résumé and every draft, and nothing may be ' +
-      'claimed that is not in it. Identity edits require the user\'s confirmation. After a change ' +
-      'that affects résumé wording, tell the user to edit resume.tex to match and to sync so drift ' +
-      'is re-baselined.',
+    description: describeTool({
+      does:
+        'Edit the fact base (profile/facts.json): add or remove ATS keywords, skills (each needs a ' +
+        'category), headline metrics, title variants, or set an identity field. Several edits apply ' +
+        'together or not at all, so the file is never left half-written.',
+      cost: 'local',
+      use: 'the user states something true about themselves that the fact base does not carry yet.',
+      avoid:
+        'anything you inferred, assumed, or read off a job description. This file is what every other ' +
+        'tool is allowed to claim, so a wrong entry propagates into the résumé and every draft.',
+      needs: "the user's confirmation for identity fields (name, email, links).",
+      then: 'if the change affects résumé wording, resume.tex must be edited to match, then sync_profiles to re-baseline drift.',
+    }),
     inputSchema: z.object({
       edits: z.array(EDIT).min(1).describe('The edits to apply, in order.'),
     }),
