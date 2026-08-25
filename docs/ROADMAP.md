@@ -13,7 +13,7 @@ code).
 | Phase | What | State |
 | --- | --- | --- |
 | 0 | Handoff docs | done |
-| 1 | One LLM path, instrumented | in progress — gateway, migration and Langfuse landed; the offline e2e test remains |
+| 1 | One LLM path, instrumented | done — one live-trace check outstanding, see below |
 | 2 | Flexible tools, unconfusing MCP | not started |
 | 3 | Résumé as structured data | not started |
 | 4 | Web studio | not started |
@@ -103,7 +103,7 @@ the auth failure.
 - [x] Every call site migrated; `packages/core/src/llm` and `ports/llm.ts` deleted
 - [x] Langfuse self-hosted and wired
 - [x] Fake model (`createFakeLlm`)
-- [ ] Fake LaTeX/PDF adapters + offline end-to-end tailor test
+- [x] Fake LaTeX/PDF adapters + offline end-to-end tailor test
 - [x] Config cleanup
 
 Landed so far: `docs:` handoff docs, `feat(llm)` gateway, `refactor(llm)` injectable
@@ -111,7 +111,8 @@ interface, `test(llm)` fake + coverage, `fix(prompts)` truncation, `test(profile
 serialization, `refactor:` the migration, `feat(llm)` timeout setting,
 `feat(infra)` the Langfuse stack, `build(deps)` its packages, `feat(llm)` the
 tracer, `test(llm)` its coverage, `feat(cli)` the wiring, `feat(agent)` the Mastra
-instance.
+instance, `test(core)` the fake rendering adapters, `test(tailor)` the offline
+end-to-end run.
 
 Two chat behaviours are preserved explicitly in `packages/agent/src/model.ts`
 because the gateway's defaults would otherwise revert them: chat prefers Gemini
