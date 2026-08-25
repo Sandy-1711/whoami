@@ -9,7 +9,7 @@
 // via process.stdout.write directly, so it is unaffected by the console redirect.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { buildMcpServer, progressPresenter, type AgentDeps } from '@resume/agent';
+import { buildMcpServer, progressPresenter, allowGate, type AgentDeps } from '@resume/agent';
 import type { Cli } from '../container.js';
 
 function havePlaywright(root: string): boolean {
@@ -27,14 +27,17 @@ export async function runMcp(cli: Cli): Promise<void> {
     mailer: cli.mailer,
     // Progress goes to stderr — stdout is reserved for the JSON-RPC stream.
     presenter: progressPresenter((line) => process.stderr.write(line + '\n')),
-    // The MCP client (e.g. Claude Code) prompts the user before every tool call,
-    // so that prompt IS the human-in-the-loop for this path. Auto-approve the
-    // in-tool confirm gate; without it, irreversible tools (send email, push
-    // GitHub) would deadlock waiting on a terminal that isn't there. What stops
-    // a blanket "always allow" from sending mail unseen is the other layer: those
-    // tools require `confirm: true` in the call itself, so the intent is in the
-    // arguments the client renders.
-    confirm: async () => true,
+    // The MCP client (Claude Code, Cursor, Claude Desktop) prompts the user with
+    // the arguments before every tool call, so that prompt IS the
+    // human-in-the-loop here. The in-tool gate has no terminal to reach on this
+    // path — leaving it unanswered would hang the call — so it auto-approves and
+    // the client's own approval stands in its place.
+    //
+    // Known limit: a client set to auto-approve loses the gate entirely. What
+    // still holds on that path is the draft-first rule — send_application_email
+    // can only transmit bytes that a previous drafting call wrote under
+    // tailored/, and that call showed them.
+    confirm: allowGate,
     playwright: havePlaywright(cli.root),
   };
 

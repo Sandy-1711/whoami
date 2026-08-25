@@ -11,7 +11,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  buildAgent, progressPresenter, AGENT_RESOURCE_ID, type AgentDeps, type BuiltAgent,
+  buildAgent, progressPresenter, formatConfirm, AGENT_RESOURCE_ID, type AgentDeps, type BuiltAgent,
   CHAT_MODELS, chatModelInfo, estimateCost, keyedAgentProviders,
   type AgentProviderId, type ChatModelInfo,
 } from '@resume/agent';
@@ -84,8 +84,14 @@ function buildDeps(cli: Cli, out: Out, ask: (q: string) => Promise<string>): Age
     pdf: cli.pdf,
     mailer: cli.mailer,
     presenter: progressPresenter((line) => out.line(pc.dim('  ' + line))),
-    confirm: async (question: string) => {
-      const a = (await ask('\n' + pc.yellow('? ') + question + pc.dim(' [y/N] '))).trim();
+    confirm: async (request) => {
+      // The values first, then the question. Whatever the tool is about to do is
+      // on screen in full before there is anything to answer.
+      const [headline, ...rest] = formatConfirm(request).split('\n');
+      out.line('');
+      out.line(`  ${pc.yellow('?')} ${pc.bold(headline!)}`);
+      for (const line of rest) out.line(pc.dim('  ' + line));
+      const a = (await ask('\n  ' + pc.yellow('Proceed?') + pc.dim(' [y/N] '))).trim();
       return /^y(es)?$/i.test(a);
     },
     ask: async (questions) => {

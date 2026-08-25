@@ -25,7 +25,7 @@ export function outreachTools(deps: AgentDeps) {
       cost: 'llm',
       use: 'the user wants short copy to paste somewhere — a form, an inbox, a DM.',
       avoid: 'a full application email with the résumé attached — that is draft_application_email.',
-      needs: "a JD and a company for application_note. `tone` and `length` are the user's call: ask_user rather than guess when it matters.",
+      needs: "a JD and a company for application_note. `tone` and `length` are the user's call: ask_user rather than guess when it matters. The user is asked before the call is spent.",
       then: 'show it to them. Saved under tailored/<company>/ when a company was given, and recorded automatically.',
     }),
     inputSchema: z.object({
@@ -39,6 +39,20 @@ export function outreachTools(deps: AgentDeps) {
       length: z.enum(COPY_LENGTHS).optional().describe('Scales the kind\'s own word budget; it never overrides a platform limit.'),
     }),
     execute: async ({ kind, company, role, platform, context, tone, length, ...jdInput }) => {
+      const ok = await deps.confirm({
+        tool: 'outreach_message',
+        action: `Write a ${kind.replace(/_/g, ' ')}`,
+        params: {
+          company: company || '(none — an ad-hoc message)',
+          role: role || '(read from the job description)',
+          platform,
+          tone: tone || 'direct (default)',
+          length: length || 'standard (default)',
+          context,
+          cost: 'one model call',
+        },
+      });
+      if (!ok) return { written: false, reason: 'Cancelled — nothing was written.' };
       const service = new OutreachService({ root: deps.root, presenter: deps.presenter });
       if (kind === 'application_note') {
         if (!company?.trim()) throw new Error('An application_note is written for one posting — pass `company`.');

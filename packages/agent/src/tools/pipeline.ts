@@ -10,7 +10,7 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import {
   SourceRefresher, TailorService, checkResume,
-  hashSources, writeLock, type CheckScope,
+  hashSources, writeLock, LINKEDIN_LIVE_DEPRECATED, type CheckScope,
 } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
 import { cap } from './shared.js';
@@ -45,7 +45,7 @@ export function pipelineTools(deps: AgentDeps) {
       cost: 'llm',
       use: 'the user has decided to apply somewhere. Show them the proposed copy before rendering it.',
       avoid: 'judging fit or answering "should I apply?" — score_jd does that for free.',
-      needs: 'a company name and an LLM key.',
+      needs: 'a company name and an LLM key. The user is asked before the run starts, because it costs credits.',
       then: 'tailor_render turns the plan into the PDF.',
     }),
     inputSchema: z.object({
@@ -55,6 +55,17 @@ export function pipelineTools(deps: AgentDeps) {
     }),
     execute: async ({ company, role, ...jdInput }) => {
       const jd = await resolveJd(deps.root, jdInput);
+      const ok = await deps.confirm({
+        tool: 'tailor_plan',
+        action: 'Write new résumé copy for this job description',
+        params: {
+          company,
+          role: role || '(read from the job description)',
+          'job description': `${jd.trim().length} chars — ${jd.trim().slice(0, 90).replace(/\s+/g, ' ')}…`,
+          cost: 'one model call',
+        },
+      });
+      if (!ok) return { ran: false, reason: 'Cancelled — nothing was tailored.' };
       const refresher = new SourceRefresher({
         githubToken: deps.config.githubToken,
         linkedinCookie: deps.config.linkedinCookie,
@@ -92,7 +103,7 @@ export function pipelineTools(deps: AgentDeps) {
       cost: 'llm',
       use: 'straight after tailor_plan, once the user has seen the copy.',
       avoid: 'a company that has no plan yet — run tailor_plan first.',
-      needs: 'a LaTeX toolchain (Docker running, or latexmk). Tightening a failed guard costs another model call.',
+      needs: 'a LaTeX toolchain (Docker running, or latexmk). Tightening a failed guard costs another model call, so the user is asked first.',
       then: 'draft_application_email or outreach_message. The application records itself; no need to log it.',
     }),
     inputSchema: z.object({
@@ -100,7 +111,20 @@ export function pipelineTools(deps: AgentDeps) {
     }),
     execute: async ({ company }) => {
       const svc = service();
-      const result = await svc.render(await svc.loadPlan(company), { llm: deps.llm });
+      const plan = await svc.loadPlan(company);
+      const ok = await deps.confirm({
+        tool: 'tailor_render',
+        action: 'Compile this copy into a tailored PDF',
+        params: {
+          company: plan.company,
+          role: plan.role,
+          subtitle: plan.subtitle,
+          cost: 'compiles locally; up to two more model calls if a guard fails',
+        },
+        preview: plan.summaryText,
+      });
+      if (!ok) return { ran: false, reason: 'Cancelled — nothing was rendered.' };
+      const result = await svc.render(plan, { llm: deps.llm });
       const r = result.report;
       return {
         company: result.paths.slug,
@@ -128,15 +152,18 @@ export function pipelineTools(deps: AgentDeps) {
         'hashes so tailoring stops warning that the fact base may be behind.',
       cost: 'network',
       use: 'profile_status reports drift or stale sources, or the user just shipped something public.',
-      avoid: 'the LinkedIn half unless the user explicitly asks: that scrape is automated against their ToS and risks the account. GitHub alone is the default.',
-      needs: 'GITHUB_TOKEN for a complete GitHub read; the LinkedIn scrape needs a cookie and Playwright.',
+      avoid: 'the `linkedin` option — the live scrape is DEPRECATED and refuses to run. profile/linkedin.json is still read; it is refreshed from a PDF export or by hand.',
+      needs: 'GITHUB_TOKEN for a complete GitHub read.',
       then: 'read_profile to see what changed before drafting from it.',
     }),
     inputSchema: z.object({
       force: z.boolean().optional().describe('Re-scrape even if sources are still fresh.'),
-      linkedin: z.boolean().optional().describe('Opt in to the LinkedIn scrape (default off — ToS/ban risk). Only when the user explicitly asks.'),
+      linkedin: z.boolean().optional().describe('DEPRECATED — the live LinkedIn scrape no longer runs and this returns why.'),
     }),
     execute: async ({ force, linkedin }) => {
+      if (linkedin) {
+        return { sources: [], deprecated: true, reason: LINKEDIN_LIVE_DEPRECATED, nextSteps: ['Re-run without `linkedin` to refresh GitHub.'] };
+      }
       const refresher = new SourceRefresher({
         githubToken: deps.config.githubToken,
         linkedinCookie: deps.config.linkedinCookie,
@@ -166,7 +193,7 @@ export function pipelineTools(deps: AgentDeps) {
       cost: 'local',
       use: 'after editing resume.tex, or when profile_status says the canonical PDF is missing or stale.',
       avoid: 'producing a per-company PDF — that is tailor_plan then tailor_render.',
-      needs: 'a LaTeX toolchain: the Docker daemon running, or latexmk installed.',
+      needs: 'a LaTeX toolchain: the Docker daemon running, or latexmk installed. The user is asked first, because it replaces the PDF the site serves.',
       then: 'check_resume — a build that compiles can still fail the guards.',
     }),
     inputSchema: z.object({}),
@@ -177,6 +204,15 @@ export function pipelineTools(deps: AgentDeps) {
           ? 'Docker daemon is down — start Docker Desktop (or install latexmk).'
           : 'No LaTeX engine — install latexmk or Docker.');
       }
+      const ok = await deps.confirm({
+        tool: 'build_resume',
+        action: 'Rebuild the canonical résumé PDF',
+        params: {
+          source: 'resume.tex',
+          output: 'apps/web/assets/resume.pdf (overwritten — this is the PDF the site serves)',
+        },
+      });
+      if (!ok) return { built: false, reason: 'Cancelled — nothing was built.' };
       const spin = deps.presenter.spinner('Compiling resume.tex …');
       const res = deps.latex.compile(deps.root, 'resume.tex', { outDir: 'build', capture: true });
       const built = join(deps.root, 'build', 'resume.pdf');

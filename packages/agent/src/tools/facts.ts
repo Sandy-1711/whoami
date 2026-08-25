@@ -1,7 +1,8 @@
 // update_facts — the only way the agent edits the fact base, and it does so
-// through validated, typed operations (never a free rewrite). Identity edits pass
-// through the confirm gate because they change the verified profile the résumé
-// and every draft draw from.
+// through validated, typed operations (never a free rewrite). Every edit passes
+// through the confirm gate, which shows the user each one resolved to what it
+// would actually change: this file is the verified profile the résumé and every
+// draft draw from, so a wrong entry propagates everywhere.
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createTool } from '@mastra/core/tools';
@@ -36,7 +37,7 @@ export function factsTools(deps: AgentDeps) {
       avoid:
         'anything you inferred, assumed, or read off a job description. This file is what every other ' +
         'tool is allowed to claim, so a wrong entry propagates into the résumé and every draft.',
-      needs: "the user's confirmation for identity fields (name, email, links).",
+      needs: "the user's approval, which is asked for with every edit spelled out.",
       then: 'if the change affects résumé wording, resume.tex must be edited to match, then sync_profiles to re-baseline drift.',
     }),
     inputSchema: z.object({
@@ -59,12 +60,21 @@ export function factsTools(deps: AgentDeps) {
       }
 
       const changed = applied.some((a) => a.changed);
-      if (identityTouched) {
-        const ok = await deps.confirm(`${applied.map((a) => a.summary).join(' ')} This edits your verified identity — proceed?`);
+      if (changed) {
+        // Each summary is what the edit resolved to, so the user approves the
+        // real effect rather than the operation names that were passed in.
+        const ok = await deps.confirm({
+          tool: 'update_facts',
+          action: `Apply ${applied.length} edit(s) to the fact base`,
+          params: {
+            file: 'profile/facts.json',
+            identity: identityTouched ? 'YES — this changes your verified identity (name, email, links)' : undefined,
+          },
+          preview: applied.filter((a) => a.changed).map((a) => a.summary).join('\n'),
+        });
         if (!ok) return { changed: false, edits: applied, summary: 'Cancelled — nothing written.' };
+        await writeFile(path, JSON.stringify(facts, null, 2) + '\n');
       }
-
-      if (changed) await writeFile(path, JSON.stringify(facts, null, 2) + '\n');
       return {
         changed,
         edits: applied,
