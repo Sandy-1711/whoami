@@ -30,9 +30,9 @@ describe('recordTools', () => {
 
   it('advances the application for a tool that moves one forward', async () => {
     const tools = recordTools(root, {
-      tailor_resume: { execute: async () => ({ pdf: 'tailored/acme/resume.pdf', score: {}, guardsPass: true }) },
+      tailor_render: { execute: async () => ({ pdf: 'tailored/acme/resume.pdf', score: {}, guardsPass: true }) },
     });
-    await call(tools.tailor_resume, { company: 'Acme AI', role: 'AI Engineer' });
+    await call(tools.tailor_render, { company: 'Acme AI', role: 'AI Engineer' });
 
     const [app] = await listApplications(root);
     expect(app.company).toBe('Acme AI');
@@ -43,9 +43,9 @@ describe('recordTools', () => {
   it('never walks an application backwards', async () => {
     await logApplication(root, { company: 'Acme AI', status: 'interviewing' });
     const tools = recordTools(root, {
-      tailor_resume: { execute: async () => ({ pdf: 'tailored/acme/resume.pdf' }) },
+      tailor_render: { execute: async () => ({ pdf: 'tailored/acme/resume.pdf' }) },
     });
-    await call(tools.tailor_resume, { company: 'Acme AI' });
+    await call(tools.tailor_render, { company: 'Acme AI' });
 
     const [app] = await listApplications(root);
     expect(app.status).toBe('interviewing');

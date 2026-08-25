@@ -46,7 +46,7 @@ describe('the tool surface', () => {
     const costOf = (id: string) => ((tools as Record<string, { description?: string }>)[id]?.description ?? '')
       .split('\n').find((l) => l.startsWith('COST: ')) ?? '';
 
-    for (const id of ['tailor_resume', 'outreach_message', 'draft_application_email']) {
+    for (const id of ['tailor_plan', 'tailor_render', 'outreach_message', 'draft_application_email']) {
       expect(costOf(id), id).toMatch(/SPENDS LLM CREDITS/);
     }
     for (const id of ['send_application_email', 'update_github_profile']) {
