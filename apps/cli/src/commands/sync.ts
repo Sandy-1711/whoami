@@ -1,6 +1,6 @@
 // `resume sync` — refresh the scraped profile sources into profile/*.json.
 import {
-  SourceRefresher, hashSources, writeLock, timeAgo,
+  SourceRefresher, hashSources, writeLock, timeAgo, LINKEDIN_LIVE_DEPRECATED,
   type GithubData, type LinkedinData, type RefreshResult,
 } from '@resume/core';
 import * as ui from '../ui.js';
@@ -13,15 +13,15 @@ export async function runSync(
   cli: Cli,
   { force = false, linkedin = false }: { force?: boolean; linkedin?: boolean } = {},
 ): Promise<RefreshResult[]> {
-  const scope = linkedin ? 'GitHub + LinkedIn' : 'GitHub · LinkedIn opt-in (--linkedin)';
-  console.log(ui.banner('Sync Sources', `${force ? 'force re-scrape' : 'refresh what is stale'} · ${scope}`));
+  console.log(ui.banner('Sync Sources', `${force ? 'force re-scrape' : 'refresh what is stale'} · GitHub`));
   console.log();
+  if (linkedin) console.log(ui.warn(LINKEDIN_LIVE_DEPRECATED) + '\n');
 
   const refresher = new SourceRefresher({
     githubToken: cli.config.githubToken,
     linkedinCookie: cli.config.linkedinCookie,
     ttlHours: cli.config.scrapeTtlHours,
-    liveLinkedin: linkedin,
+    liveLinkedin: false,
     // Only the LinkedIn structuring step calls it; a missing key surfaces as a
     // per-source error rather than blocking the GitHub scrape.
     llm: cli.llm,
@@ -38,7 +38,7 @@ export async function runSync(
   for (const r of results) {
     const name = LABEL[r.source] || r.source;
     if (r.status === 'error') { console.log(ui.fail(`${name}: ${r.error}`)); continue; }
-    if (r.status === 'skipped') { console.log(ui.info(`${name}: ${pc.dim('skipped — opt-in scrape; pass --linkedin to include it')}`)); continue; }
+    if (r.status === 'skipped') { console.log(ui.info(`${name}: ${pc.dim('skipped — the live scrape is deprecated; profile/linkedin.json is still used')}`)); continue; }
     if (r.status === 'fresh') { console.log(ui.ok(`${name}: still fresh ${pc.dim(`(last ${timeAgo(r.at)})`)}`)); continue; }
     const t = r.source === 'github' ? (r.data as GithubData | undefined)?.totals : undefined;
     const detail = r.source === 'github' && t

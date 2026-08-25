@@ -5,7 +5,7 @@
 //   resume tailor <jd> --company X [--role X] [--provider gemini|deepseek] [--model X]
 //   resume tailor --jd "text..." --company X
 //   resume note <jd> --company X [--platform Wellfound]
-//   resume sync [--force] [--linkedin]   refresh scraped GitHub (LinkedIn is opt-in)
+//   resume sync [--force]          refresh the scraped GitHub source
 //   resume status                  show env, sources, outputs
 //   resume build                   compile resume.tex → apps/web/assets/resume.pdf
 //   resume check [--source|--pdf|--width]
@@ -122,7 +122,7 @@ function printHelp(): void {
     ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
     ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
     ${pc.cyan('note')} <jd> --company <name> [--platform <where>] [--tone <t>] [--length <l>]   application-form note (per JD)
-    ${pc.cyan('sync')} [--force] [--linkedin]                                refresh GitHub (LinkedIn opt-in via --linkedin)
+    ${pc.cyan('sync')} [--force]                                            refresh the scraped GitHub source
     ${pc.cyan('score')} <jd-file> | --jd "text…"                             deterministic JD fit score — free, no LLM
     ${pc.cyan('digest')} [--json]                                            ranked GitHub/LinkedIn evidence digest — free, no LLM
     ${pc.cyan('status')}                                                    env, sources, outputs
@@ -148,7 +148,7 @@ async function interactive(cli: Cli): Promise<void> {
         { value: 'tailor', label: 'Tailor to a job description', hint: 'score → rewrite → PDF' },
         { value: 'email', label: 'Draft & send an application email', hint: 'JD → Gmail, on approval' },
         { value: 'note', label: 'Application-form note', hint: 'JD → the "why this role?" box' },
-        { value: 'sync', label: 'Sync profile sources', hint: 'scrape GitHub (LinkedIn opt-in)' },
+        { value: 'sync', label: 'Sync profile sources', hint: 'refresh the GitHub scrape' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
         { value: 'build', label: 'Build canonical résumé', hint: 'resume.tex → PDF' },
         { value: 'check', label: 'Run guards', hint: 'structure / pages / width' },
@@ -165,9 +165,7 @@ async function interactive(cli: Cli): Promise<void> {
       else if (action === 'sync') {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
         if (p.isCancel(force)) continue;
-        const linkedin = await p.confirm({ message: 'Also scrape LinkedIn? (automated, against their ToS — opt-in)', initialValue: false });
-        if (p.isCancel(linkedin)) continue;
-        await (await import('./commands/sync.js')).runSync(cli, { force, linkedin });
+        await (await import('./commands/sync.js')).runSync(cli, { force });
       } else if (action === 'status') await (await import('./commands/status.js')).runStatus(cli);
       else if (action === 'build') await (await import('./commands/build.js')).runBuild(cli);
       else if (action === 'check') await (await import('./commands/check.js')).runCheck(cli, {});
