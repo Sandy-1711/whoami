@@ -22,9 +22,8 @@ LLM systems), anchored on his open-source Mastra work.
   the profile digest (`pnpm digest` here; `read_profile` over MCP), and
   put the text into the file (or the send tool) yourself. Do NOT call the paid
   LLM tools — `tailor_resume`, `draft_application_email`, `outreach_message`,
-  `profile_enhancer` (or their CLI equivalents
-  `pnpm tailor/email/wellfound/wellfound-profile`) — unless the user
-  explicitly asks to spend API credits.
+  (or their CLI equivalents `pnpm tailor/email/wellfound/wellfound-profile`)
+  — unless the user explicitly asks to spend API credits.
 - JD scoring, PDF builds, structure/width checks, source sync, actually sending
   an email → **always via the repo's tools** (`pnpm score` / `score_jd`,
   `pnpm build:pdf` / `build_resume`, `pnpm check` / `check_resume`,
@@ -61,7 +60,7 @@ LLM systems), anchored on his open-source Mastra work.
 | See the ranked GitHub/LinkedIn evidence | `pnpm digest` (no LLM) | — |
 | Draft a Wellfound note / cold email / DM / follow-up | **you draft it** → `resume-outreach` skill | `pnpm wellfound` / `pnpm email` / agent |
 | Tailor the résumé summary/skills to a JD | **you edit `resume.tex`** → `resume-latex` + `resume-ats` | `pnpm tailor` |
-| LinkedIn / GitHub profile copy | **you draft it** → `resume-outreach` | `pnpm wellfound-profile`, agent's enhancer |
+| LinkedIn / GitHub profile copy | **you draft it** → `resume-outreach` | `pnpm wellfound-profile` |
 | Add/remove a fact, keyword, skill | **you edit `facts.json`** → `resume-facts` | agent's update_facts |
 | Ban/pin repos feeding the profile | **you edit `curation.json`** → `resume-facts` | — |
 | Build the PDF, run guards, check drift | Bash (`pnpm build:pdf`, `pnpm check`, `pnpm status`) | same |
@@ -85,8 +84,7 @@ applies verbatim to MCP clients. Cost split:
   `log_application`, `build_resume`, `check_resume` (LaTeX toolchain, no LLM),
   `sync_profiles` (GitHub API; LinkedIn opt-in — its structuring uses Gemini).
 - **PAID (LLM):** `tailor_resume`, `draft_application_email`, `outreach_message`
-  (kinds: wellfound_note, cold_email, linkedin_dm, followup, referral_ask),
-  `profile_enhancer`.
+  (kinds: wellfound_note, cold_email, linkedin_dm, followup, referral_ask).
 - **Outward-facing / confirm-gated:** `send_application_email` (SMTP),
   `update_github_profile` (GitHub push).
 
