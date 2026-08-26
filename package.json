@@ -14,6 +14,7 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "resume": "pnpm --filter @resume/cli run resume",
+    "studio": "pnpm --filter @resume/studio run studio",
     "chat": "pnpm --filter @resume/cli run chat",
     "mcp": "pnpm --filter @resume/cli run mcp",
     "send": "pnpm --filter @resume/cli run send",
