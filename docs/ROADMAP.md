@@ -24,9 +24,8 @@ code).
 
 ## Resuming — start here
 
-Everything through Phase 2 is committed on **`hardening`** (62 commits ahead of `main`), tree
-clean, `pnpm test` and `pnpm typecheck` green. Phases are being committed as they land, one
-concern per commit.
+Everything through Phase 2 is committed on **`hardening`**, tree clean, `pnpm test` and
+`pnpm typecheck` green. Phases are committed as they land, one concern per commit.
 
 ```sh
 git log --oneline main..hardening    # what has landed
