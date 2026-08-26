@@ -119,12 +119,16 @@ export function scoreResume(
 
 // ---- LaTeX injection --------------------------------------------------------
 
+const ESCAPES: Record<string, string> = {
+  '\\': '\\textbackslash{}',
+  '~': '\\textasciitilde{}',
+  '^': '\\textasciicircum{}',
+  '&': '\\&', '%': '\\%', '$': '\\$', '#': '\\#', '_': '\\_', '{': '\\{', '}': '\\}',
+};
+
+// One pass, so the braces a replacement introduces are not escaped in turn.
 export function latexEscape(s: string): string {
-  return String(s)
-    .replace(/\\/g, '\\textbackslash{}')
-    .replace(/([&%$#_{}])/g, '\\$1')
-    .replace(/~/g, '\\textasciitilde{}')
-    .replace(/\^/g, '\\textasciicircum{}');
+  return String(s).replace(/[\\~^&%$#_{}]/g, (ch) => ESCAPES[ch]!);
 }
 
 // Escape text, then bold the first occurrence of each term (case-insensitive).
