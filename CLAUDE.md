@@ -1,7 +1,8 @@
 # ResumeGit
 
 A résumé toolkit for one person (Sandeep). A hand-verified fact base grounds every generated
-artifact; a LaTeX résumé compiles to a PDF served from Vercel. Anything that needs a model is the
+artifact; the résumé is structured data that renders to LaTeX and compiles to a PDF served from
+Vercel. Anything that needs a model is the
 agent's — `resume chat` or the MCP server, both wiring the same tool set. The rest of the `resume`
 CLI is the operator surface: the toolchain, the free deterministic reads, and sending a draft that
 already exists.
@@ -25,8 +26,10 @@ Reading order for someone new to the repo:
 2. [docs/CLI.md](docs/CLI.md) — every command and what it does.
 3. `profile/facts.json` — the fact base. **The only source of claims.** If it is not in here, it
    may not be asserted about the candidate.
-4. `packages/core/src/tailor/service.ts` — the pipeline that matters most.
-5. `packages/agent/src/agent.ts` — `assembleTools` is the single source of truth for what tools
+4. `profile/resume.json` — the résumé itself. `resume.tex` is rendered from it; edit the JSON, not
+   the LaTeX.
+5. `packages/core/src/tailor/service.ts` — the pipeline that matters most.
+6. `packages/agent/src/agent.ts` — `assembleTools` is the single source of truth for what tools
    exist; chat and MCP both wire exactly that set.
 
 ```

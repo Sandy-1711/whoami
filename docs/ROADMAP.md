@@ -15,7 +15,7 @@ code).
 | 0 | Handoff docs | done |
 | 1 | One LLM path, instrumented | done — one live-trace check outstanding, see below |
 | 2 | Flexible tools, unconfusing MCP | done |
-| 3 | Résumé as structured data | not started |
+| 3 | Résumé as structured data | done |
 | 4 | Web studio | not started |
 | 5 | Formatter, linter, comment pass | not started |
 | 6 | Deferred work | not started |
@@ -24,7 +24,7 @@ code).
 
 ## Resuming — start here
 
-Everything through Phase 2 is committed on **`hardening`**, tree clean, `pnpm test` and
+Everything through Phase 3 is committed on **`hardening`**, tree clean, `pnpm test` and
 `pnpm typecheck` green. Phases are committed as they land, one concern per commit.
 
 ```sh
@@ -41,8 +41,10 @@ this file predates it:
   `digest`, `status`, `build`, `check` are the operator surface.
 - **The confirm gate** takes a `ConfirmRequest { tool, action, params, preview }` and the terminal
   prints the resolved values before asking. Nothing is approved by an argument.
+- **The résumé is `profile/resume.json`.** `resume.tex` is rendered from it by both build paths and
+  guarded for staleness; nothing hand-edits the LaTeX any more.
 
-**Carried forward, still unverified** — none of these blocks Phase 3, but none has been watched
+**Carried forward, still unverified** — none of these blocks Phase 4, but none has been watched
 working either:
 
 - No Langfuse trace has been seen arriving in a running stack (Phase 1). Needs the stack up and one
@@ -51,21 +53,23 @@ working either:
   Gmail.
 - Over MCP the confirm gate auto-approves, because there is no terminal to prompt. MCP elicitation
   was not explored; the draft-first rule is what holds under a client set to "always allow".
+- No tailoring run has been made against a real model since the rewrite went document-wide. The
+  offline end-to-end test covers the mechanism; what a real model does with the whole document —
+  how much it rewrites, how often a line is reverted, whether it respects the length budgets — has
+  not been watched.
 
 `AGENT_BUILDLOG.md` at the repo root is **stale and superseded by this file** — it opens by telling
 a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
 longer exists. It should be deleted.
 
-**Next: Phase 3**, below. Its acceptance gate is the risky part — read that before writing any of
-it.
+**Next: Phase 4**, below.
 
 ---
 
 ## Why this work exists
 
-This was the state at the start. Phases 1 and 2 closed all of it except the two marked **open**,
-which are what Phase 3 is for. Kept because it is the argument for the whole plan, not a to-do
-list — read it for the reasoning, not the status.
+This was the state at the start, and Phases 1 to 3 closed all of it. Kept because it is the argument
+for the whole plan, not a to-do list — read it for the reasoning, not the status.
 
 The ports-and-adapters structure is sound and the test suite passes. The problems are in the LLM
 layer, the tool surface, and the total absence of runtime visibility:
@@ -80,9 +84,9 @@ layer, the tool surface, and the total absence of runtime visibility:
 - Real provider errors get replaced by a generic sentence in `tailor/service.ts` before anyone can
   read them, and under MCP the real message is written to stderr, which the client discards.
 - Every JD-taking tool demands the full JD text inline — no file path, no URL.
-- **Open.** Tailoring rewrites two lines. Experience and project bullets are identical across every
+- Tailoring rewrites two lines. Experience and project bullets are identical across every
   company in `tailored/`.
-- **Open.** The reported ATS "after" score is a projection computed before the model runs, never
+- The reported ATS "after" score is a projection computed before the model runs, never
   measured.
 - The fact base is truncated mid-string by a blind `.slice()`, and `headline_metrics` never reaches
   the model at all.
@@ -322,6 +326,8 @@ means outreach gets it too.
 **What:** `profile/resume.json` becomes the source of truth; `resume.tex` becomes a rendered
 artifact. Tailoring can then rewrite every section.
 
+**Done.** What follows is the plan as written, annotated where the build went another way.
+
 **Why:** tailoring two lines is not tailoring, and letting a model write LaTeX directly is how the
 output breaks. Structured data removes both problems at once.
 
@@ -332,6 +338,10 @@ output breaks. Structured data removes both problems at once.
 - **Restricted markup** in all prose: `**bold**` and `[label](url)`, nothing else. The renderer
   escapes via the existing `latexEscape` first, then converts the two markers. The model never
   emits LaTeX. `boldify`'s first-occurrence heuristic retires.
+  **Landed as three markers, not two:** `` `code` `` is the third, because the résumé sets one
+  token (`allow-same-origin`) in typewriter and the migration had to not degrade the document. The
+  markers are consumed before escaping rather than after, so the two-backtick spelling of a curly
+  quote cannot be read as a code span.
 - `packages/core/src/resume/render.ts` — JSON → `.tex`, composing the preamble/macros partial
   (verbatim from current `resume.tex` lines 1–68) with a generated body.
 - `packages/core/src/resume/extract.ts` — one-time `resume.tex` → `resume.json` migration.
@@ -347,22 +357,47 @@ output breaks. Structured data removes both problems at once.
 - **Decide here:** whether the same validator becomes `save_draft`, so outreach and email copy are
   checked too, and whether `draft_context` replaces paying a second model for prose. See the
   deferred question at the end of Phase 2 — the argument and the proposed shapes are written up
-  there.
+  there. **Decided:** the validator was built as `unbackedClaims` in `packages/core/src/profile/`,
+  not under `tailor/`, so outreach and email can adopt it without moving anything. Wiring it into
+  `save_draft`/`draft_context` is deliberately not done yet — that is a tool-surface change, and it
+  should wait until a few real tailoring runs say how often the check reverts a line that was
+  actually true. Reverting a bullet is cheap to notice; refusing to save a good cold email is not.
 - Re-score the rendered plain text via `latexToPlainText`, so `score.after` is measured. Report the
-  projection and the measurement when they differ.
+  projection and the measurement when they differ. **Landed differently:** the score is measured on
+  the document that rendered (`resumePlainText`) rather than by stripping the LaTeX back off. Same
+  words, one fewer lossy step, and it no longer depends on the `.tex` being current.
 - `.githooks/pre-commit` and `.github/workflows/build-deploy.yml` build from `resume.tex`; after
   migration CI renders from `resume.json` first. Update the workflow's `paths:` filter.
+  **Landed differently:** CI still compiles the committed `resume.tex` — the source guard already
+  fails when that file is not what `resume.json` renders to, which catches the same mistake one
+  step earlier and keeps the PDF cache keyed on a committed file. Both local build paths render
+  first.
 
 **Acceptance gate — do not proceed past this:** render `resume.json`, compile, and diff the
 extracted PDF text against the committed `apps/web/assets/resume.pdf`. Identical text, one page,
 all guards pass. This is the riskiest step in the plan.
 
-- [ ] Schema + restricted markup
-- [ ] Renderer + extractor
-- [ ] Migration gate passes
-- [ ] Full-document tailoring with fact-base validation
-- [ ] Measured re-score
-- [ ] CI + hook updated
+**Passed.** The baseline was rebuilt from the hand-written `resume.tex` first rather than trusting
+the PDF on disk, then rebuilt from `resume.json`: 3597 characters of extracted text, byte-identical,
+one page, all three guards green. Only whitespace, the dropped TAILOR anchors and a trailing newline
+differ in the `.tex`.
+
+- [x] Schema + restricted markup
+- [x] Renderer + extractor
+- [x] Migration gate passes
+- [x] Full-document tailoring with fact-base validation
+- [x] Measured re-score
+- [x] CI + hook updated
+
+Two bugs surfaced on the way and were fixed under their own commits: `latexEscape` escaped the
+braces of its own `\textbackslash{}` replacement, and `termInText` refused any term followed by a
+dot — so a bullet ending "…on FastAPI." never counted as covering FastAPI, and every score that
+mattered read low for it.
+
+**Not done, and deliberately:** skills are not tailored. The dead `TAILOR:skills` anchor is gone,
+but the model is not asked to reorder or select skill groups per JD. Surfacing an addable keyword
+usually means adding it to a skills line, so this is the obvious next lever on the score — it just
+needs the reordering to be a constrained edit (pick from what is there) rather than free text.
 
 ---
 

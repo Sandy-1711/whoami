@@ -71,6 +71,48 @@ It also makes guards structural and gives the web studio something to edit.
 The migration is the riskiest step in the plan, so it carries a hard acceptance gate: PDF text
 rendered from `resume.json` must be identical to the committed `apps/web/assets/resume.pdf`.
 
+## 2026-08-26 — Three markers, and they are consumed before escaping
+
+The restricted-markup decision above said two markers. It shipped with three: `` `code` `` joins
+`**bold**` and `[label](url)`, because the résumé sets one token in typewriter and the migration's
+acceptance gate was "the document does not change". A marker the writer already knows from markdown
+is a smaller cost than a silent typographic regression.
+
+Order matters more than the count. Markers are tokenized out of the prose *first*, and only what
+falls between them is escaped. The alternative — escape, then convert — breaks on the curly quote,
+which is spelled with two backticks in TeX and would then be read as an empty code span.
+
+## 2026-08-26 — The fact-base check lives in profile/, not tailor/
+
+`unbackedClaims` compares a piece of generated copy against the fact base and against the line it is
+replacing. It is what makes "the model may rewrite every bullet" safe: an unbacked claim is dropped
+and the original text kept.
+
+It sits in `packages/core/src/profile/` rather than under `tailor/` because outreach notes, cold
+emails and application emails have the same exposure and nothing checks them today either. Moving it
+later would be a refactor nobody schedules; putting it there now costs nothing.
+
+It is not yet wired into outreach or email. The deferred `save_draft`/`draft_context` shapes at the
+end of Phase 2 are the way to do that, and they should wait for evidence: reverting a résumé bullet
+is cheap to notice and easy to re-ask for, while refusing to save an otherwise good cold email is
+not. A few real tailoring runs will say how often the check is wrong before it gets a veto over
+copy that leaves the machine.
+
+The check knows two kinds of claim — technologies from the shared lexicon, and figures. A technology
+this repo has never named anywhere passes unseen. That is the same vocabulary JD scoring reasons in,
+so widening the lexicon widens both at once.
+
+## 2026-08-26 — CI still compiles the committed resume.tex
+
+Phase 3 planned for CI to render `resume.json` before compiling. It does not: it compiles the
+committed `resume.tex`, and the source guard fails the build when that file is not what the document
+renders to.
+
+Same mistake caught, one step earlier and with a better message — and the PDF cache stays keyed on
+`hashFiles('resume.tex')`, which only works because the file is committed. Both local build paths
+(`pnpm build:pdf` and the agent's `build_resume`) do render first, so the committed artifact is
+produced by the same code CI checks it against.
+
 ## 2026-08-25 — Web studio: Hono + Vite React, local-only
 
 A separate `apps/studio`, not an extension of `apps/web` — the studio needs the filesystem and
