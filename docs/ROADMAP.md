@@ -62,11 +62,14 @@ working either:
 a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
 longer exists. It should be deleted.
 
-**Branch state:** `hardening` is 80 commits ahead of `main` and 0 behind, so merging is a
-fast-forward. Pushing to `main` triggers `build-deploy.yml`, which recompiles the résumé and
-deploys it to Vercel — safe as of Phase 3, because the PDF that migration produces is byte-identical
-to the published one. The cache key is `hashFiles('resume.tex')`, so that first run misses the cache
-and does a full LaTeX compile.
+**Branch state:** Phases 0–3 are open as [PR #7](https://github.com/Sandy-1711/whoami/pull/7),
+`hardening` → `main`, unmerged at the time of writing and a clean fast-forward. The PR has no CI of
+its own: `build-deploy.yml` triggers on push to `main`, not on pull requests, so the first real CI
+signal arrives after the merge. That merge also deploys the résumé to Vercel — safe as of Phase 3,
+because the PDF the migration produces is byte-identical to the published one. The cache key is
+`hashFiles('resume.tex')`, so that run misses the cache and does a full LaTeX compile.
+
+Phase 4 work continues on `hardening` on top of that PR unless it is merged first.
 
 **Next: Phase 4**, below.
 
