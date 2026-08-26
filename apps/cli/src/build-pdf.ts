@@ -1,5 +1,6 @@
 // Build resume.pdf locally, mirroring CI — so the page/width/structure guards
-// can run on your machine instead of a slow push.
+// can run on your machine instead of a slow push. resume.tex is rendered from
+// profile/resume.json first, so what compiles is always the current document.
 //
 // Uses a local `latexmk` if one is on PATH; otherwise falls back to Docker with
 // a full TeX Live image (no LaTeX install needed — just Docker Desktop running).
@@ -11,6 +12,7 @@ import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { loadResume, writeResumeTex } from '@resume/core';
 
 // apps/cli/src/ -> ../../../ is the monorepo root (where resume.tex lives).
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -32,6 +34,8 @@ function daemonUp(): boolean {
     encoding: 'utf8',
   }).status === 0;
 }
+
+await writeResumeTex(root, await loadResume(root));
 
 let result: SpawnSyncReturns<Buffer>;
 if (runs('latexmk', ['--version'])) {

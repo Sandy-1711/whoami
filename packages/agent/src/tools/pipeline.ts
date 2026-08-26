@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import {
-  SourceRefresher, TailorService, checkResume,
+  SourceRefresher, TailorService, checkResume, loadResume, writeResumeTex,
   hashSources, writeLock, LINKEDIN_LIVE_DEPRECATED, type CheckScope,
 } from '@resume/core';
 import type { AgentDeps } from '../deps.js';
@@ -195,9 +195,11 @@ export function pipelineTools(deps: AgentDeps) {
   const build_resume = createTool({
     id: 'build_resume',
     description: describeTool({
-      does: 'Compile the canonical resume.tex to apps/web/assets/resume.pdf, exactly as CI does.',
+      does:
+        'Render profile/resume.json to resume.tex and compile it to apps/web/assets/resume.pdf, ' +
+        'exactly as CI does.',
       cost: 'local',
-      use: 'after editing resume.tex, or when profile_status says the canonical PDF is missing or stale.',
+      use: 'after editing the résumé, or when profile_status says the canonical PDF is missing or stale.',
       avoid: 'producing a per-company PDF — that is tailor_plan then tailor_render.',
       needs: 'a LaTeX toolchain: the Docker daemon running, or latexmk installed. The user is asked first, because it replaces the PDF the site serves.',
       then: 'check_resume — a build that compiles can still fail the guards.',
@@ -214,12 +216,13 @@ export function pipelineTools(deps: AgentDeps) {
         tool: 'build_resume',
         action: 'Rebuild the canonical résumé PDF',
         params: {
-          source: 'resume.tex',
+          source: 'profile/resume.json → resume.tex',
           output: 'apps/web/assets/resume.pdf (overwritten — this is the PDF the site serves)',
         },
       });
       if (!ok) return { built: false, reason: 'Cancelled — nothing was built.' };
-      const spin = deps.presenter.spinner('Compiling resume.tex …');
+      const spin = deps.presenter.spinner('Rendering resume.tex & compiling …');
+      await writeResumeTex(deps.root, await loadResume(deps.root));
       const res = deps.latex.compile(deps.root, 'resume.tex', { outDir: 'build', capture: true });
       const built = join(deps.root, 'build', 'resume.pdf');
       if (!existsSync(built)) {

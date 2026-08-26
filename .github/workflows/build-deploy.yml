@@ -8,8 +8,10 @@ on:
     # (packages/core, apps/cli, profile/, skills, docs) skip the whole job.
     paths:
       - 'resume.tex'
+      - 'profile/resume.json'
       - 'apps/web/**'
       - 'packages/core/src/check/**'
+      - 'packages/core/src/resume/**'
       - 'pnpm-lock.yaml'
       - 'tsconfig.base.json'
       - '.github/workflows/build-deploy.yml'
@@ -41,6 +43,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Also fails when the committed resume.tex is not what profile/resume.json
+      # renders to — the PDF below is compiled from the .tex.
       - name: Check résumé source structure
         run: pnpm --filter @resume/cli run check:source
 

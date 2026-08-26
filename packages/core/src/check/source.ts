@@ -1,4 +1,7 @@
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { renderResume } from '../resume/render.js';
+import { loadResume, RESUME_JSON, RESUME_TEX } from '../resume/store.js';
 
 // Sections every version of the résumé must keep. Edit here if the résumé's
 // shape changes intentionally.
@@ -86,4 +89,21 @@ export async function checkSource(path: string): Promise<string[]> {
   if (/\\resumeItem\{\s*\}/.test(tex)) problems.push('Found an empty \\resumeItem{}.');
 
   return problems;
+}
+
+// resume.tex is rendered from profile/resume.json. A hand-edit to the .tex, or
+// an edit to the document that was never re-rendered, makes the two disagree —
+// and then the PDF ships whichever one happened to be on disk.
+export async function checkRendered(root: string): Promise<string[]> {
+  let expected: string;
+  try {
+    expected = renderResume(await loadResume(root));
+  } catch (err) {
+    return [`Cannot render ${RESUME_JSON}: ${(err as Error).message}`];
+  }
+  const actual = await readFile(join(root, RESUME_TEX), 'utf8').catch(() => null);
+  if (actual === expected) return [];
+  return [
+    `${RESUME_TEX} is not what ${RESUME_JSON} renders to — rebuild it (pnpm build:pdf) and commit the result.`,
+  ];
 }
