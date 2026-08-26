@@ -12,9 +12,9 @@ import type { Presenter } from '../ports/logger.js';
 import { slugCompany, extractRoleFromJd } from '../naming.js';
 import { loadProfileDigestText } from '../profile/loaders.js';
 import { drift } from '../profile/sources.js';
-import {
-  extractJdKeywords, classify, scoreResume, latexToPlainText,
-} from '../tailor/core.js';
+import { extractJdKeywords, classify, scoreResume } from '../tailor/core.js';
+import { resumePlainText } from '../resume/schema.js';
+import { loadResume } from '../resume/store.js';
 import {
   outreachPrompt, OUTREACH_SCHEMA, type OutreachResponse, type OutreachKind,
   applicationNotePrompt, APPLICATION_NOTE_SCHEMA, type CopyTone, type CopyLength,
@@ -137,7 +137,7 @@ export class OutreachService {
     if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
 
     const facts: Facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
-    const resumeText = latexToPlainText(await readFile(join(root, 'resume.tex'), 'utf8'));
+    const resumeText = resumePlainText(await loadResume(root));
     await this.warnDrift();
 
     // Deterministic keyword read so the note leans on real matches, never a gap.

@@ -13,9 +13,9 @@ import { join } from 'node:path';
 import { LlmError, type Llm } from '@resume/llm';
 import type { Presenter } from '../ports/logger.js';
 import type { Mailer, EmailAttachment, SendResult } from '../ports/mailer.js';
-import {
-  extractJdKeywords, classify, scoreResume, latexToPlainText,
-} from '../tailor/core.js';
+import { extractJdKeywords, classify, scoreResume } from '../tailor/core.js';
+import { resumePlainText } from '../resume/schema.js';
+import { loadResume } from '../resume/store.js';
 import { slugCompany, sanitizeRole, extractRoleFromJd } from '../naming.js';
 import { drift } from '../profile/sources.js';
 import { loadProfileDigestText } from '../profile/loaders.js';
@@ -110,7 +110,7 @@ export class EmailService {
     if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
 
     const facts = await this.facts();
-    const resumeText = latexToPlainText(await readFile(join(root, 'resume.tex'), 'utf8'));
+    const resumeText = resumePlainText(await loadResume(root));
     await this.warnDrift();
 
     // Deterministic keyword read so the email leans on real matches, never a gap.

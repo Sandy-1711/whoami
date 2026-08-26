@@ -1,8 +1,9 @@
 // Profile source state: two jobs in one lock file (profile/sources.lock.json).
 //
-//  1. File drift — hash the canonical inputs (resume.tex, facts.json, the raw
+//  1. File drift — hash the canonical inputs (resume.json, facts.json, the raw
 //     LinkedIn PDF) so the tailor can warn when your profile has drifted from
-//     what the fact base was built against.
+//     what the fact base was built against. resume.tex is not one of them: it
+//     is rendered from resume.json, so it can only drift with it.
 //  2. Scrape freshness — remember when each scraped source (github, linkedin)
 //     was last pulled and a content hash of what came back, so we can (a) skip
 //     re-scraping while it's still fresh, and (b) avoid rewriting the JSON when
@@ -26,7 +27,7 @@ export function contentHash(obj: Record<string, unknown> | null | undefined): st
 // Files whose changes should invalidate the fact base.
 export function sourceFiles(root: string): { key: string; path: string }[] {
   return [
-    { key: 'resume.tex', path: join(root, 'resume.tex') },
+    { key: 'resume.json', path: join(root, 'profile', 'resume.json') },
     { key: 'facts.json', path: join(root, 'profile', 'facts.json') },
     { key: 'linkedin.pdf', path: join(root, 'Linkedin_Profile.pdf') },
   ];

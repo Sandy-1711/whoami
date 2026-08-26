@@ -6,7 +6,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  extractJdKeywords, classify, scoreResume, latexToPlainText, type Facts,
+  extractJdKeywords, classify, scoreResume, loadResume, resumePlainText, type Facts,
 } from '@resume/core';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
@@ -25,7 +25,7 @@ export async function runScore(cli: Cli, args: RunScoreArgs): Promise<void> {
   console.log(ui.banner('JD score', 'deterministic keyword match — no LLM, no cost'));
 
   const facts: Facts = JSON.parse(await readFile(join(cli.root, 'profile', 'facts.json'), 'utf8'));
-  const resumeText = latexToPlainText(await readFile(join(cli.root, 'resume.tex'), 'utf8'));
+  const resumeText = resumePlainText(await loadResume(cli.root));
 
   const jdKeywords = extractJdKeywords(jd);
   const cls = classify(jdKeywords, resumeText, facts);

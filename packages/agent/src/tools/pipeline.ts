@@ -248,7 +248,7 @@ export function pipelineTools(deps: AgentDeps) {
         'contact email), and width (overfull lines). Scope "all" runs every guard and skips the two ' +
         'that need a build when no PDF exists yet.',
       cost: 'local',
-      use: 'before treating the résumé as ship-ready, and after any edit to resume.tex.',
+      use: 'before treating the résumé as ship-ready, and after any edit to the résumé document.',
       needs: 'a built PDF for the pdf and width scopes — run build_resume first, or they are skipped.',
       then: 'if a guard fails the résumé is NOT ship-ready; say so rather than sending it.',
     }),
@@ -268,7 +268,7 @@ export function pipelineTools(deps: AgentDeps) {
           ? skipped
             ? ['The guards that need a built PDF were skipped — run build_resume, then check again for a full answer.']
             : ['Every guard passed.']
-          : ['Fix the problems above in resume.tex, rebuild, and check again. A failing résumé is not ship-ready.'],
+          : ['Fix the problems above in profile/resume.json, rebuild, and check again. A failing résumé is not ship-ready.'],
       };
     },
   });
