@@ -45,10 +45,13 @@ const ALIASES: Record<string, string> = {
 };
 
 // Does `term` occur in `text`, not glued inside a larger token? Handles the
-// dotted/plus/slash terms (Node.js, CI/CD, C++) that \b would mishandle.
+// dotted/plus/slash terms (Node.js, CI/CD, C++) that \b would mishandle: a dot
+// only separates tokens when a word character follows it, so "Node" does not
+// match inside "Node.js" while "Kubernetes" still matches at the end of a
+// sentence.
 export function termInText(term: string, text: string): boolean {
   const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`(?<![A-Za-z0-9+#.])${esc}(?![A-Za-z0-9+#.])`, 'i');
+  const re = new RegExp(`(?<![A-Za-z0-9+#])(?<![A-Za-z0-9]\\.)${esc}(?![A-Za-z0-9+#])(?!\\.[A-Za-z0-9])`, 'i');
   return re.test(text);
 }
 
