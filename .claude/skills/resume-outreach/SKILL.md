@@ -1,13 +1,13 @@
 ---
 name: resume-outreach
-description: Draft job-search copy yourself (in Claude Code, no API spend) grounded in the fact base — application-form notes (Wellfound, Work at a Startup, Lever), the standing Wellfound profile, cold emails, LinkedIn DMs, follow-ups, referral asks, and LinkedIn/GitHub profile-copy suggestions. Use when the user asks for "a note for X", "a cold email", "a DM", "a follow-up", "a referral message", a Wellfound profile, or better LinkedIn/GitHub copy — instead of running `pnpm note`/`pnpm email` (which call Gemini/DeepSeek).
+description: Draft job-search copy yourself (in Claude Code, no API spend) grounded in the fact base — application-form notes (Wellfound, Work at a Startup, Lever, Greenhouse), cold emails, LinkedIn DMs, follow-ups, referral asks, and LinkedIn/GitHub profile-copy suggestions. Use when the user asks for "a note for X", "a cold email", "a DM", "a follow-up", "a referral message", or better LinkedIn/GitHub copy — instead of the agent's paid `outreach_message` and `draft_application_email` tools.
 ---
 
 # Outreach & profile copy (you draft it — no API)
 
-The paid CLI/agent generate the per-JD ones with Gemini/DeepSeek (`pnpm note`,
-`pnpm email`). Draft them yourself here instead — same
-grounding rules, same output files, no API spend.
+The agent generates the per-JD ones with Gemini/DeepSeek (`outreach_message`,
+`draft_application_email`). Draft them yourself here instead — same grounding
+rules, same output files, no API spend.
 
 **Always first:** read `profile/facts.json` AND run `pnpm digest` (free, no
 LLM). Every claim (employer, metric, project, skill) must come from facts.json;
@@ -44,11 +44,12 @@ stack, reviewed by maintainers" — do not apologize.
 - **Application email you want SENT:** write it to
   `tailored/<company-slug>/application-email.txt` in this exact shape —
   optional `To: <addr>` line, a `Subject: <line>`, a blank line, then the body.
-  `pnpm email -- --company X` then sends that file **verbatim** (no LLM call —
-  the file-draft is detected and used instead of drafting). It confirms the
-  recipient before sending; `--attach <pdf>` / `--no-attach` control the résumé
-  attachment (default: auto-attach the newest tailored PDF for that company).
-  Sending is outward-facing — the user confirms; never auto-send.
+  `pnpm send -- --company X` then mails that file **verbatim** — no LLM call at
+  all. It shows the whole thing and confirms the recipient before sending;
+  `--attach <pdf>` / `--no-attach` control the résumé attachment (default: the
+  newest PDF sitting beside the draft). Over MCP the same send is
+  `send_application_email`. Sending is outward-facing — the user confirms;
+  never auto-send.
 - **Standing Wellfound profile:** `wellfound-profile.md` at repo root (gitignored).
 - **LinkedIn/GitHub suggestions:** `linkedin-updates.md` at repo root (gitignored).
 

@@ -17,17 +17,17 @@ LLM systems), anchored on his open-source Mastra work.
 ## THE POLICY — text vs operations (applies to Claude Code AND any MCP client)
 > **If the deliverable is text, write it yourself. If the step is an isolated
 > operation, use the repo's tool path.**
-- Résumé section content, application emails, DMs, Wellfound notes, profile
-  copy → **you draft it in your own words**, grounded in `profile/facts.json` +
+- Résumé section content, application emails, DMs, application-form notes,
+  profile copy → **you draft it in your own words**, grounded in `profile/facts.json` +
   the profile digest (`pnpm digest` here; `read_profile` over MCP), and
   put the text into the file (or the send tool) yourself. Do NOT call the paid
-  LLM tools — `tailor_plan`/`tailor_render`, `draft_application_email`, `outreach_message`,
-  (or their CLI equivalents `pnpm tailor/email/note`)
-  — unless the user explicitly asks to spend API credits.
+  LLM tools — `tailor_plan`/`tailor_render`, `draft_application_email`,
+  `outreach_message` — unless the user explicitly asks to spend API credits.
+  There are no CLI equivalents any more: no command calls a model.
 - JD scoring, PDF builds, structure/width checks, source sync, actually sending
   an email → **always via the repo's tools** (`pnpm score` / `score_jd`,
   `pnpm build:pdf` / `build_resume`, `pnpm check` / `check_resume`,
-  `pnpm sync` / `sync_profiles`, `send_application_email`). These are isolated
+  `pnpm sync` / `sync_profiles`, `pnpm send` / `send_application_email`). These are isolated
   and deterministic — don't eyeball a score or hand-roll a build. (The scorer
   is pure keyword matching, no LLM — this path is also free.)
 
@@ -56,22 +56,22 @@ LLM systems), anchored on his open-source Mastra work.
 ## Free (do it yourself) vs paid (runs the API)
 | Task | Free path (this session) | Paid path (avoid unless asked) |
 |---|---|---|
-| Score a JD's ATS fit | `pnpm score -- jd.txt` (deterministic, no LLM) → `resume-ats` skill | — (`pnpm tailor` also scores, but drafts via LLM) |
+| Score a JD's ATS fit | `pnpm score -- jd.txt` (deterministic, no LLM) → `resume-ats` skill | — (`tailor_plan` also scores, but drafts via LLM) |
 | See the ranked GitHub/LinkedIn evidence | `pnpm digest` (no LLM) | — |
-| Draft an application-form note / cold email / DM / follow-up | **you draft it** → `resume-outreach` skill | `pnpm note` / `pnpm email` / agent |
-| Tailor the résumé summary/skills to a JD | **you edit `resume.tex`** → `resume-latex` + `resume-ats` | `pnpm tailor` |
-| LinkedIn / Wellfound / GitHub profile copy | **you draft it** → `resume-outreach` | — |
+| Draft an application-form note / cold email / DM / follow-up | **you draft it** → `resume-outreach` skill | agent's `outreach_message` |
+| Tailor the résumé summary/skills to a JD | **you edit `resume.tex`** → `resume-latex` + `resume-ats` | agent's `tailor_plan` + `tailor_render` |
+| LinkedIn / GitHub profile copy | **you draft it** → `resume-outreach` | — |
 | Add/remove a fact, keyword, skill | **you edit `facts.json`** → `resume-facts` | agent's update_facts |
 | Ban/pin repos feeding the profile | **you edit `curation.json`** → `resume-facts` | — |
 | Build the PDF, run guards, check drift | Bash (`pnpm build:pdf`, `pnpm check`, `pnpm status`) | same |
-| Send an application email (hand-edited draft) | write `tailored/<slug>/application-email.txt`, then `pnpm email -- --company X` sends it verbatim (confirm-gated; `--attach <pdf>`/`--no-attach` control the résumé attachment) | `pnpm email` without a hand-edited file (drafts via LLM first) |
+| Send an application email | write `tailored/<slug>/application-email.txt`, then `pnpm send -- --company X` mails it verbatim — no LLM, and it shows you the whole thing before it goes (`--attach <pdf>`/`--no-attach` control the résumé attachment) | agent's `draft_application_email` when you want the model to write it |
 | Track applications | edit `.agent/applications.json` (below) | agent's log_application |
 
-Commands that only compute or check (`score`, `digest`, `build:pdf`, `check`,
-`status`) don't call an LLM — run them freely via Bash. `pnpm sync` hits the
-GitHub API (no LLM) and scrapes LinkedIn **only with `--linkedin`** (that
-structuring step uses Gemini). Commands that *draft* (`tailor`, `email`, `note`)
-call Gemini/DeepSeek — do that drafting yourself instead. All are `pnpm <script>` from the repo root.
+**No command calls an LLM any more.** `score`, `digest`, `build:pdf`, `check`,
+`status` and `send` compute, check, or transmit — run them freely via Bash.
+`pnpm sync` hits the GitHub API (no LLM); the live LinkedIn scrape is deprecated
+and refuses to run. Drafting is the agent's, and you do it yourself instead.
+All are `pnpm <script>` from the repo root.
 
 ## The MCP server (`pnpm mcp`)
 The toolkit is also exposed over MCP (stdio) for Claude Code / Cursor / Claude
