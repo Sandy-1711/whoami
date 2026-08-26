@@ -6,6 +6,10 @@
   "bin": {
     "resume": "src/main.ts"
   },
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "resume": "tsx src/main.ts",
     "chat": "tsx src/main.ts chat",
