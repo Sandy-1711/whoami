@@ -7,15 +7,9 @@
 // protocol stream corrupts. main.ts redirects console.* to stderr before we build
 // anything; here we also route tool progress to stderr. The stdio transport writes
 // via process.stdout.write directly, so it is unaffected by the console redirect.
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { buildMcpServer, progressPresenter, allowGate, type AgentDeps } from '@resume/agent';
+import { havePlaywright } from '../adapters/playwright.js';
 import type { Cli } from '../container.js';
-
-function havePlaywright(root: string): boolean {
-  return existsSync(join(root, 'node_modules', 'playwright'))
-    || existsSync(join(root, 'packages', 'core', 'node_modules', 'playwright'));
-}
 
 export async function runMcp(cli: Cli): Promise<void> {
   const deps: AgentDeps = {

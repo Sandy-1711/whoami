@@ -2,11 +2,10 @@
 // LaTeX toolchain, scraped-source freshness, the built résumé, and the tailored
 // outputs on disk. The data is gathered by core's collectStatus(); this command
 // injects the two env probes it can't do (render engine, Playwright) and renders.
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { collectStatus, timeAgo, type StatusReport } from '@resume/core';
 import { defaultProviderId, listProviders } from '@resume/llm';
 import { renderEngineReason } from '../adapters/latex.js';
+import { havePlaywright } from '../adapters/playwright.js';
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
 import type { Cli } from '../container.js';
@@ -14,11 +13,6 @@ import type { Cli } from '../container.js';
 const yes = pc.green('●');
 const no = pc.red('○');
 const optional = pc.yellow('○');
-
-function havePlaywright(root: string): boolean {
-  return existsSync(join(root, 'node_modules', 'playwright'))
-    || existsSync(join(root, 'packages', 'core', 'node_modules', 'playwright'));
-}
 
 export async function runStatus(cli: Cli): Promise<StatusReport> {
   const { root, config } = cli;
