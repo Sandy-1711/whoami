@@ -15,8 +15,8 @@ describe("styleInline", () => {
     });
 
     it("never rewrites bold/italic markers inside a code span", () => {
-        const out = styleInline("run `pnpm tailor -- --company *X*` now");
-        expect(out).toContain("pnpm tailor -- --company *X*");
+        const out = styleInline("run `pnpm send -- --company *X*` now");
+        expect(out).toContain("pnpm send -- --company *X*");
     });
 
     it("leaves multiplication-style asterisks alone", () => {

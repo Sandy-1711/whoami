@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "A LaTeX résumé served on Vercel, plus a JD-tailoring CLI — organized as a pnpm + turbo monorepo.",
+  "description": "A LaTeX r\u00e9sum\u00e9 served on Vercel, plus a JD-tailoring CLI \u2014 organized as a pnpm + turbo monorepo.",
   "packageManager": "pnpm@11.8.0",
   "engines": {
     "node": ">=20"
@@ -16,9 +16,7 @@
     "resume": "pnpm --filter @resume/cli run resume",
     "chat": "pnpm --filter @resume/cli run chat",
     "mcp": "pnpm --filter @resume/cli run mcp",
-    "tailor": "pnpm --filter @resume/cli run tailor",
-    "email": "pnpm --filter @resume/cli run email",
-    "note": "pnpm --filter @resume/cli run note",
+    "send": "pnpm --filter @resume/cli run send",
     "sync": "pnpm --filter @resume/cli run sync",
     "score": "pnpm --filter @resume/cli run score",
     "digest": "pnpm --filter @resume/cli run digest",
