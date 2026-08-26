@@ -1,22 +1,23 @@
 #!/usr/bin/env node
 // resume — one entrypoint for the whole résumé toolkit.
 //
+// Drafting lives with the agent (`resume chat`, or the MCP tools) — the commands
+// here are the ones worth having without one: the toolchain, the free
+// deterministic reads, and putting an already-written email on the wire.
+//
 //   resume                         interactive menu
-//   resume tailor <jd> --company X [--role X] [--provider gemini|deepseek] [--model X]
-//   resume tailor --jd "text..." --company X
-//   resume note <jd> --company X [--platform Wellfound]
+//   resume chat / mcp              the agent, in a terminal or over MCP
+//   resume send --company X        mail tailored/<company>/application-email.txt
 //   resume sync [--force]          refresh the scraped GitHub source
-//   resume status                  show env, sources, outputs
+//   resume score / digest / status free, deterministic
 //   resume build                   compile resume.tex → apps/web/assets/resume.pdf
 //   resume check [--source|--pdf|--width]
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { createInterface } from 'node:readline';
 import * as p from '@clack/prompts';
 import * as ui from './ui.js';
 import { pc } from './ui.js';
-import { defaultProviderId, listProviders, startTracing } from '@resume/llm';
-import { COPY_TONES, COPY_LENGTHS } from '@resume/core';
+import { startTracing } from '@resume/llm';
 import { parseArgs } from './args.js';
 import { buildCli, type Cli } from './container.js';
 
@@ -27,75 +28,24 @@ function fail(err: unknown): never {
   process.exit(1);
 }
 
-// A flag whose value must be one of a fixed set — rejected here rather than
-// carried into a prompt as a word the model will try to honour.
-function optEnum<T extends readonly string[]>(flag: string, allowed: T): T[number] | undefined {
-  const value = opt(flag);
-  if (!value) return undefined;
-  if (!allowed.includes(value)) throw new Error(`${flag} must be one of: ${allowed.join(', ')}`);
-  return value;
-}
-
 async function fileJd(file?: string): Promise<string> {
   if (!file) return '';
   if (!existsSync(file)) throw new Error(`JD file not found: ${file}`);
   return readFile(file, 'utf8');
 }
 
-// ---- direct commands -------------------------------------------------------
-async function directTailor(cli: Cli): Promise<void> {
-  const { runTailor } = await import('./commands/tailor.js');
-  const jd = opt('--jd') || (await fileJd(positionals()[0]));
-  await runTailor(cli, {
-    jd,
-    company: opt('--company') || opt('--name'),
-    role: opt('--role'),
-    provider: opt('--provider'),
-    model: opt('--model'),
-  });
-}
-
-async function directNote(cli: Cli, platform: string): Promise<void> {
-  const { runNote } = await import('./commands/note.js');
-  const jd = opt('--jd') || (await fileJd(positionals()[0]));
-  await runNote(cli, {
-    jd,
-    company: opt('--company') || opt('--name'),
-    role: opt('--role'),
-    platform: opt('--platform') || platform,
-    tone: optEnum('--tone', COPY_TONES),
-    length: optEnum('--length', COPY_LENGTHS),
-    provider: opt('--provider'),
-    model: opt('--model'),
-  });
-}
-
-async function directEmail(cli: Cli): Promise<void> {
-  const { runEmail } = await import('./commands/email.js');
-  const jd = opt('--jd') || (await fileJd(positionals()[0]));
-  await runEmail(cli, {
-    jd,
-    company: opt('--company') || opt('--name'),
-    role: opt('--role'),
-    to: opt('--to'),
-    attach: opt('--attach'),
-    noAttach: has('--no-attach'),
-    dryRun: has('--dry-run') || has('--no-send'),
-    autoSend: has('--yes') || has('-y'),
-    provider: opt('--provider'),
-    model: opt('--model'),
-  });
-}
-
 function commands(cli: Cli): Record<string, () => Promise<unknown>> {
   return {
     chat: async () => (await import('./commands/chat.js')).runChat(cli, { fresh: has('--new') }),
     mcp: async () => (await import('./commands/mcp.js')).runMcp(cli),
-    tailor: () => directTailor(cli),
-    email: () => directEmail(cli),
-    note: () => directNote(cli, ''),
-    // Kept because the note started life Wellfound-only; it is the same note.
-    wellfound: () => directNote(cli, 'Wellfound'),
+    send: async () => (await import('./commands/send.js')).runSend(cli, {
+      company: opt('--company') || opt('--name'),
+      path: opt('--path') || undefined,
+      to: opt('--to') || undefined,
+      attach: opt('--attach') || undefined,
+      noAttach: has('--no-attach'),
+      dryRun: has('--dry-run') || has('--no-send'),
+    }),
     sync: async () => (await import('./commands/sync.js')).runSync(cli, { force: has('--force'), linkedin: has('--linkedin') }),
     score: async () => {
       const { runScore } = await import('./commands/score.js');
@@ -119,9 +69,7 @@ function printHelp(): void {
   ${pc.bold('Commands')}
     ${pc.cyan('chat')} [--new]                                              chat with the job-search agent (all tools)
     ${pc.cyan('mcp')}                                                       serve the tools over MCP (stdio) for Claude Code / Cursor
-    ${pc.cyan('tailor')} <jd> --company <name> [--role <r>] [--provider gemini|deepseek] [--model <m>]   tailor to a JD
-    ${pc.cyan('email')} <jd> --company <name> [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]   draft + send a Gmail application email
-    ${pc.cyan('note')} <jd> --company <name> [--platform <where>] [--tone <t>] [--length <l>]   application-form note (per JD)
+    ${pc.cyan('send')} --company <name> [--path <draft>] [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run]   mail a saved draft verbatim
     ${pc.cyan('sync')} [--force]                                            refresh the scraped GitHub source
     ${pc.cyan('score')} <jd-file> | --jd "text…"                             deterministic JD fit score — free, no LLM
     ${pc.cyan('digest')} [--json]                                            ranked GitHub/LinkedIn evidence digest — free, no LLM
@@ -129,7 +77,7 @@ function printHelp(): void {
     ${pc.cyan('build')}                                                     compile the canonical PDF
     ${pc.cyan('check')} [--source|--pdf|--width]                            run the guards
 
-  ${pc.dim('Provider defaults to $LLM_PROVIDER, else whichever API key is set (Gemini first).')}
+  ${pc.dim('Tailoring, drafting and research are the agent\'s: `resume chat`, or the MCP tools.')}
   ${pc.dim('Run with no command for an interactive menu.')}
 `);
 }
@@ -144,10 +92,8 @@ async function interactive(cli: Cli): Promise<void> {
     const action = await p.select({
       message: 'What do you want to do?',
       options: [
-        { value: 'chat', label: 'Chat with the agent', hint: 'conversational — every capability as a tool' },
-        { value: 'tailor', label: 'Tailor to a job description', hint: 'score → rewrite → PDF' },
-        { value: 'email', label: 'Draft & send an application email', hint: 'JD → Gmail, on approval' },
-        { value: 'note', label: 'Application-form note', hint: 'JD → the "why this role?" box' },
+        { value: 'chat', label: 'Chat with the agent', hint: 'tailor, draft, research — every capability as a tool' },
+        { value: 'send', label: 'Send a saved application email', hint: 'tailored/<company>/application-email.txt → Gmail' },
         { value: 'sync', label: 'Sync profile sources', hint: 'refresh the GitHub scrape' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
         { value: 'build', label: 'Build canonical résumé', hint: 'resume.tex → PDF' },
@@ -159,9 +105,7 @@ async function interactive(cli: Cli): Promise<void> {
 
     try {
       if (action === 'chat') { await (await import('./commands/chat.js')).runChat(cli); continue; }
-      else if (action === 'tailor') await interactiveTailor(cli);
-      else if (action === 'email') await interactiveEmail(cli);
-      else if (action === 'note') await interactiveNote(cli);
+      else if (action === 'send') await interactiveSend(cli);
       else if (action === 'sync') {
         const force = await p.confirm({ message: 'Force re-scrape (ignore the freshness TTL)?', initialValue: false });
         if (p.isCancel(force)) continue;
@@ -178,48 +122,7 @@ async function interactive(cli: Cli): Promise<void> {
   }
 }
 
-async function interactiveTailor(cli: Cli): Promise<void> {
-  const company = await p.text({
-    message: 'Company name',
-    placeholder: 'Acme-AI',
-    validate: (v) => (v && v.trim() ? undefined : 'Required — the résumé is filed + named by company.'),
-  });
-  if (p.isCancel(company)) return;
-
-  const source = await p.select({
-    message: 'How do you want to provide the JD?',
-    options: [
-      { value: 'file', label: 'Path to a JD file', hint: './jd.txt' },
-      { value: 'paste', label: 'Paste the JD text', hint: 'multi-line paste' },
-    ],
-  });
-  if (p.isCancel(source)) return;
-
-  let jd: string;
-  if (source === 'file') {
-    const file = await p.text({
-      message: 'Path to the JD file',
-      placeholder: './jd.txt',
-      validate: (v) => (v && existsSync(v.trim()) ? undefined : 'File not found — save the JD to a file and give its path.'),
-    });
-    if (p.isCancel(file)) return;
-    jd = await readFile(file.trim(), 'utf8');
-  } else {
-    jd = await pasteJd();
-    if (!jd.trim()) { console.log('\n' + ui.fail('No JD text received.') + '\n'); return; }
-  }
-
-  const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
-  if (p.isCancel(role)) return;
-
-  const provider = await pickProvider(cli, 'Which model should tailor the résumé?');
-  if (provider === null) return;
-
-  const { runTailor } = await import('./commands/tailor.js');
-  await runTailor(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
-}
-
-async function interactiveEmail(cli: Cli): Promise<void> {
+async function interactiveSend(cli: Cli): Promise<void> {
   const company = await p.text({
     message: 'Company name',
     placeholder: 'Acme-AI',
@@ -227,127 +130,8 @@ async function interactiveEmail(cli: Cli): Promise<void> {
   });
   if (p.isCancel(company)) return;
 
-  const source = await p.select({
-    message: 'How do you want to provide the JD?',
-    options: [
-      { value: 'file', label: 'Path to a JD file', hint: './jd.txt' },
-      { value: 'paste', label: 'Paste the JD text', hint: 'multi-line paste' },
-    ],
-  });
-  if (p.isCancel(source)) return;
-
-  let jd: string;
-  if (source === 'file') {
-    const file = await p.text({
-      message: 'Path to the JD file',
-      placeholder: './jd.txt',
-      validate: (v) => (v && existsSync(v.trim()) ? undefined : 'File not found — save the JD to a file and give its path.'),
-    });
-    if (p.isCancel(file)) return;
-    jd = await readFile(file.trim(), 'utf8');
-  } else {
-    jd = await pasteJd();
-    if (!jd.trim()) { console.log('\n' + ui.fail('No JD text received.') + '\n'); return; }
-  }
-
-  const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
-  if (p.isCancel(role)) return;
-
-  const provider = await pickProvider(cli, 'Which model should draft the email?');
-  if (provider === null) return;
-
-  // runEmail draws the draft, then handles recipient approval + the send confirm.
-  const { runEmail } = await import('./commands/email.js');
-  await runEmail(cli, { jd, company: company.trim(), role: (role || '').trim(), provider });
-}
-
-async function interactiveNote(cli: Cli): Promise<void> {
-  const company = await p.text({
-    message: 'Company name',
-    placeholder: 'Acme-AI',
-    validate: (v) => (v && v.trim() ? undefined : 'Required — the note is filed by company.'),
-  });
-  if (p.isCancel(company)) return;
-
-  const platform = await p.text({
-    message: 'Where will you paste it? (optional — Wellfound, Work at a Startup, …)',
-    placeholder: 'Wellfound',
-  });
-  if (p.isCancel(platform)) return;
-
-  const source = await p.select({
-    message: 'How do you want to provide the JD?',
-    options: [
-      { value: 'file', label: 'Path to a JD file', hint: './jd.txt' },
-      { value: 'paste', label: 'Paste the JD text', hint: 'multi-line paste' },
-    ],
-  });
-  if (p.isCancel(source)) return;
-
-  let jd: string;
-  if (source === 'file') {
-    const file = await p.text({
-      message: 'Path to the JD file',
-      placeholder: './jd.txt',
-      validate: (v) => (v && existsSync(v.trim()) ? undefined : 'File not found — save the JD to a file and give its path.'),
-    });
-    if (p.isCancel(file)) return;
-    jd = await readFile(file.trim(), 'utf8');
-  } else {
-    jd = await pasteJd();
-    if (!jd.trim()) { console.log('\n' + ui.fail('No JD text received.') + '\n'); return; }
-  }
-
-  const role = await p.text({ message: 'Role override (optional — blank = read from JD)', placeholder: '' });
-  if (p.isCancel(role)) return;
-
-  const provider = await pickProvider(cli, 'Which model should draft the note?');
-  if (provider === null) return;
-
-  const { runNote } = await import('./commands/note.js');
-  await runNote(cli, {
-    jd, company: company.trim(), role: (role || '').trim(), platform: (platform || '').trim(), provider,
-  });
-}
-
-// Ask which model to use, but only when more than one provider has a key. Returns
-// '' for the auto-pick (single provider), the chosen id, or null on cancel.
-async function pickProvider(cli: Cli, message: string): Promise<string | null> {
-  const withKeys = listProviders().filter((f) => cli.config.llm.keys[f.id]);
-  if (withKeys.length <= 1) return '';
-  const pick = await p.select({
-    message,
-    initialValue: defaultProviderId(cli.config.llm),
-    options: withKeys.map((f) => ({ value: f.id, label: f.label, hint: cli.config.llm.models[f.id] || f.defaultModel })),
-  });
-  if (p.isCancel(pick)) return null;
-  return pick as string;
-}
-
-// Clack has no built-in multiline text prompt, so pasted JDs are read directly
-// off stdin. A blank-line terminator won't do — JDs routinely contain blank
-// lines between sections — so we end on a lone `.` sentinel. Clack leaves stdin
-// in raw mode, where Ctrl+D/Ctrl+Z is never turned into EOF, so we drop raw mode
-// for the read and restore it afterwards for the prompts that follow.
-async function pasteJd(): Promise<string> {
-  console.log(
-    '\n' + ui.info(`Paste the JD below. When done, type ${pc.bold('.')} on a line by itself and press Enter.`) + '\n',
-  );
-  const stdin = process.stdin;
-  const wasRaw = Boolean(stdin.isTTY && stdin.isRaw);
-  if (stdin.isTTY) stdin.setRawMode(false);
-  const rl = createInterface({ input: stdin });
-  const lines: string[] = [];
-  try {
-    for await (const line of rl) {
-      if (line.trim() === '.') break;
-      lines.push(line);
-    }
-  } finally {
-    rl.close();
-    if (stdin.isTTY) stdin.setRawMode(wasRaw);
-  }
-  return lines.join('\n').trim();
+  const { runSend } = await import('./commands/send.js');
+  await runSend(cli, { company: company.trim() });
 }
 
 // ---- dispatch --------------------------------------------------------------

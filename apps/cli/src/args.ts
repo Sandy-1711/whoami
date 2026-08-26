@@ -3,7 +3,7 @@
 
 // Flags that consume the following token as their value, so a value like
 // "--company Acme" is never mistaken for a positional argument.
-export const VALUE_FLAGS = ['--jd', '--company', '--role', '--model', '--name', '--provider', '--target', '--focus', '--to', '--attach', '--platform', '--tone', '--length'];
+export const VALUE_FLAGS = ['--jd', '--company', '--name', '--to', '--attach', '--path'];
 
 // `--word`, the shape of another flag. A JD that opens with a `---` rule is not
 // one, so the test is "two dashes then a letter".
