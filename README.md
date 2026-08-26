@@ -266,13 +266,15 @@ If you do have TeXLive/MiKTeX installed, `pnpm build:pdf` uses it directly.
 
 A companion toolkit turns a JD into an ATS-optimized, company-named PDF — **without**
 touching your canonical `resume.tex` — and helps run the rest of a job search (emails,
-Wellfound notes, outreach, application tracking). Everything is grounded in a **verified
+application-form notes, outreach, application tracking). Everything is grounded in a **verified
 fact base** (`profile/facts.json`), so it never fabricates experience, and it works with
 **Gemini or DeepSeek** (set at least one key; there's no offline mode for LLM steps).
 
-There are **three ways to drive it**: a conversational **chat agent** that wraps every
-capability as a tool and calls them for you, the **individual commands** run directly, or an
-**MCP server** that hands the same tools to an external agent like Claude Code or Cursor.
+There are **two ways to drive it**: a conversational **chat agent** that wraps every
+capability as a tool and calls them for you, or an **MCP server** that hands the same tools to
+an external agent like Claude Code or Cursor. Anything needing a model lives there. The
+remaining commands are the operator's — the toolchain, the free reads, and sending a draft
+that already exists.
 
 ```bash
 cp .env.example .env             # set GEMINI_API_KEY and/or DEEPSEEK_API_KEY (see the file)
@@ -280,19 +282,17 @@ cp .env.example .env             # set GEMINI_API_KEY and/or DEEPSEEK_API_KEY (s
 pnpm chat                     # ⭐ conversational agent — every capability as a tool
 pnpm mcp                      # serve the tools over MCP (stdio) to Claude Code / Cursor
 pnpm resume                   # interactive menu (clack) — the same commands, guided
-pnpm tailor -- jd.txt --company "Acme-AI" [--role "AI Dev Engineer"]
-pnpm email  -- jd.txt --company "Northwind AI"   # draft + send a Gmail application email
-pnpm note -- jd.txt --company "Acme AI"          # the "why this role?" application-form note
+pnpm send -- --company "Northwind AI"   # mail the saved draft verbatim — free, no LLM
 pnpm score -- jd.txt          # deterministic JD fit score — free, no LLM
 pnpm digest                   # ranked GitHub/LinkedIn evidence digest — free, no LLM
-pnpm sync -- --force          # re-scrape GitHub now (LinkedIn is opt-in: --linkedin)
+pnpm sync -- --force          # re-scrape GitHub now
 pnpm status                   # env, sources, toolchain, and outputs at a glance
 ```
 
 ### Chat — the agent (`pnpm chat`)
 
 A streaming REPL over a **Mastra** agent (Gemini or DeepSeek) that has the whole toolkit as
-tools — score a JD, tailor, draft/send email, Wellfound notes, outreach messages, sync,
+tools — score a JD, tailor, draft/send email, application-form notes, outreach, sync,
 build, check, edit the fact base, update the GitHub profile, track applications — and calls
 them for you. Text and the model's live **thinking** stream back; tool calls show as dim
 lines; irreversible actions (sending email, GitHub writes) require a terminal confirm.
@@ -327,16 +327,14 @@ The client prompts before each tool call, so that prompt is the human-in-the-loo
 pushes. See [docs/CLI.md](docs/CLI.md#mcp--serve-the-tools-over-mcp-for-claude-code--cursor--claude-desktop)
 for details.
 
-- **Application email** — `pnpm email -- jd.txt --company "Northwind AI"` drafts a
-  JD-tailored email from the same fact base, reads the apply-to address and subject
-  straight from the JD, and auto-attaches the tailored résumé PDF from
-  `tailored/<company>/` (override with `--attach <pdf>` or `--no-attach`). It then
-  **shows the draft and only sends after you confirm the recipient** — sending goes
-  through Gmail using a **Google App Password** (`GMAIL_USER` + `GMAIL_APP_PASSWORD` in
-  `.env`; see `.env.example`). Without those it drafts only. Flags: `--to <addr>` to set
-  the recipient, `--yes` to skip the confirm (for automation), `--dry-run` to preview
-  only. On a real run the draft is written to `tailored/<company>/application-email.txt`;
-  a `--dry-run` is a read-only preview that never overwrites an existing draft.
+- **Application email** — the agent drafts it (`draft_application_email`), grounded in the
+  same fact base, reading the apply-to address and subject straight from the JD and attaching
+  the tailored résumé PDF from `tailored/<company>/`. Nothing is sent until you have seen the
+  recipient, the subject and the full body and said yes. `pnpm send -- --company "Northwind AI"`
+  mails `tailored/<company>/application-email.txt` verbatim without calling a model at all —
+  useful when you (or a Claude Code session) wrote the draft by hand. Sending goes through Gmail
+  using a **Google App Password** (`GMAIL_USER` + `GMAIL_APP_PASSWORD` in `.env`; see
+  `.env.example`). Flags: `--to <addr>`, `--attach <pdf>` / `--no-attach`, `--dry-run`.
 
 - **Output naming** — the résumé is filed and named by company + the role read from the
   JD: `--company "Acme-AI"` → `tailored/acme_ai/Sandeep Singh - AI Dev
