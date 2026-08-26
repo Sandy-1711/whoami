@@ -1,9 +1,9 @@
-// The wire format between the studio server and its SPA.
+// The wire format between the studio server and its SPA. One module, so a route
+// and the component reading it cannot drift apart.
 //
-// Types only, and it has to stay that way: the SPA imports these with
-// `import type`, which erases the specifier before Vite has to resolve a
-// NodeNext-style '.js' path onto the '.ts' file that actually exists. A runtime
-// value here would not survive the round trip.
+// The two halves resolve modules differently, so they spell the import
+// differently: the server is NodeNext and writes '../shared/events.js', the SPA
+// is bundler-resolved and writes '../shared/events'. Same file.
 
 /** Token counts for one turn, as the provider reported them. */
 export interface TurnUsage {

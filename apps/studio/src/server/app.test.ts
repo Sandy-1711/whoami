@@ -1,9 +1,9 @@
-import { mkdtempSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { fakeLatexCompiler, fakePdfInspector } from '@resume/core/testing';
-import type { AppConfig, Resume } from '@resume/core';
+import type { AppConfig, Resume, StatusReport } from '@resume/core';
 import type { Cli } from '@resume/cli';
 import type { UserAnswer } from '@resume/agent';
 import { createApp } from './app.js';
@@ -36,6 +36,11 @@ const config: AppConfig = {
   scrapeTtlHours: 12,
 };
 
+interface StatusBody {
+  report: StatusReport;
+  langfuse: { enabled: boolean; url: string };
+}
+
 const roots: string[] = [];
 
 // Everything the routes under test actually reach. The chat turn is not one of
@@ -64,12 +69,18 @@ function testStudio(): { studio: Studio; root: string } {
   return { studio, root };
 }
 
+// Hono's test client types a response body as unknown; every assertion below
+// states the shape it is checking, so read it back at that shape.
+const body = <T>(res: Response): Promise<T> => res.json() as Promise<T>;
+
 function writeResume(root: string, resume: unknown): void {
   mkdirSync(join(root, 'profile'), { recursive: true });
   writeFileSync(join(root, 'profile', 'resume.json'), JSON.stringify(resume));
 }
 
-afterEach(() => { roots.length = 0; });
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
 
 describe('GET /api/status', () => {
   it('reports the toolchain and where to find the traces', async () => {
@@ -77,9 +88,9 @@ describe('GET /api/status', () => {
     const res = await createApp(studio).request('/api/status');
 
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.report.env.anyKey).toBe(false);
-    expect(body.langfuse).toEqual({ enabled: false, url: 'http://localhost:3000' });
+    const status = await body<StatusBody>(res);
+    expect(status.report.env.anyKey).toBe(false);
+    expect(status.langfuse).toEqual({ enabled: false, url: 'http://localhost:3000' });
   });
 });
 
@@ -89,7 +100,7 @@ describe('GET /api/resume', () => {
     const res = await createApp(studio).request('/api/resume');
 
     expect(res.status).toBe(404);
-    expect((await res.json()).error).toContain('profile/resume.json');
+    expect((await body<{ error: string }>(res)).error).toContain('profile/resume.json');
   });
 
   it('returns the parsed document', async () => {
@@ -98,7 +109,7 @@ describe('GET /api/resume', () => {
 
     const res = await createApp(studio).request('/api/resume');
     expect(res.status).toBe(200);
-    expect((await res.json()).resume.name).toBe('Ada Lovelace');
+    expect((await body<{ resume: Resume }>(res)).resume.name).toBe('Ada Lovelace');
   });
 });
 
@@ -116,7 +127,7 @@ describe('PUT /api/resume', () => {
     const res = await createApp(studio).request('/api/resume', put({ ...RESUME, subtitle: [] }));
 
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toContain('subtitle');
+    expect((await body<{ error: string }>(res)).error).toContain('subtitle');
   });
 
   it('leaves the document on disk untouched when the edit is invalid', async () => {
@@ -148,7 +159,7 @@ describe('GET /api/outputs', () => {
     const { studio } = testStudio();
     const res = await createApp(studio).request('/api/outputs');
 
-    expect(await res.json()).toEqual({ outputs: [] });
+    expect(await body<unknown>(res)).toEqual({ outputs: [] });
   });
 
   it('refuses a path that climbs out of tailored/', async () => {
@@ -189,7 +200,7 @@ describe('POST /api/files', () => {
     const res = await createApp(studio).request('/api/files', { method: 'POST', body: form });
 
     expect(res.status).toBe(200);
-    const { path } = await res.json();
+    const { path } = await body<{ path: string }>(res);
     expect(path.startsWith(join(root, '.agent', 'jd'))).toBe(true);
     expect(readFileSync(path, 'utf8')).toBe('We are hiring a Staff Engineer.');
   });
@@ -249,7 +260,7 @@ describe('GET /api/threads', () => {
     const { studio } = testStudio();
     const res = await createApp(studio).request('/api/threads');
 
-    expect((await res.json()).threads).toEqual([
+    expect((await body<{ threads: unknown[] }>(res)).threads).toEqual([
       { id: 't1', title: 'Acme outreach', updatedAt: new Date(0).toISOString() },
     ]);
   });
@@ -258,7 +269,7 @@ describe('GET /api/threads', () => {
     const { studio } = testStudio();
     const res = await createApp(studio).request('/api/threads/t1');
 
-    expect((await res.json()).messages).toEqual([
+    expect((await body<{ messages: unknown[] }>(res)).messages).toEqual([
       { id: 'm1', role: 'user', text: 'hello', createdAt: new Date(0).toISOString() },
     ]);
   });
