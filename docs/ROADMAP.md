@@ -24,11 +24,11 @@ code).
 
 ## Resuming — start here
 
-Everything through Phase 3 is committed on **`hardening`**, tree clean, `pnpm test` and
-`pnpm typecheck` green. Phases are committed as they land, one concern per commit.
+Everything through Phase 3 is merged into **`main`**, tree clean, `pnpm test` and `pnpm typecheck`
+green. Phases are committed as they land, one concern per commit.
 
 ```sh
-git log --oneline main..hardening    # what has landed
+git log --oneline -40    # what has landed
 ```
 
 **What the surface looks like now**, since it moved a long way in Phase 2 and the older prose in
@@ -62,11 +62,16 @@ working either:
 a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
 longer exists. It should be deleted.
 
-**Branch state:** `hardening` is 80 commits ahead of `main` and 0 behind, so merging is a
-fast-forward. Pushing to `main` triggers `build-deploy.yml`, which recompiles the résumé and
-deploys it to Vercel — safe as of Phase 3, because the PDF that migration produces is byte-identical
-to the published one. The cache key is `hashFiles('resume.tex')`, so that first run misses the cache
-and does a full LaTeX compile.
+**Branch state:** Phases 0–3 landed on `main` through
+[PR #7](https://github.com/Sandy-1711/whoami/pull/7), merged 2026-08-26 with a rebase — so `main`
+carries the same work under new SHAs and **`hardening` is a stale duplicate of it**. Start Phase 4
+from `main`.
+
+That merge was the first time CI saw any of this: `build-deploy.yml` triggers on push to `main`, not
+on pull requests. It passed — the migrated résumé compiled, the source guard (including the new
+check that `resume.tex` is what `profile/resume.json` renders to) and the PDF guard both cleared,
+and Vercel took the deploy. The run missed the PDF cache, as expected: the key is
+`hashFiles('resume.tex')` and that file changed.
 
 **Next: Phase 4**, below.
 
@@ -487,12 +492,16 @@ Server reuses `buildCli()`, `assembleTools(deps)`, `buildAgent`, `progressPresen
 | `GET /api/threads`, `/api/threads/:id` | Past threads from the existing libSQL memory. |
 | `POST /api/files` | Upload a JD; returns a path usable as `jdPath`. |
 | `GET /api/outputs/*` | Serve tailored PDFs. |
-| `GET`/`PUT /api/resume` | Read/write `profile/resume.json`. |
+| `GET`/`PUT /api/resume` | Read/write `profile/resume.json` — `parseResume` validates the PUT, `writeResumeTex` re-renders after it. |
 | `GET /api/status` | Existing `collectStatus`. |
 
-**Confirm gate over the wire:** `ConfirmGate` stays `(question) => Promise<boolean>`. The web
-implementation emits a `confirm` SSE event with an id, parks the promise in a `Map`, resolves on
-the browser's POST. A timeout denies rather than hanging.
+**Confirm gate over the wire:** `ConfirmGate` is `(request: ConfirmRequest) => Promise<boolean>`
+since Phase 2 — `{ tool, action, params, preview }`, the resolved values rather than a sentence
+about them. That is what the modal renders, and `formatConfirm` in `packages/agent/src/confirm.ts`
+already lays the same fields out for a terminal. The web implementation emits a `confirm` SSE event
+carrying the request and an id, parks the promise in a `Map`, and resolves on the browser's POST. A
+timeout denies rather than hanging; `denyGate` is the default so a missing wiring cannot
+auto-approve.
 
 Frontend: chat pane with streamed markdown and collapsible reasoning; tool timeline with per-call
 timing (already computed in `runTurn`); `ConfirmModal` showing the exact action, recipient, and

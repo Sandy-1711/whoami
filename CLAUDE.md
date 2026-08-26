@@ -9,14 +9,12 @@ already exists.
 
 ## Active work — read this first
 
-Hardening work is in progress on the **`hardening`** branch, not `main`. Start with
+Hardening work is in progress: Phases 0–3 are merged into `main`, Phase 4 is next. Start with
 **[docs/ROADMAP.md](docs/ROADMAP.md)** — it carries current status and per-phase what/why/how.
 Then [docs/DECISIONS.md](docs/DECISIONS.md) for why things are the way they are, and
 [docs/CONVENTIONS.md](docs/CONVENTIONS.md) before writing any code.
 
-```sh
-git log --oneline main..hardening    # what has landed
-```
+The `hardening` branch is a stale duplicate of `main` after a rebase merge — do not branch from it.
 
 ## Orientation
 
