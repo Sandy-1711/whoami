@@ -62,7 +62,72 @@ working either:
 a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
 longer exists. It should be deleted.
 
+**Branch state:** `hardening` is 80 commits ahead of `main` and 0 behind, so merging is a
+fast-forward. Pushing to `main` triggers `build-deploy.yml`, which recompiles the résumé and
+deploys it to Vercel — safe as of Phase 3, because the PDF that migration produces is byte-identical
+to the published one. The cache key is `hashFiles('resume.tex')`, so that first run misses the cache
+and does a full LaTeX compile.
+
 **Next: Phase 4**, below.
+
+---
+
+## Open questions — the owner's call, not the plan's
+
+Raised by an audit at the end of Phase 3. None of them blocks Phase 4; all three are things that
+exist without a reason strong enough to defend themselves.
+
+### 1. The file-drift half of `profile/sources.lock.json` earns nothing
+
+The lock does two unrelated jobs. **Scrape freshness** (`recordScrape`, `lastScrape`, `isStale`,
+`contentHash`) is load-bearing: it is the TTL short-circuit that stops every `sync` and every
+`tailor_plan` re-hitting the GitHub API — N+1, one README call per repo across ~45 repos — and the
+content hash that stops `github.json` being rewritten when nothing changed. Keep it.
+
+**File drift** (`hashSources`, `sourceFiles`, `drift`, `writeLock`, `Lock.files`) is a warning
+wired to nothing. All four call sites — `tailor/service.ts`, `email/service.ts`,
+`outreach/service.ts`, `profile/status.ts` — print it or put it in a read-only status object.
+Nothing gates, skips or branches on `d.synced` anywhere.
+
+And the logic does not hold up: it detects "you edited `facts.json` or `resume.json` since the last
+sync" and reports "your scraped sources may be stale" — but a hand edit to the fact base does not
+make GitHub's data older. Its one real consumer is the model, which reads `drift` from
+`profile_status` and is told by `sync_profiles`' description to re-scrape when it is set. So the
+agent re-pulls GitHub because a local JSON file changed, and the sync's only real effect is
+re-baselining the hash that was nagging it.
+
+Cost of keeping: ~60 lines, a `files` key, and a meaningless warning at the top of every tailor,
+email and outreach run. **Recommended: delete the file-drift half, keep the scrape half.**
+
+Note in passing: Phase 3 changed the tracked key from `resume.tex` to `profile/resume.json` (the
+`.tex` is generated now), and the committed lock still names the old key. Until the next `sync`,
+drift reports `resume.json` as changed when nothing has — which is its own small argument.
+
+### 2. Three of the five pipeline tools duplicate free CLI commands
+
+`tailor_plan` and `tailor_render` are the only path to what they do — no CLI command tailors, by
+design, and the skills' free path is a human writing the copy, which is narrower than a
+whole-document rewrite validated line by line. Keep both.
+
+`sync_profiles`, `build_resume` and `check_resume` are thin wrappers over exactly what
+`pnpm sync`, `pnpm build:pdf` and `pnpm check` call. `job-copilot`'s own table already marks them
+"same". Their only justification is an MCP client with no shell — Claude Desktop, Cursor. Driven
+from Claude Code, where Bash exists, they are three of the eighteen tools a model has to choose
+between, which is the exact complaint Phase 2 set out to fix.
+
+**Recommended: drop all three if the MCP surface is only ever driven from a client with shell
+access; keep them otherwise.** It is a one-line answer about how the toolkit is used, not a
+technical question.
+
+### 3. A tool description promises a confirm gate that MCP does not have
+
+`runMcp` wires `confirm: allowGate`, which is `async () => true`. `tailor_plan`'s description says
+"the user is asked before the run starts, because it costs credits". On the MCP path nobody is
+asked by this codebase — it rests entirely on the client's own approval UI.
+
+The gate itself is a known Phase 2 tradeoff and is written up there. The description claiming
+otherwise is not: it is a statement that is false on one of the two paths that read it.
+**Recommended: fix the wording either way this is decided.**
 
 ---
 
