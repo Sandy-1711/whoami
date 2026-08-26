@@ -65,6 +65,7 @@ export interface TailorPlanResult {
 
 export interface TailorRunResult {
   paths: OutputPaths;
+  /** `after` is measured on the résumé that rendered, not projected. */
   score: Score;
   role: string;
   guardsPass: boolean;
@@ -278,9 +279,16 @@ export class TailorService {
 
     // The loop may have changed the copy — report on whatever finally rendered.
     const passed = guardsPass(guards);
+    // scoreResume's "before" is coverage as the text stands. Run against the
+    // résumé that actually rendered, that is a measurement rather than the
+    // projection the plan made before the model had written anything.
+    const rendered = classify(extractJdKeywords(plan.jd), resumePlainText(draft), facts);
+    const score: Score = { ...plan.score, after: scoreResume(rendered).before };
+
     const report: TailorReportData = {
       cls: plan.cls,
-      score: plan.score,
+      score,
+      projectedAfter: plan.score.after,
       role: plan.role,
       summary: draft.summary,
       subtitle: draft.subtitle.join(' | '),
@@ -291,7 +299,7 @@ export class TailorService {
       paths, guardsPass: passed, provider: plan.provider, model: plan.model,
     };
     await writeFile(paths.report, buildReportMarkdown(report));
-    return { paths, score: plan.score, role: plan.role, guardsPass: passed, report };
+    return { paths, score, role: plan.role, guardsPass: passed, report };
   }
 
   // A reverted line is not a failure — the guarantee working — but it is the one

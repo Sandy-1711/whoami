@@ -7,7 +7,10 @@ import type { Classification, Score, OutputPaths } from '../types.js';
 
 export interface TailorReportData {
   cls: Classification;
+  /** `after` is measured on the résumé that rendered. */
   score: Score;
+  /** What the plan predicted `after` would be, before the model wrote anything. */
+  projectedAfter: number;
   role: string;
   summary: string;
   subtitle: string;
@@ -24,11 +27,14 @@ export interface TailorReportData {
 }
 
 export function buildReportMarkdown(r: TailorReportData): string {
-  const { cls, score, role, summary, subtitle, edited, reverted, rationale } = r;
+  const { cls, score, projectedAfter, role, summary, subtitle, edited, reverted, rationale } = r;
   const { guards, paths, provider, model } = r;
+  // The projection is only worth printing when the rewrite did not reach it —
+  // that gap is the interesting number, not the agreement.
+  const missedBy = projectedAfter === score.after ? '' : ` · projected ${projectedAfter}`;
   return [
     `# Tailored résumé report — ${paths.base}`,
-    ``, `- ATS score: **${score.before} → ${score.after}** (target 92+)`,
+    ``, `- ATS score: **${score.before} → ${score.after}** (measured on the rendered résumé, target 92+)${missedBy}`,
     `- Role: ${role}`,
     `- Engine: ${provider} ${model}`,
     `- Pages: ${guards.pages} · Width: ${guards.width.length === 0 ? 'OK' : guards.width.join('; ')}`,
