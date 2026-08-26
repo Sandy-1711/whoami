@@ -12,8 +12,9 @@
 import { extractJdKeywords, factIndex, termInText } from '../tailor/core.js';
 import type { Facts } from '../types.js';
 
-// "82%", "10,000+", "27k+", "8+", "4B", "99.9%".
-const FIGURE = /\d[\d,]*(?:\.\d+)?\s*(?:k|m|b|x|%)?\+?/gi;
+// "82%", "10,000+", "27k+", "8+", "4B", "99.9%". The unit has to be glued to
+// the number, or "16 merged" reads as the figure "16m".
+const FIGURE = /\d[\d,]*(?:\.\d+)?[kmbx%]?\+?/gi;
 
 function figures(text: string): Set<string> {
   const found = (text.match(FIGURE) || []).map((f) => f.replace(/[\s,]/g, '').toLowerCase());
