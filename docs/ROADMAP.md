@@ -20,11 +20,53 @@ code).
 | 5 | Formatter, linter, comment pass | not started |
 | 6 | Deferred work | not started |
 
-Work stays **uncommitted** for review unless commits are explicitly requested.
+---
+
+## Resuming — start here
+
+Everything through Phase 2 is committed on **`hardening`** (62 commits ahead of `main`), tree
+clean, `pnpm test` and `pnpm typecheck` green. Phases are being committed as they land, one
+concern per commit.
+
+```sh
+git log --oneline main..hardening    # what has landed
+```
+
+**What the surface looks like now**, since it moved a long way in Phase 2 and the older prose in
+this file predates it:
+
+- **18 tools**, assembled in one place — `assembleTools` in `packages/agent/src/agent.ts`. Chat and
+  MCP wire exactly that set. `recordTools` wraps all of them, so every call appends to
+  `.agent/activity.jsonl` and updates the tracker without any tool opting in.
+- **The CLI no longer calls a model.** `chat` and `mcp` reach the agent; `send`, `sync`, `score`,
+  `digest`, `status`, `build`, `check` are the operator surface.
+- **The confirm gate** takes a `ConfirmRequest { tool, action, params, preview }` and the terminal
+  prints the resolved values before asking. Nothing is approved by an argument.
+
+**Carried forward, still unverified** — none of these blocks Phase 3, but none has been watched
+working either:
+
+- No Langfuse trace has been seen arriving in a running stack (Phase 1). Needs the stack up and one
+  real paid call.
+- `resume send` has only been exercised with `--dry-run`. It has never put a real message through
+  Gmail.
+- Over MCP the confirm gate auto-approves, because there is no terminal to prompt. MCP elicitation
+  was not explored; the draft-first rule is what holds under a client set to "always allow".
+
+`AGENT_BUILDLOG.md` at the repo root is **stale and superseded by this file** — it opens by telling
+a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
+longer exists. It should be deleted.
+
+**Next: Phase 3**, below. Its acceptance gate is the risky part — read that before writing any of
+it.
 
 ---
 
 ## Why this work exists
+
+This was the state at the start. Phases 1 and 2 closed all of it except the two marked **open**,
+which are what Phase 3 is for. Kept because it is the argument for the whole plan, not a to-do
+list — read it for the reasoning, not the status.
 
 The ports-and-adapters structure is sound and the test suite passes. The problems are in the LLM
 layer, the tool surface, and the total absence of runtime visibility:
@@ -39,9 +81,10 @@ layer, the tool surface, and the total absence of runtime visibility:
 - Real provider errors get replaced by a generic sentence in `tailor/service.ts` before anyone can
   read them, and under MCP the real message is written to stderr, which the client discards.
 - Every JD-taking tool demands the full JD text inline — no file path, no URL.
-- Tailoring rewrites two lines. Experience and project bullets are identical across every company
-  in `tailored/`.
-- The reported ATS "after" score is a projection computed before the model runs, never measured.
+- **Open.** Tailoring rewrites two lines. Experience and project bullets are identical across every
+  company in `tailored/`.
+- **Open.** The reported ATS "after" score is a projection computed before the model runs, never
+  measured.
 - The fact base is truncated mid-string by a blind `.slice()`, and `headline_metrics` never reaches
   the model at all.
 
@@ -293,10 +336,19 @@ output breaks. Structured data removes both problems at once.
 - `packages/core/src/resume/render.ts` — JSON → `.tex`, composing the preamble/macros partial
   (verbatim from current `resume.tex` lines 1–68) with a generated body.
 - `packages/core/src/resume/extract.ts` — one-time `resume.tex` → `resume.json` migration.
-- `TailorService` produces a validated `ResumeEdit` addressing bullets by `id`.
+- `TailorService.plan()` produces a validated `ResumeEdit` addressing bullets by `id`; `render()`
+  applies it. The service was split in Phase 2 (plan = the model call, saved to
+  `tailored/<company>/tailor-plan.json`; render = compile + guards + the tighten loop), so the
+  edit lands in `plan()` and nothing about the split needs revisiting.
 - Every rewritten bullet is checked against `factIndex(facts)` before render; unbacked keywords
   revert the bullet to its base text and are reported. This is what keeps "rewrite everything" from
-  meaning "invent anything".
+  meaning "invent anything". **`factIndex` is currently dead weight for this purpose** — it exists
+  in `packages/core/src/tailor/core.ts` but is only ever called by `classify()` on JD keywords, so
+  no path validates generated text against the fact base today. This bullet builds the first one.
+- **Decide here:** whether the same validator becomes `save_draft`, so outreach and email copy are
+  checked too, and whether `draft_context` replaces paying a second model for prose. See the
+  deferred question at the end of Phase 2 — the argument and the proposed shapes are written up
+  there.
 - Re-score the rendered plain text via `latexToPlainText`, so `score.after` is measured. Report the
   projection and the measurement when they differ.
 - `.githooks/pre-commit` and `.github/workflows/build-deploy.yml` build from `resume.tex`; after
