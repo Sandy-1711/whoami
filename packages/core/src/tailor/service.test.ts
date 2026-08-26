@@ -147,6 +147,24 @@ describe('TailorService.run', () => {
     expect(result.report.summary).toBe(DRAFT.summary);
   });
 
+  it('scores what rendered, and keeps the projection beside it', async () => {
+    const root = await makeRoot();
+    // A résumé that never says TypeScript, which the fact base has: the plan
+    // projects the gain, and only the render can say whether it landed.
+    const thin = { ...RESUME, projects: [{ ...RESUME.projects[0]!, tech: '' }] };
+    await writeFile(join(root, 'profile', 'resume.json'), JSON.stringify(thin));
+    // Copy that never works TypeScript in, so the projection is not reached.
+    const llm = createFakeLlm({ responses: [{ ...DRAFT, subtitle: ['AI Engineer', 'RAG Systems'] }] });
+
+    const result = await new TailorService({
+      root, latex: fakeLatexCompiler(), pdf: fakePdfInspector({ pages: [1] }), presenter: silentPresenter,
+    }).run({ jd: JD, company: 'Acme AI' }, context(llm));
+
+    expect(result.score).toMatchObject({ before: 60, after: 60 });
+    expect(result.report.projectedAfter).toBe(80);
+    expect(await readFile(result.paths.report, 'utf8')).toContain('projected 80');
+  });
+
   it('grounds the prompt in the JD and the fact base', async () => {
     const root = await makeRoot();
     const llm = createFakeLlm({ responses: [DRAFT] });
