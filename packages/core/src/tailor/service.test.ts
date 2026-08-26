@@ -127,6 +127,26 @@ describe('TailorService.run', () => {
     expect(latex.compiled[0]).toContain('\\resumeItem{Shipped \\textbf{RAG} agents on \\textbf{FastAPI}, in production.}');
   });
 
+  it('keeps the original bullet when the model claims something the facts do not back', async () => {
+    const root = await makeRoot();
+    const latex = fakeLatexCompiler();
+    const invented = {
+      ...DRAFT,
+      bullets: [{ id: 'aira-1', text: 'Shipped agents on **Kubernetes** at **99.99%** uptime.' }],
+    };
+    const llm = createFakeLlm({ responses: [invented] });
+
+    const result = await new TailorService({
+      root, latex, pdf: fakePdfInspector({ pages: [1] }), presenter: silentPresenter,
+    }).run({ jd: JD, company: 'Acme AI' }, context(llm));
+
+    expect(latex.compiled[0]).toContain('\\resumeItem{Shipped RAG agents on FastAPI.}');
+    expect(latex.compiled[0]).not.toContain('Kubernetes');
+    expect(result.report.reverted).toEqual([{ id: 'aira-1', unbacked: ['Kubernetes', '99.99%'] }]);
+    // The summary was clean, so the rest of the rewrite still landed.
+    expect(result.report.summary).toBe(DRAFT.summary);
+  });
+
   it('grounds the prompt in the JD and the fact base', async () => {
     const root = await makeRoot();
     const llm = createFakeLlm({ responses: [DRAFT] });
