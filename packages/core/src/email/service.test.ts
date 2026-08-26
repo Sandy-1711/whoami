@@ -33,7 +33,12 @@ async function makeRoot(): Promise<string> {
         identity: { name: "Sandeep Singh", github: "https://github.com/Sandy-1711", portfolio: "https://devsandy.vercel.app/" },
         allowed_keywords: ["RAG", "FastAPI"], skills: { AI: ["RAG", "FastAPI"] },
     }));
-    await writeFile(join(root, "resume.tex"), "\\section{x} FastAPI RAG agents");
+    await writeFile(join(root, "profile", "resume.json"), JSON.stringify({
+        name: "Sandeep Singh",
+        subtitle: ["AI Engineer"],
+        contacts: ["[mail](mailto:x@y.dev)"],
+        summary: "Ships RAG agents on FastAPI.",
+    }));
     return root;
 }
 afterEach(async () => { await Promise.all(roots.splice(0).map((r) => rm(r, { recursive: true, force: true }))); });

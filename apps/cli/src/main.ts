@@ -10,7 +10,7 @@
 //   resume send --company X        mail tailored/<company>/application-email.txt
 //   resume sync [--force]          refresh the scraped GitHub source
 //   resume score / digest / status free, deterministic
-//   resume build                   compile resume.tex → apps/web/assets/resume.pdf
+//   resume build                   render profile/resume.json → resume.tex → apps/web/assets/resume.pdf
 //   resume check [--source|--pdf|--width]
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -96,7 +96,7 @@ async function interactive(cli: Cli): Promise<void> {
         { value: 'send', label: 'Send a saved application email', hint: 'tailored/<company>/application-email.txt → Gmail' },
         { value: 'sync', label: 'Sync profile sources', hint: 'refresh the GitHub scrape' },
         { value: 'status', label: 'Status', hint: 'env, sources, outputs' },
-        { value: 'build', label: 'Build canonical résumé', hint: 'resume.tex → PDF' },
+        { value: 'build', label: 'Build canonical résumé', hint: 'resume.json → resume.tex → PDF' },
         { value: 'check', label: 'Run guards', hint: 'structure / pages / width' },
         { value: 'exit', label: 'Exit' },
       ],

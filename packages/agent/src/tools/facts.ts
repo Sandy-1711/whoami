@@ -38,7 +38,7 @@ export function factsTools(deps: AgentDeps) {
         'anything you inferred, assumed, or read off a job description. This file is what every other ' +
         'tool is allowed to claim, so a wrong entry propagates into the résumé and every draft.',
       needs: "the user's approval, which is asked for with every edit spelled out.",
-      then: 'if the change affects résumé wording, resume.tex must be edited to match, then sync_profiles to re-baseline drift.',
+      then: 'if the change affects résumé wording, profile/resume.json must be edited to match, then sync_profiles to re-baseline drift.',
     }),
     inputSchema: z.object({
       edits: z.array(EDIT).min(1).describe('The edits to apply, in order.'),
@@ -80,7 +80,7 @@ export function factsTools(deps: AgentDeps) {
         edits: applied,
         summary: applied.map((a) => a.summary).join(' '),
         nextSteps: changed
-          ? ['If this affects résumé wording, edit resume.tex to match, then run sync_profiles to re-baseline drift.']
+          ? ['If this affects résumé wording, edit profile/resume.json to match, then run sync_profiles to re-baseline drift.']
           : [],
       };
     },

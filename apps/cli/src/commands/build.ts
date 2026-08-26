@@ -1,6 +1,6 @@
-// `resume build` — compile the canonical resume.tex → apps/web/assets/resume.pdf,
-// mirroring CI. Thin wrapper over build-pdf.ts (run via the tsx loader, since
-// node can't execute .ts directly).
+// `resume build` — render profile/resume.json to resume.tex and compile it to
+// apps/web/assets/resume.pdf, mirroring CI. Thin wrapper over build-pdf.ts (run
+// via the tsx loader, since node can't execute .ts directly).
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
