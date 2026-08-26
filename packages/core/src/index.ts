@@ -13,6 +13,12 @@ export * from './format.js';
 export * from './naming.js';
 export * from './prompts.js';
 
+// The résumé document: profile/resume.json is the source, resume.tex the render.
+export * from './resume/schema.js';
+export * from './resume/markup.js';
+export * from './resume/render.js';
+export * from './resume/extract.js';
+
 // Tailoring.
 export * from './tailor/core.js';
 export * from './tailor/report.js';
