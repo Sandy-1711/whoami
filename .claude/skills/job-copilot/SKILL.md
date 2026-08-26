@@ -38,9 +38,10 @@ LLM systems), anchored on his open-source Mastra work.
    is good; fabricating one is a serious error.
 2. **The Indigle/Samagra role is "Founding Software Engineer".** Never
    "co-founder" or "CTO" — he dislikes that framing.
-3. **The résumé stays ONE page and passes its guards.** After any `resume.tex`
-   edit, rebuild and run the guards (see the `resume-latex` skill). A failing PDF
-   is not ship-ready.
+3. **The résumé stays ONE page and passes its guards.** The résumé is
+   `profile/resume.json`; `resume.tex` is rendered from it. After any edit,
+   rebuild and run the guards (see the `resume-latex` skill). A failing PDF is
+   not ship-ready.
 4. **Irreversible / outward-facing actions need explicit confirmation.** Sending
    an email, pushing to GitHub, or editing an identity field (name/email/links):
    draft and SHOW first, then ask before it goes out. Never send/push silently.
@@ -59,7 +60,7 @@ LLM systems), anchored on his open-source Mastra work.
 | Score a JD's ATS fit | `pnpm score -- jd.txt` (deterministic, no LLM) → `resume-ats` skill | — (`tailor_plan` also scores, but drafts via LLM) |
 | See the ranked GitHub/LinkedIn evidence | `pnpm digest` (no LLM) | — |
 | Draft an application-form note / cold email / DM / follow-up | **you draft it** → `resume-outreach` skill | agent's `outreach_message` |
-| Tailor the résumé summary/skills to a JD | **you edit `resume.tex`** → `resume-latex` + `resume-ats` | agent's `tailor_plan` + `tailor_render` |
+| Tailor the résumé to a JD | **you edit `profile/resume.json`** → `resume-latex` + `resume-ats` | agent's `tailor_plan` + `tailor_render` |
 | LinkedIn / GitHub profile copy | **you draft it** → `resume-outreach` | — |
 | Add/remove a fact, keyword, skill | **you edit `facts.json`** → `resume-facts` | agent's update_facts |
 | Ban/pin repos feeding the profile | **you edit `curation.json`** → `resume-facts` | — |

@@ -11,9 +11,13 @@ commands below are the free half of the pipeline.
 
 > **POLICY (see `job-copilot`):** `tailor_plan` + `tailor_render` are the PAID
 > path — 1–3 LLM calls per run. When Claude Code or an MCP client is doing the
-> tailoring, write the summary/subtitle/skills yourself (edit `resume.tex`
-> between the TAILOR anchors, see `resume-latex`), grounded in `pnpm score` +
-> `pnpm digest`, and only call the paid tools when the user explicitly asks.
+> tailoring, write the copy yourself: edit `profile/resume.json` (see
+> `resume-latex`), grounded in `pnpm score` + `pnpm digest`, and only call the
+> paid tools when the user explicitly asks.
+>
+> Anything you rewrite has to be backed by `profile/facts.json` or by the line
+> it replaces — that is the same rule the paid path enforces automatically, and
+> nothing enforces it for you here.
 
 ## Commands
 ```

@@ -6,7 +6,7 @@ description: Edit the local profile data files by hand (in Claude Code, no API) 
 # Fact base & repo curation (hand edits, no API)
 
 Both files are plain JSON you edit directly with Edit. No LLM needed. After any
-change that affects résumé wording, remind the user to update `resume.tex` to
+change that affects résumé wording, remind the user to update `profile/resume.json` to
 match (see `resume-latex`) and run `pnpm sync` to re-baseline drift.
 
 ## `profile/facts.json` — the verified fact base
@@ -57,6 +57,6 @@ only the top 8, pins first. Implementation:
 `packages/core/src/profile/curation.ts` + `profile/digest.ts`.
 
 ## After editing
-- Facts that change résumé wording → edit `resume.tex`, rebuild, run guards.
+- Facts that change résumé wording → edit `profile/resume.json`, rebuild, run guards.
 - `pnpm sync` to re-baseline the drift lock (and apply curation to `github.json`).
 - `pnpm status` to confirm sources are fresh and the fact base looks right.

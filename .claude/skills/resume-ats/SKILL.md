@@ -1,6 +1,6 @@
 ---
 name: resume-ats
-description: Check and improve the résumé's ATS keyword coverage against a job description. Use when the user asks to score a résumé, raise its ATS match, analyze a JD's keywords, or decide which skills to surface — for the LaTeX résumé in this repo (resume.tex + profile/facts.json).
+description: Check and improve the résumé's ATS keyword coverage against a job description. Use when the user asks to score a résumé, raise its ATS match, analyze a JD's keywords, or decide which skills to surface — for the résumé in this repo (profile/resume.json + profile/facts.json).
 ---
 
 # Résumé ATS checking & improvement
@@ -12,7 +12,7 @@ LLM, no cost, transparent. (Only the *rewriting* in `tailor_plan` uses a model.)
 - `packages/core/src/tailor/core.ts` extracts JD keywords from a fixed lexicon
   (`TECH_LEXICON` + `ALIASES`), then classifies each against the résumé text and
   the **fact base** (`profile/facts.json`):
-  - **matched** — already in `resume.tex`.
+  - **matched** — already in `profile/resume.json`.
   - **addable** — TRUE (present in the fact base) but not yet on the résumé → surface these to raise the score.
   - **missing** — the JD wants it and it's NOT in the fact base → a real gap.
 - Score = 20 (structure) + 80 × (matched ÷ total keywords). "After" adds the
@@ -30,7 +30,7 @@ don't call it just to see a number.)
 ## Improving the score (POLICY: you write the text yourself)
 Scoring goes through the tool above; the résumé edits that raise it are TEXT —
 per the policy in `job-copilot`, **you** surface the addable keywords by editing
-`resume.tex` directly (see `resume-latex`), then re-run `pnpm score` to confirm.
+`profile/resume.json` (see `resume-latex`), then re-run `pnpm score` to confirm.
 Run `pnpm digest` first so you emphasize the strongest real evidence.
 
 ## Rules when improving
