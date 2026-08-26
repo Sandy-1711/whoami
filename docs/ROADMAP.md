@@ -490,12 +490,16 @@ Server reuses `buildCli()`, `assembleTools(deps)`, `buildAgent`, `progressPresen
 | `GET /api/threads`, `/api/threads/:id` | Past threads from the existing libSQL memory. |
 | `POST /api/files` | Upload a JD; returns a path usable as `jdPath`. |
 | `GET /api/outputs/*` | Serve tailored PDFs. |
-| `GET`/`PUT /api/resume` | Read/write `profile/resume.json`. |
+| `GET`/`PUT /api/resume` | Read/write `profile/resume.json` — `parseResume` validates the PUT, `writeResumeTex` re-renders after it. |
 | `GET /api/status` | Existing `collectStatus`. |
 
-**Confirm gate over the wire:** `ConfirmGate` stays `(question) => Promise<boolean>`. The web
-implementation emits a `confirm` SSE event with an id, parks the promise in a `Map`, resolves on
-the browser's POST. A timeout denies rather than hanging.
+**Confirm gate over the wire:** `ConfirmGate` is `(request: ConfirmRequest) => Promise<boolean>`
+since Phase 2 — `{ tool, action, params, preview }`, the resolved values rather than a sentence
+about them. That is what the modal renders, and `formatConfirm` in `packages/agent/src/confirm.ts`
+already lays the same fields out for a terminal. The web implementation emits a `confirm` SSE event
+carrying the request and an id, parks the promise in a `Map`, and resolves on the browser's POST. A
+timeout denies rather than hanging; `denyGate` is the default so a missing wiring cannot
+auto-approve.
 
 Frontend: chat pane with streamed markdown and collapsible reasoning; tool timeline with per-call
 timing (already computed in `runTurn`); `ConfirmModal` showing the exact action, recipient, and
