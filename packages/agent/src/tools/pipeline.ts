@@ -40,8 +40,9 @@ export function pipelineTools(deps: AgentDeps) {
       does:
         'First half of tailoring: refresh stale sources, score the JD, and ask the model to rewrite the ' +
         'résumé — summary, subtitle and any experience or project bullet — from the VERIFIED fact base ' +
-        'only. Returns the proposed copy, the before/after score, the detected role and the remaining ' +
-        'gaps, and saves the plan for tailor_render. Renders nothing, so it needs no LaTeX toolchain.',
+        'only. Returns the proposed copy, the current score and the score this rewrite is projected to ' +
+        'reach, the detected role and the remaining gaps, and saves the plan for tailor_render. Renders ' +
+        'nothing, so it needs no LaTeX toolchain.',
       cost: 'llm',
       use: 'the user has decided to apply somewhere. Show them the proposed copy before rendering it.',
       avoid: 'judging fit or answering "should I apply?" — score_jd does that for free.',
@@ -77,7 +78,7 @@ export function pipelineTools(deps: AgentDeps) {
       return {
         company: paths.slug,
         role: plan.role,
-        score: { current: plan.score.before, tailored: plan.score.after },
+        score: { current: plan.score.before, projected: plan.score.after },
         matched: cap(plan.cls.matched),
         gaps: cap(plan.cls.missing),
         summary: plan.edit.summary,
@@ -132,7 +133,7 @@ export function pipelineTools(deps: AgentDeps) {
       return {
         company: result.paths.slug,
         role: result.role,
-        score: { current: r.score.before, tailored: r.score.after },
+        score: { current: r.score.before, tailored: r.score.after, projected: r.projectedAfter },
         gaps: cap(r.cls.missing),
         pdf: rel(deps.root, result.paths.pdf),
         guardsPass: result.guardsPass,
