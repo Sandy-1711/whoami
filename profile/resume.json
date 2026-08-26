@@ -1,0 +1,188 @@
+{
+  "name": "Sandeep Singh",
+  "subtitle": [
+    "AI Engineer",
+    "Agent Infrastructure & LLM Systems",
+    "Full-Stack Software Engineer"
+  ],
+  "contacts": [
+    "[sandy1711003@gmail.com](mailto:sandy1711003@gmail.com)",
+    "[linkedin.com/in/sandeep-singh-445058254](https://linkedin.com/in/sandeep-singh-445058254/)",
+    "[github.com/Sandy-1711](https://github.com/Sandy-1711)",
+    "+91 8953596712"
+  ],
+  "summary": "**AI Engineer** building agentic LLM systems, memory, and RAG — **16 merged PRs** into Mastra's agent runtime (**27k+ stars**), shipped production agents at AiRA, and scaled a campus platform to **10,000+ users**.",
+  "experience": [
+    {
+      "id": "aira",
+      "org": "AiRA",
+      "role": "AI Engineer (Agent Orchestration, Memory, RAG & Systems)",
+      "dates": "Nov 2025 - March 2026",
+      "location": "Bangalore, India",
+      "bullets": [
+        {
+          "id": "aira-1",
+          "text": "Built the flagship **Daily Brief** agent (**Python**/**FastAPI**) — an **agentic orchestration loop** coordinating Email, Calendar, and **Exa AI** web-search tools via **asyncio** into each user's personalized morning briefing."
+        },
+        {
+          "id": "aira-2",
+          "text": "Architected a multi-tier **memory system** (working / medium / long-term) on **MongoDB** and **Redis** that distills each user's conversations and style into a preferences store for personalization and proactive check-ins."
+        },
+        {
+          "id": "aira-3",
+          "text": "Cut routing-**LLM** token usage by **82%** via artifact-based prompting and context deduplication, and stood up **promptfoo** evals across 8+ models with **Langfuse** traces to standardize model selection, latency, and cost."
+        }
+      ]
+    },
+    {
+      "id": "iit-kharagpur",
+      "org": "IIT Kharagpur",
+      "role": "Research Intern (Multimodal AI)",
+      "dates": "May 2025 - Aug 2025",
+      "location": "Kharagpur, India",
+      "bullets": [
+        {
+          "id": "iit-kharagpur-1",
+          "text": "Developed **CircuitSynth**, fine-tuning **Qwen models (4B/8B)** with **LoRA/QLoRA** and a multi-stage **RAG** pipeline to generate executable Arduino circuit JSONs at **75% accuracy**, quantized to **GGUF** for **Raspberry Pi**."
+        }
+      ]
+    },
+    {
+      "id": "indigle",
+      "org": "Indigle",
+      "role": "Founding Software Engineer — Samagra [Play Store](https://play.google.com/store/apps/details?id=com.indigle.samagra)",
+      "dates": "Sep 2024 - Sep 2025",
+      "location": "India",
+      "bullets": [
+        {
+          "id": "indigle-1",
+          "text": "Built **Samagra**, a campus ERP platform grown to **10,000+ active users** — a **React Native** mobile client, a **Node.js**/**Express** **REST API**, **MongoDB**, and a **Next.js** web app."
+        },
+        {
+          "id": "indigle-2",
+          "text": "Engineered **JWT authentication** with **role-based access control** and **Socket.io** real-time sync, and owned **CI/CD** and release on a **zero-cost** Vercel backend serving **150k+ monthly API requests**."
+        }
+      ]
+    },
+    {
+      "id": "web-accuracy",
+      "org": "Web Accuracy",
+      "role": "Software Engineer Intern",
+      "dates": "Aug 2023 - Aug 2024",
+      "location": "Ranchi, India",
+      "bullets": [
+        {
+          "id": "web-accuracy-1",
+          "text": "Delivered 6 commercial **MERN** web applications, cutting client cost **30%** and time-to-market **45%**."
+        },
+        {
+          "id": "web-accuracy-2",
+          "text": "Designed **REST APIs** and **MongoDB** schemas serving **50,000+ monthly requests** at **99.9% uptime**."
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "open-source",
+      "name": "Open Source",
+      "tech": "TypeScript, Node.js, React, Vue.js",
+      "dates": "2025 - Present",
+      "bullets": [
+        {
+          "id": "open-source-1",
+          "text": "**18 merged PRs** upstream — **16 into mastra-ai/mastra (27k+ stars)** [[PR list]](https://github.com/mastra-ai/mastra/pulls?q=author:Sandy-1711) across the core agent runtime, streaming, ai-sdk, and Studio: ordering interleaved text and tool calls mid-stream and preserving persisted assistant messages on **tool-approval** resume. Contributing since June 2026."
+        },
+        {
+          "id": "open-source-2",
+          "text": "**cal.com (47k+ stars)**: Authored a full **BigBlueButton video integration** — checksum-signed client, encrypted credential storage, **912 LOC** on a bounty issue. **n8n (202k stars)**: Webhook CSP security fix (`allow-same-origin`)."
+        }
+      ]
+    },
+    {
+      "id": "voice-sdk",
+      "name": "voice-sdk",
+      "tech": "TypeScript, WebSockets, pnpm monorepo",
+      "dates": "2026",
+      "link": {
+        "label": "GitHub",
+        "url": "https://github.com/Sandy-1711/voice-sdk"
+      },
+      "bullets": [
+        {
+          "id": "voice-sdk-1",
+          "text": "One **TypeScript** interface for **text-to-speech** and **speech-to-text** across **Cartesia**, **Deepgram**, and **ElevenLabs** — switching providers takes a one-line change, and capability declarations surface unsupported features up front."
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "ai-ml-llm",
+      "label": "AI/ML & LLM",
+      "items": [
+        "Claude Code",
+        "Hugging Face (PEFT/LoRA)",
+        "LangChain",
+        "Langfuse",
+        "LlamaIndex",
+        "Mastra",
+        "MCP",
+        "OpenAI/Anthropic/Gemini API",
+        "Pinecone",
+        "promptfoo",
+        "PyTorch",
+        "Qdrant",
+        "RAG"
+      ]
+    },
+    {
+      "id": "backend-ops",
+      "label": "Backend & Ops",
+      "items": [
+        "asyncio",
+        "AWS (Lambda, S3)",
+        "CI/CD (GitHub Actions)",
+        "Docker",
+        "FastAPI",
+        "MongoDB",
+        "Nginx",
+        "PostgreSQL",
+        "Pub/Sub",
+        "Redis",
+        "REST APIs",
+        "WebSockets"
+      ]
+    },
+    {
+      "id": "frontend-mobile",
+      "label": "Frontend & Mobile",
+      "items": [
+        "Next.js",
+        "React Native (Expo)",
+        "React.js",
+        "Shadcn/UI",
+        "Tailwind CSS"
+      ]
+    },
+    {
+      "id": "languages",
+      "label": "Languages",
+      "items": [
+        "JavaScript",
+        "Python",
+        "SQL",
+        "TypeScript"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "madan-mohan-malviya-university",
+      "school": "Madan Mohan Malviya University of Technology",
+      "degree": "B.Tech in Electronics & Communication Engineering (CGPA: 7.32)",
+      "dates": "Nov 2022 – Aug 2026",
+      "location": "Gorakhpur, India"
+    }
+  ]
+}
