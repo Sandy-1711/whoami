@@ -86,6 +86,9 @@ describe("latexEscape", () => {
         expect(latexEscape("a & b_c 50% #1")).toBe("a \\& b\\_c 50\\% \\#1");
         expect(latexEscape("~x^y")).toBe("\\textasciitilde{}x\\textasciicircum{}y");
     });
+    it("should not escape the braces its own replacements introduce", () => {
+        expect(latexEscape("a \\ b")).toBe("a \\textbackslash{} b");
+    });
 });
 
 describe("boldify", () => {
