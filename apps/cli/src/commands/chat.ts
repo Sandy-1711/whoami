@@ -18,13 +18,9 @@ import {
 import * as ui from '../ui.js';
 import { pc } from '../ui.js';
 import { createStreamRenderer } from '../markdown.js';
+import { havePlaywright } from '../adapters/playwright.js';
 import type { Cli } from '../container.js';
 import { runStatus } from './status.js';
-
-function havePlaywright(root: string): boolean {
-  return existsSync(join(root, 'node_modules', 'playwright'))
-    || existsSync(join(root, 'packages', 'core', 'node_modules', 'playwright'));
-}
 
 // A tiny stdout coordinator so streamed text (written without newlines) and
 // full-line notices (tool events, progress) never collide mid-line.
