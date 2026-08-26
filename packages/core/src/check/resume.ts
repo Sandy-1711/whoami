@@ -2,12 +2,13 @@
 // (check-resume.ts, the git hook, CI) and the agent's check_resume tool both run
 // through here, so "what counts as passing" is defined in exactly one place.
 //
-// Three guards: source structure (no compile needed), rendered-PDF structure
+// Three guards: source (structure, plus resume.tex still being what
+// profile/resume.json renders to — no compile needed), rendered-PDF structure
 // (page count, required sections, contact email), and width (overfull hboxes in
 // the build log). Each reports a list of human-readable problems; empty = clean.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkSource, REQUIRED_SECTIONS } from './source.js';
+import { checkRendered, checkSource, REQUIRED_SECTIONS } from './source.js';
 import { extractPdf } from './pdf.js';
 import { checkLog } from './log.js';
 
@@ -79,7 +80,10 @@ export async function checkResume(input: CheckResumeInput): Promise<CheckResumeR
 
   if (wantSource) {
     source.ran = true;
-    source.problems = await checkSource(join(root, 'resume.tex'));
+    source.problems = [
+      ...await checkSource(join(root, 'resume.tex')),
+      ...await checkRendered(root),
+    ];
   }
 
   const pdfPath = join(root, 'apps', 'web', 'assets', 'resume.pdf');

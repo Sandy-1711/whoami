@@ -2,23 +2,37 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { loadResume, writeResumeTex } from '../resume/store.js';
 import { checkResume } from './resume.js';
 
-// A minimal, structurally-sound resume.tex so the source guard passes.
-const GOOD_TEX = String.raw`\documentclass{article}
-\begin{document}
-\href{mailto:me@example.com}{me@example.com} linkedin github
-\section{Experience}
-\section{Projects}
-\section{Technical Skills}
-\section{Education}
-\end{document}`;
+// A minimal résumé that renders to a structurally-sound resume.tex, so the
+// source guard passes — every required section has an entry.
+const RESUME = {
+  name: 'Sandeep Singh',
+  subtitle: ['AI Engineer'],
+  contacts: [
+    '[me@example.com](mailto:me@example.com)',
+    '[linkedin.com/in/x](https://linkedin.com/in/x)',
+    '[github.com/x](https://github.com/x)',
+  ],
+  summary: 'Builds agentic LLM systems.',
+  experience: [{ id: 'acme', org: 'Acme AI', role: 'Engineer', bullets: [{ id: 'acme-1', text: 'Shipped it.' }] }],
+  projects: [{ id: 'sdk', name: 'sdk', bullets: [{ id: 'sdk-1', text: 'One interface.' }] }],
+  skills: [{ id: 'languages', label: 'Languages', items: ['TypeScript'] }],
+  education: [{ id: 'mmmut', school: 'MMMUT', degree: 'B.Tech' }],
+};
+
+async function writeResume(root: string): Promise<void> {
+  await mkdir(join(root, 'profile'), { recursive: true });
+  await writeFile(join(root, 'profile', 'resume.json'), JSON.stringify(RESUME));
+  await writeResumeTex(root, await loadResume(root));
+}
 
 describe('checkResume', () => {
   let root: string;
   beforeAll(async () => {
     root = await mkdtemp(join(tmpdir(), 'checkresume-'));
-    await writeFile(join(root, 'resume.tex'), GOOD_TEX);
+    await writeResume(root);
   });
   afterAll(async () => { await rm(root, { recursive: true, force: true }); });
 

@@ -1,11 +1,13 @@
 #!/bin/sh
 # Validate the résumé's source structure before allowing a commit that touches
-# resume.tex. Only the source check runs here — the PDF isn't rebuilt at commit
-# time (CI does that). Bypass with `git commit --no-verify` if ever needed.
-if git diff --cached --name-only | grep -q '^resume\.tex$'; then
+# it. resume.tex is rendered from profile/resume.json, so either one changing is
+# worth checking — the guard also catches a resume.tex that no longer matches the
+# document. Only the source check runs here; the PDF isn't rebuilt at commit time
+# (CI does that). Bypass with `git commit --no-verify` if ever needed.
+if git diff --cached --name-only | grep -qE '^(resume\.tex|profile/resume\.json)$'; then
   echo "Running résumé structure check (source)…"
   if ! pnpm --filter @resume/cli run check:source; then
-    echo "✗ Commit blocked: resume.tex failed its structure check (see above)."
+    echo "✗ Commit blocked: the résumé failed its structure check (see above)."
     exit 1
   fi
 fi
