@@ -20,10 +20,11 @@ import type { Llm } from '@resume/llm';
 import { LlmError } from '@resume/llm';
 import type { LatexCompiler, PdfInspector, EngineReason } from '../ports/latex.js';
 import type { Presenter } from '../ports/logger.js';
-import {
-  extractJdKeywords, classify, scoreResume,
-  boldify, latexEscape, replaceBlock, latexToPlainText,
-} from './core.js';
+import { extractJdKeywords, classify, scoreResume } from './core.js';
+import { applyResumeEdit, type ResumeEdit, type RevertedEdit } from '../resume/edit.js';
+import { renderResume } from '../resume/render.js';
+import { resumePlainText, type Resume } from '../resume/schema.js';
+import { loadResume } from '../resume/store.js';
 import { drift } from '../profile/sources.js';
 import { loadProfileDigestText } from '../profile/loaders.js';
 import { checkLog } from '../check/log.js';
@@ -41,16 +42,13 @@ export interface TailorRequest {
   role?: string;
 }
 
-// The copy the model produced, plus everything render() needs to compile it and
-// to ask for a tighter draft without re-planning. Persisted between the stages.
+// The rewrite the model produced, plus everything render() needs to compile it
+// and to ask for a tighter draft without re-planning. Persisted between stages.
 export interface TailorPlan {
   company: string;
   role: string;
   jd: string;
-  summaryText: string;
-  subtitle: string;
-  boldTerms: string[];
-  rationale: string;
+  edit: ResumeEdit;
   score: Score;
   cls: Classification;
   provider: string;
@@ -96,12 +94,6 @@ interface Guards {
   width: string[];
 }
 
-interface TailoredCopy {
-  summaryText: string;
-  subtitle: string;
-  boldTerms: string[];
-}
-
 // How many times to re-ask the model for a tighter draft when a guard fails.
 const MAX_FIX_ATTEMPTS = 2;
 
@@ -124,13 +116,12 @@ function describeGuardFailure(g: Guards): string {
   return problems.join('; ');
 }
 
-function buildTailoredTex(resumeTex: string, { summaryText, subtitle, boldTerms }: TailoredCopy): string {
-  const summaryLatex = '   ' + boldify(summaryText, boldTerms);
-  const subtitleLatex = '    {\\large ' + subtitle.split(/\s*\|\s*/).map((s) => latexEscape(s.trim())).join(' $|$ ') + '} \\\\ \\vspace{4pt}';
-  let out = resumeTex;
-  out = replaceBlock(out, 'summary', summaryLatex);
-  out = replaceBlock(out, 'subtitle', subtitleLatex);
-  return out;
+// Roughly how much text has to go. A page is a lot; an overfull line is a
+// phrase. The attempt number escalates it, so a draft that ignored the first
+// ask is told to cut harder rather than the same amount again.
+function charsToCut(g: Guards, attempt: number): number {
+  const spill = Math.max(0, (g.pages ?? 1) - 1) * 200 + g.width.length * 40;
+  return Math.max(80, spill) + (attempt - 1) * 150;
 }
 
 export class TailorService {
@@ -156,7 +147,7 @@ export class TailorService {
     if (!company || !company.trim()) throw new Error('No company given — pass --company "Acme AI".');
 
     const facts: Facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
-    const resumeText = latexToPlainText(await readFile(join(root, 'resume.tex'), 'utf8'));
+    const resume = await loadResume(root);
 
     // ---- keep scraped sources fresh (fail-soft) ---------------------------
     const spinS = presenter.spinner('Refreshing profile sources (GitHub, LinkedIn)…');
@@ -173,7 +164,7 @@ export class TailorService {
     else if (!d.synced) presenter.warn(`Profile sources changed since last sync: ${d.changed.join(', ')}. Fact base may be stale.`);
 
     // ---- score ------------------------------------------------------------
-    const cls = classify(extractJdKeywords(jd), resumeText, facts);
+    const cls = classify(extractJdKeywords(jd), resumePlainText(resume), facts);
     const score = scoreResume(cls);
 
     // Ranked GitHub/LinkedIn evidence (just refreshed above) so the model
@@ -182,30 +173,25 @@ export class TailorService {
 
     // ---- tailor content (LLM) --------------------------------------------
     const spin = presenter.spinner(`Asking ${model.label} (${model.modelId}) to tailor from your fact base…`);
-    let copy: ReturnType<typeof mapTailorResponse>;
+    let edit: ResumeEdit;
     try {
       const { object } = await llm.generateJson({
         operation: 'tailor',
-        prompt: tailorPrompt({ jd, facts, classification: cls, digest }),
+        prompt: tailorPrompt({ jd, resume, facts, classification: cls, digest }),
         schema: TAILOR_SCHEMA,
       });
-      copy = mapTailorResponse(object);
-      spin.succeed(`${model.label} tailored the summary & subtitle.`);
+      edit = mapTailorResponse(object);
+      spin.succeed(`${model.label} rewrote the summary, the subtitle and ${edit.bullets.length} bullet(s).`);
     } catch (err) {
       spin.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
       throw err;
     }
 
-    const role = roleOverride || copy.roleTitle || extractRoleFromJd(jd) || 'Software Engineer';
+    const role = roleOverride || edit.roleTitle || extractRoleFromJd(jd) || 'Software Engineer';
     const paths = outputPaths(root, { company, fullName: facts.identity?.name || 'Sandeep Singh', role });
 
     const plan: TailorPlan = {
-      company, role, jd,
-      summaryText: copy.summaryText,
-      subtitle: copy.subtitle,
-      boldTerms: copy.boldTerms,
-      rationale: copy.rationale,
-      score, cls,
+      company, role, jd, edit, score, cls,
       provider: model.providerId,
       model: model.modelId,
       createdAt: new Date().toISOString(),
@@ -241,7 +227,7 @@ export class TailorService {
     if (engineReason) throw engineError(engineReason);
 
     const facts: Facts = JSON.parse(await readFile(join(root, 'profile', 'facts.json'), 'utf8'));
-    const resumeTex = await readFile(join(root, 'resume.tex'), 'utf8');
+    const base = await loadResume(root);
     const paths = outputPaths(root, {
       company: plan.company,
       fullName: facts.identity?.name || 'Sandeep Singh',
@@ -251,31 +237,41 @@ export class TailorService {
     await mkdir(paths.dir, { recursive: true });
     await mkdir(join(root, 'build'), { recursive: true });
 
-    let content: TailoredCopy = { summaryText: plan.summaryText, subtitle: plan.subtitle, boldTerms: plan.boldTerms };
+    const edit = applyResumeEdit(base, plan.edit, facts);
+    let draft: Resume = edit.resume;
+    const applied = new Set(edit.applied);
+    const reverted = new Map(edit.reverted.map((r) => [r.id, r]));
+    this.reportReverts(edit.reverted, edit.unknown);
+
     const spin2 = presenter.spinner('Rendering PDF & running guards…');
-    let guards = await this.renderAndGuard(buildTailoredTex(resumeTex, content), paths);
+    let guards = await this.renderAndGuard(renderResume(draft), paths);
     if (guardsPass(guards)) spin2.succeed('PDF rendered — guards passed.');
     else spin2.warn(`PDF rendered — guard failed: ${describeGuardFailure(guards)}.`);
 
     for (let attempt = 1; !guardsPass(guards) && attempt <= MAX_FIX_ATTEMPTS; attempt++) {
       const problem = describeGuardFailure(guards);
-      const summaryBudget = Math.max(160, 300 - attempt * 60);
       const spinFix = presenter.spinner(`Asking ${model.label} to tighten the copy (fix ${attempt}/${MAX_FIX_ATTEMPTS})…`);
       try {
         const { object } = await llm.generateJson({
           operation: 'tailor-fix',
-          prompt: tailorFixPrompt({ jd: plan.jd, facts, classification: plan.cls, previous: content, problem, summaryBudget }),
+          prompt: tailorFixPrompt({
+            jd: plan.jd, resume: draft, facts, classification: plan.cls,
+            problem, overBy: charsToCut(guards, attempt),
+          }),
           schema: TAILOR_SCHEMA,
         });
-        const fixed = mapTailorResponse(object);
-        content = { summaryText: fixed.summaryText, subtitle: fixed.subtitle, boldTerms: fixed.boldTerms };
+        const fix = applyResumeEdit(draft, mapTailorResponse(object), facts);
+        draft = fix.resume;
+        fix.applied.forEach((id) => applied.add(id));
+        fix.reverted.forEach((r) => reverted.set(r.id, r));
+        this.reportReverts(fix.reverted, fix.unknown);
         spinFix.succeed(`${model.label} returned a tighter draft — re-rendering…`);
       } catch (err) {
         spinFix.fail(err instanceof LlmError ? err.describe() : (err as Error).message);
         break;
       }
       const spinR = presenter.spinner(`Re-rendering PDF & re-checking guards (fix ${attempt})…`);
-      guards = await this.renderAndGuard(buildTailoredTex(resumeTex, content), paths);
+      guards = await this.renderAndGuard(renderResume(draft), paths);
       if (guardsPass(guards)) spinR.succeed(`Guards passed after ${attempt} fix attempt(s).`);
       else spinR.warn(`Still failing: ${describeGuardFailure(guards)}.`);
     }
@@ -286,14 +282,26 @@ export class TailorService {
       cls: plan.cls,
       score: plan.score,
       role: plan.role,
-      summaryText: content.summaryText,
-      subtitle: content.subtitle,
-      rationale: plan.rationale,
+      summary: draft.summary,
+      subtitle: draft.subtitle.join(' | '),
+      edited: [...applied],
+      reverted: [...reverted.values()],
+      rationale: plan.edit.rationale,
       guards: { pages: guards.pages, width: guards.width },
       paths, guardsPass: passed, provider: plan.provider, model: plan.model,
     };
     await writeFile(paths.report, buildReportMarkdown(report));
     return { paths, score: plan.score, role: plan.role, guardsPass: passed, report };
+  }
+
+  // A reverted line is not a failure — the guarantee working — but it is the one
+  // thing about a run the user has to be told without reading the report.
+  private reportReverts(reverted: RevertedEdit[], unknown: string[]): void {
+    const { presenter } = this.deps;
+    for (const { id, unbacked } of reverted) {
+      presenter.warn(`Kept the original ${id}: the fact base does not back ${unbacked.join(', ')}.`);
+    }
+    if (unknown.length) presenter.note(`Ignored edits to unknown line(s): ${unknown.join(', ')}.`);
   }
 
   // Write the tailored .tex, compile it, and run the page/width guards.

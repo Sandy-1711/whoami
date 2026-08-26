@@ -4,7 +4,9 @@
 // raw responses into typed results. The transport is any LlmProvider.
 import { z } from 'zod';
 import { serializeFacts } from './profile/serialize.js';
-import type { Facts, Classification, TailorContent, LinkedinProfile } from './types.js';
+import type { ResumeEdit } from './resume/edit.js';
+import type { Resume } from './resume/schema.js';
+import type { Facts, Classification, LinkedinProfile } from './types.js';
 
 // The fact base as a prompt block. When a section cannot fit, the block says so
 // rather than letting the model believe it received everything — several prompts
@@ -39,40 +41,71 @@ VERIFIED PUBLIC EVIDENCE (auto-digest of the candidate's GitHub/LinkedIn — use
 // that omits a rationale does not fail an otherwise good run.
 export const TAILOR_SCHEMA = z.object({
   role_title: z.string().default(''),
-  tailored_summary_text: z.string(),
-  tailored_subtitle: z.string(),
-  bold_terms: z.array(z.string()).default([]),
+  summary: z.string(),
+  subtitle: z.array(z.string()).default([]),
+  bullets: z.array(z.object({ id: z.string(), text: z.string() })).default([]),
   rationale: z.string().default(''),
 });
 
 export type TailorResponse = z.infer<typeof TAILOR_SCHEMA>;
 
+// The house rules for résumé prose, shared by the first draft and the retry so
+// the two cannot drift apart.
+const RESUME_STYLE = `- Use ONLY facts, skills, metrics, and keywords present in the FACT BASE, or already present in the line you are rewriting. Never invent employers, numbers, or technologies — a line that claims something unbacked is thrown away and the original kept.
+- Tone: grounded, direct, objective — write like a serious engineer. No marketing fluff, no personality adjectives ("passionate", "visionary", "dynamic"), no buzzwords; only concrete achievements, technologies, and metrics.
+- MARKUP: plain text with three markers and nothing else — **bold** for metrics and top keywords, [label](url) for a link, \`code\` for a literal token. No LaTeX, no other markdown.`;
+
+// The editable document as the model sees it: ids to address, and the length of
+// each line, since the résumé must stay on one page.
+function resumeBlock(resume: Resume): string {
+  const entry = (heading: string, bullets: { id: string; text: string }[]): string =>
+    [heading, ...bullets.map((b) => `  [${b.id}] (${b.text.length} chars) ${b.text}`)].join('\n');
+
+  return [
+    `SUMMARY (${resume.summary.length} chars): ${resume.summary}`,
+    `SUBTITLE: ${resume.subtitle.join(' | ')}`,
+    '',
+    'EXPERIENCE',
+    ...resume.experience.map((e) => entry(`${e.org} — ${e.role} (${e.dates})`, e.bullets)),
+    '',
+    'PROJECTS',
+    ...resume.projects.map((p) => entry(`${p.name} — ${p.tech} (${p.dates})`, p.bullets)),
+  ].join('\n');
+}
+
 export function tailorPrompt({
   jd,
+  resume,
   facts,
   classification,
   digest,
 }: {
   jd: string;
+  resume: Resume;
   facts: Facts;
   classification: Classification;
   digest?: string;
 }): string {
-  return `You are an expert technical resume writer optimizing a resume for a specific job description (JD) and ATS keyword matching.
+  return `You are an expert technical resume writer optimizing a one-page resume for a specific job description (JD) and ATS keyword matching.
+
+You are given the resume as data. Rewrite the summary, the subtitle, and ANY bullets that would land harder for this JD. Address each bullet by its id and return only the ones you changed.
 
 STRICT RULES:
-- Use ONLY facts, skills, metrics, and keywords present in the FACT BASE. Never invent employers, numbers, or technologies.
+${RESUME_STYLE}
 - ${classification.addable.length
-    ? 'Prefer surfacing the "addable" keywords (things the candidate truly has but the current summary omits) that are relevant to this JD.'
+    ? 'Work in the "addable" keywords below — things the candidate truly has that this resume does not yet say. That is where the score moves.'
     : 'No "addable" keywords were detected for this JD — lead with the highest-impact metrics and the FACT BASE items most relevant to the JD instead.'}
-- Keep the summary to exactly ONE sentence, at most 40 words (~320 characters), punchy, metric-led. Plain text only (no markdown, no LaTeX).
-- Tone: grounded, direct, objective — write like a serious engineer. No marketing fluff, no personality adjectives ("passionate", "visionary", "dynamic"), no buzzwords; only concrete achievements, technologies, and metrics.
-- The subtitle is a short " | "-separated tagline of 3 role/skill phrases matched to the JD.
-- bold_terms: 3-6 exact substrings from your summary to bold (metrics and top keywords).
+- LENGTH: a rewritten bullet must be no longer than the original (its character count is given). The resume must stay on one page.
+- Keep every bullet's subject: rewrite what the same work emphasizes, do not swap in different work.
+- summary: exactly ONE sentence, at most 40 words (~320 characters), metric-led.
+- subtitle: 3 short role/skill phrases matched to the JD, as an array of strings.
 - role_title: the exact job title this JD is hiring for (e.g. "AI Dev Engineer", "Senior Backend Engineer"), copied/normalized from the JD. If the JD states no clear title, use "Software Engineer". Keep it under 50 characters, no company name, no location.
 
 JOB DESCRIPTION:
 """${jd.slice(0, 6000)}"""
+
+CURRENT RESUME (rewrite by id):
+"""${resumeBlock(resume)}"""
 
 FACT BASE (the only truth you may use):
 ${factsBlock(facts)}
@@ -87,38 +120,37 @@ Return JSON only.`;
 
 // A retry prompt for the tighten-and-render loop: a previous draft made the
 // one-page résumé fail a layout guard (usually spilling to a 2nd page), so ask
-// for a shorter revision with a hard character budget while preserving the
-// strongest JD-matched keywords and metrics.
+// for a shorter revision while preserving the strongest JD-matched keywords and
+// metrics. It edits the résumé the last attempt produced, not the original.
 export function tailorFixPrompt({
   jd,
+  resume,
   facts,
   classification,
-  previous,
   problem,
-  summaryBudget,
+  overBy,
 }: {
   jd: string;
+  resume: Resume;
   facts: Facts;
   classification: Classification;
-  previous: { summaryText: string; subtitle: string };
   problem: string;
-  summaryBudget: number;
+  // Roughly how many characters the draft has to lose.
+  overBy: number;
 }): string {
-  return `You are an expert technical resume writer. A previous draft made the one-page résumé FAIL a layout guard. Produce a TIGHTER revision that fixes it.
+  return `You are an expert technical resume writer. The draft below made the one-page résumé FAIL a layout guard. Produce a TIGHTER revision that fixes it.
 
 LAYOUT PROBLEM TO FIX: ${problem}
-The résumé MUST fit on exactly one page. Your previous draft was too long. Shorten aggressively while keeping the strongest JD-matched keywords and metrics.
+Cut about ${overBy} characters across the summary and the bullets — shorten the weakest lines first, and keep the strongest JD-matched keywords and metrics.
 
 STRICT RULES:
-- Use ONLY facts, skills, metrics, and keywords present in the FACT BASE. Never invent employers, numbers, or technologies.
-- Keep the summary to exactly ONE sentence, at most ${Math.max(20, Math.round(summaryBudget / 8))} words (~${summaryBudget} characters — shorter is better). Plain text only (no markdown, no LaTeX).
-- Tone: grounded, direct, objective. No marketing fluff, no personality adjectives, no buzzwords — cutting those first is the easiest way to get shorter.
-- The subtitle is a short " | "-separated tagline of AT MOST 3 short role/skill phrases.
-- bold_terms: 3-5 exact substrings from your summary to bold (metrics and top keywords).
+${RESUME_STYLE}
+- Every line you return MUST be shorter than the version below. Returning a line unchanged does not help.
+- Cutting adjectives and connective phrases is the cheapest way to lose characters; never cut a metric to make room for prose.
 - role_title: keep the SAME job title as the previous draft.
 
-PREVIOUS SUMMARY (too long): """${previous.summaryText}"""
-PREVIOUS SUBTITLE (too long): """${previous.subtitle}"""
+CURRENT DRAFT (too long — rewrite by id):
+"""${resumeBlock(resume)}"""
 
 JOB DESCRIPTION:
 """${jd.slice(0, 6000)}"""
@@ -134,13 +166,13 @@ KEYWORD PRIORITIES:
 Return JSON only.`;
 }
 
-// Normalize a raw tailor response into the shape the pipeline consumes.
-export function mapTailorResponse(parsed: TailorResponse): TailorContent {
+// Normalize a raw tailor response into the edit the pipeline applies.
+export function mapTailorResponse(parsed: TailorResponse): ResumeEdit {
   return {
     roleTitle: parsed.role_title,
-    summaryText: parsed.tailored_summary_text,
-    subtitle: parsed.tailored_subtitle,
-    boldTerms: parsed.bold_terms,
+    summary: parsed.summary,
+    subtitle: parsed.subtitle,
+    bullets: parsed.bullets,
     rationale: parsed.rationale,
   };
 }

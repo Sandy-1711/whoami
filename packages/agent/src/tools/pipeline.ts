@@ -38,10 +38,10 @@ export function pipelineTools(deps: AgentDeps) {
     id: 'tailor_plan',
     description: describeTool({
       does:
-        'First half of tailoring: refresh stale sources, score the JD, and ask the model for a ' +
-        'summary and subtitle drawn from the VERIFIED fact base only. Returns the proposed copy, the ' +
-        'before/after score, the detected role and the remaining gaps, and saves the plan for ' +
-        'tailor_render. Renders nothing, so it needs no LaTeX toolchain.',
+        'First half of tailoring: refresh stale sources, score the JD, and ask the model to rewrite the ' +
+        'résumé — summary, subtitle and any experience or project bullet — from the VERIFIED fact base ' +
+        'only. Returns the proposed copy, the before/after score, the detected role and the remaining ' +
+        'gaps, and saves the plan for tailor_render. Renders nothing, so it needs no LaTeX toolchain.',
       cost: 'llm',
       use: 'the user has decided to apply somewhere. Show them the proposed copy before rendering it.',
       avoid: 'judging fit or answering "should I apply?" — score_jd does that for free.',
@@ -80,9 +80,10 @@ export function pipelineTools(deps: AgentDeps) {
         score: { current: plan.score.before, tailored: plan.score.after },
         matched: cap(plan.cls.matched),
         gaps: cap(plan.cls.missing),
-        summary: plan.summaryText,
-        subtitle: plan.subtitle,
-        rationale: plan.rationale,
+        summary: plan.edit.summary,
+        subtitle: plan.edit.subtitle.join(' | '),
+        bullets: plan.edit.bullets,
+        rationale: plan.edit.rationale,
         nextSteps: [
           'Show the user this copy — it is what will go on the PDF.',
           blocked
@@ -97,9 +98,10 @@ export function pipelineTools(deps: AgentDeps) {
     id: 'tailor_render',
     description: describeTool({
       does:
-        'Second half of tailoring: compile the saved plan into the one-page PDF and run the page and ' +
-        'width guards, re-asking the model for tighter copy when one fails. Returns the PDF path and ' +
-        'the guard results.',
+        'Second half of tailoring: apply the saved plan to the résumé document, compile the one-page ' +
+        'PDF and run the page and width guards, re-asking the model for tighter copy when one fails. ' +
+        'Returns the PDF path, the guard results, and any rewrite that was reverted because the fact ' +
+        'base did not back it.',
       cost: 'llm',
       use: 'straight after tailor_plan, once the user has seen the copy.',
       avoid: 'a company that has no plan yet — run tailor_plan first.',
@@ -118,10 +120,11 @@ export function pipelineTools(deps: AgentDeps) {
         params: {
           company: plan.company,
           role: plan.role,
-          subtitle: plan.subtitle,
+          subtitle: plan.edit.subtitle.join(' | '),
+          rewrites: `${plan.edit.bullets.length} bullet(s) plus the summary`,
           cost: 'compiles locally; up to two more model calls if a guard fails',
         },
-        preview: plan.summaryText,
+        preview: plan.edit.summary,
       });
       if (!ok) return { ran: false, reason: 'Cancelled — nothing was rendered.' };
       const result = await svc.render(plan, { llm: deps.llm });
@@ -135,8 +138,10 @@ export function pipelineTools(deps: AgentDeps) {
         guardsPass: result.guardsPass,
         pages: r.guards.pages,
         widthProblems: r.guards.width,
-        summary: r.summaryText,
+        summary: r.summary,
         subtitle: r.subtitle,
+        rewritten: r.edited,
+        reverted: r.reverted,
         nextSteps: result.guardsPass
           ? ['The PDF passed its guards. draft_application_email attaches it; outreach_message writes the shorter copy.']
           : [`NOT ship-ready: ${r.guards.pages} page(s), ${r.guards.width.length} overflowing line(s). Say so; do not send it.`],

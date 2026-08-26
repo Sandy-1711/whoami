@@ -6,6 +6,7 @@
 // it rewrites a bullet, and what lets a rewrite be checked against the fact base
 // before it reaches the page.
 import { z } from 'zod';
+import { markupToPlainText } from './markup.js';
 
 const id = z
   .string()
@@ -106,6 +107,19 @@ export function resumeBullets(resume: Resume): { entry: BulletEntry; bullet: Bul
   return [...resume.experience, ...resume.projects].flatMap((entry) =>
     entry.bullets.map((bullet) => ({ entry, bullet })),
   );
+}
+
+/** Everything the document says, as plain prose — what keyword scoring reads. */
+export function resumePlainText(resume: Resume): string {
+  const parts = [
+    ...resume.subtitle,
+    resume.summary,
+    ...resume.experience.flatMap((e) => [e.org, e.role, ...e.bullets.map((b) => b.text)]),
+    ...resume.projects.flatMap((p) => [p.name, p.tech, ...p.bullets.map((b) => b.text)]),
+    ...resume.skills.flatMap((s) => [s.label, ...s.items]),
+    ...resume.education.flatMap((e) => [e.school, e.degree]),
+  ];
+  return markupToPlainText(parts.join('\n'));
 }
 
 /**
