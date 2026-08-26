@@ -1,8 +1,13 @@
 # The `resume` CLI
 
-One entrypoint (`apps/cli/src/main.ts`) for the whole résumé toolkit: tailor a
-résumé to a job description, keep your GitHub/LinkedIn facts fresh, build the
-canonical PDF, and run the guards that CI also runs.
+One entrypoint (`apps/cli/src/main.ts`): reach the agent, keep your GitHub facts
+fresh, send a drafted email, build the canonical PDF, and run the guards that CI
+also runs.
+
+Anything that needs a model — tailoring, drafting, research — belongs to the
+agent, not to a command. `chat` and `mcp` are how you get to it. What is left
+here is what is worth having without one: the toolchain, the free deterministic
+reads, and putting an already-written email on the wire.
 
 Run it via the workspace scripts in [package.json](../package.json), or directly
 with `pnpm --filter @resume/cli exec tsx src/main.ts <command>`.
@@ -18,10 +23,9 @@ Running `resume` with no command (`pnpm resume`) opens a menu built with
 `@clack/prompts` that walks you through the commands below — useful when you
 don't remember the flags. Each action returns to the menu until you choose Exit.
 
-> **Two ways to drive the toolkit.** `chat` is the conversational front end — it
-> wraps every capability below as a tool and calls them for you. The individual
-> commands (`tailor`, `email`, `note`, …) are the same capabilities run
-> directly, for scripting or when you know exactly what you want.
+> **One toolkit, two surfaces.** `chat` and `mcp` expose every capability as a
+> tool for an agent to call. The remaining commands are the operator's: they
+> spend nothing, need no conversation, and several of them run in CI.
 
 ## Commands
 
@@ -86,10 +90,13 @@ launch chain in front of every session. Env (`GEMINI_API_KEY`, `GMAIL_*`, …)
 is read from `.env` at the repo root exactly like the CLI — nothing to configure per client.
 
 - **Transport:** stdio. `stdout` carries the JSON-RPC stream; all logs/progress go to `stderr`.
-- **Confirms:** the outward/irreversible tools (`send_application_email`, `update_github_profile`,
-  identity `update_facts`) are gated by a human confirm in `chat`. Over MCP that gate auto-approves,
-  because the MCP client prompts you before each tool call — that prompt is the human-in-the-loop.
-  Approve sends/pushes deliberately; declining the client's prompt is how you say no.
+- **Confirms:** anything that spends credits, leaves the machine, or rewrites the grounding stops
+  at a human confirm in `chat`, and the prompt shows the resolved call — for a send, the recipient,
+  where that address came from, the subject, the attachment and the whole body. Over MCP that gate
+  auto-approves, because the MCP client prompts you before each tool call — that prompt is the
+  human-in-the-loop. Approve sends/pushes deliberately; declining the client's prompt is how you
+  say no. What holds even under "always allow" is that `send_application_email` can only transmit
+  bytes an earlier drafting call wrote under `tailored/`.
 - **Cost:** the pipeline/draft tools call the LLM (Gemini/DeepSeek) and spend credits when invoked,
   just as they do from the CLI. The read-only tools (`score_jd`, `profile_status`, `read_profile`,
   `list_outputs`, `list_applications`) are free.
@@ -98,78 +105,34 @@ is read from `.env` at the repo root exactly like the CLI — nothing to configu
   use the free/local tools to apply, build, check, and send. Reserve the paid drafting tools
   for when the user explicitly asks. (The `.claude/skills/job-copilot` skill spells this out.)
 
-### `tailor` — JD → ATS-optimized PDF
+### `send` — mail a saved application email (free)
 
 ```
-resume tailor <path/to/jd.txt> --company "Acme AI" [--role "AI Engineer"] [--provider gemini|deepseek] [--model <model>]
-resume tailor --jd "paste JD text..." --company "Acme AI"
+resume send --company "Acme AI" [--path <draft>] [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run]
 ```
 
-| Flag | Required | Description |
-|---|---|---|
-| `<jd-file>` (positional) | one of this or `--jd` | path to a text file containing the job description |
-| `--jd` | one of this or a positional | JD text inline instead of a file |
-| `--company` (alias `--name`) | yes | company name; used for the output folder and filename |
-| `--role` | no | override the role title; otherwise inferred by the LLM, then by regex from the JD, then falls back to "Software Engineer" |
-| `--provider` | no | LLM provider id (`gemini`, `deepseek`, …); default from `LLM_PROVIDER`, else whichever key is set |
-| `--model` | no | model override (default from the provider's `*_MODEL` env var, else its default) |
+Sends `tailored/<company>/application-email.txt` **exactly as written**. No model runs
+here: the draft came from the agent (`draft_application_email`), from a Claude Code
+session, or from your own editor, and this command shows it, confirms the recipient,
+and puts it on the wire.
 
-What it does, in order ([packages/core/src/tailor/service.ts](../packages/core/src/tailor/service.ts)):
-
-1. Loads `profile/facts.json` and `resume.tex`.
-2. Refreshes scraped sources (GitHub/LinkedIn) if stale — fails soft, falls back to cached data.
-3. Warns if `profile/*.json` drifted since the last `sync` (fact base may be stale).
-4. Extracts JD keywords and scores the current résumé against them.
-5. Asks the configured LLM to rewrite the summary/subtitle from the verified fact base (never invents facts).
-6. Resolves the output name/role and writes a tailored `.tex`.
-7. Compiles the PDF and runs the same page-count/overfull-width guards as `check`; if a guard fails it re-asks the model for a tighter draft (up to 2 attempts).
-8. Writes a `.report.md` next to the PDF with the score, rationale, and guard results.
-
-Requires an LLM API key (`GEMINI_API_KEY` or `DEEPSEEK_API_KEY`) in `.env` — there is no offline mode for tailoring.
-
-Output layout ([packages/core/src/naming.ts](../packages/core/src/naming.ts)):
-
-```
-tailored/<company_slug>/<Full Name> - <Role>.pdf
-tailored/<company_slug>/<Full Name> - <Role>.tex
-tailored/<company_slug>/<Full Name> - <Role>.report.md
-```
-
-### `email` — draft & send a Gmail application email
-
-```
-resume email <path/to/jd.txt> --company "Acme AI" [--to <addr>] [--attach <pdf>|--no-attach] [--dry-run] [--yes]
-```
-
-Drafts a JD-tailored application email from the same verified fact base, reads the
-apply-to address and subject straight from the JD, and auto-attaches the tailored
-résumé PDF from `tailored/<company>/` (override with `--attach <pdf>` or `--no-attach`).
-It **shows the draft and only sends after you confirm the recipient**. Sending goes
-through Gmail with a **Google App Password** (`GMAIL_USER` + `GMAIL_APP_PASSWORD` in
-`.env`); without those it drafts only.
+The file's shape is an optional `To:` line, a `Subject:` line, a blank line, then the
+body. Sending goes through Gmail with a **Google App Password** (`GMAIL_USER` +
+`GMAIL_APP_PASSWORD` in `.env`).
 
 | Flag | Description |
 |---|---|
-| `--to <addr>` | set/override the recipient (else read from the JD) |
-| `--attach <pdf>` / `--no-attach` | attach a specific PDF, or send with no attachment |
-| `--dry-run` (alias `--no-send`) | preview only; never sends, never overwrites an existing draft |
-| `--yes` (alias `-y`) | skip the recipient confirm (for automation) |
+| `--company` (alias `--name`) | which draft to send — names the folder under `tailored/` |
+| `--path <file>` | send a specific draft file instead of the one filed under the company |
+| `--to <addr>` | set/override the recipient (else the draft's own `To:` header) |
+| `--attach <pdf>` / `--no-attach` | attach a specific PDF, or nothing; the default is the newest PDF sitting beside the draft |
+| `--dry-run` (alias `--no-send`) | show it and stop |
 
-On a real run the draft is written to `tailored/<company>/application-email.txt`.
-
-### `note` — application-form note (per JD)
-
-```
-resume note <path/to/jd.txt> --company "Acme AI" [--platform Wellfound] [--role "AI Engineer"]
-```
-
-Writes the short "What interests you about this role?" note that application forms
-ask for — Wellfound's box, Work at a Startup's intro, a Lever or Greenhouse field.
-Optimized for a human reply, not ATS keywords, and grounded in the fact base and the
-JD. Saved to `tailored/<company>/application-note[-platform].txt`, so notes for two
-platforms at the same company do not overwrite each other.
-
-`resume wellfound` is kept as an alias that passes `--platform Wellfound`.
+**Tailoring, drafting and research are not commands.** They live with the agent — `resume
+chat`, or the MCP tools in any client — because they need a conversation to be worth
+anything: which angle to lead with, what the user thought of the last draft, what the
+company actually builds. See [`tailor_plan` / `tailor_render`, `outreach_message`,
+`draft_application_email`](#mcp--serve-the-tools-over-mcp-for-claude-code--cursor--claude-desktop).
 
 ### `score` — deterministic JD fit check (free)
 
@@ -205,7 +168,7 @@ resume sync [--force] [--linkedin]
 ```
 
 Re-scrapes GitHub into `profile/github.json` when stale (see `SCRAPE_TTL_HOURS`), then
-re-baselines the drift hashes in `profile/sources.lock.json` so `tailor` won't nag about
+re-baselines the drift hashes in `profile/sources.lock.json` so tailoring won't nag about
 stale facts afterward. `--force` ignores the freshness TTL and re-scrapes unconditionally.
 
 **LinkedIn is opt-in:** `profile/linkedin.json` is refreshed only when you pass

@@ -1,8 +1,10 @@
 # ResumeGit
 
 A résumé toolkit for one person (Sandeep). A hand-verified fact base grounds every generated
-artifact; a LaTeX résumé compiles to a PDF served from Vercel. Three front ends drive one core:
-the `resume` CLI, `resume chat`, and an MCP server.
+artifact; a LaTeX résumé compiles to a PDF served from Vercel. Anything that needs a model is the
+agent's — `resume chat` or the MCP server, both wiring the same tool set. The rest of the `resume`
+CLI is the operator surface: the toolchain, the free deterministic reads, and sending a draft that
+already exists.
 
 ## Active work — read this first
 
@@ -28,7 +30,7 @@ Reading order for someone new to the repo:
    exist; chat and MCP both wire exactly that set.
 
 ```
-apps/cli       the `resume` command — menu, direct commands, chat REPL, MCP server
+apps/cli       the `resume` command — menu, operator commands, chat REPL, MCP server
 apps/web       deployed Vercel functions serving the published PDF (unrelated to the toolkit)
 packages/core  the domain: tailoring, email, outreach, scraping, guards
 packages/agent Mastra agent: tools, memory, instructions, MCP server
@@ -47,6 +49,7 @@ pnpm resume        # interactive menu
 pnpm status        # keys, toolchain, source freshness, outputs — free, no LLM
 pnpm score <jd>    # deterministic JD fit score — free, no LLM
 pnpm digest        # ranked GitHub/LinkedIn evidence — free, no LLM
+pnpm send          # mail a saved draft verbatim — free, no LLM
 pnpm verify        # build the PDF, then run the guards
 ```
 
@@ -54,9 +57,11 @@ Rendering needs Docker running (or a local `latexmk`). `pnpm status` says which.
 
 ## Costs
 
-`tailor`, `email`, `wellfound`, `chat` and the LinkedIn scrape spend real API credits. Warn before
-running them, and never run one to "check something works" — use `status`, `score`, `digest`, or
-the fake gateway in `@resume/llm/testing` instead.
+`pnpm chat` and the agent's drafting tools (`tailor_plan`, `tailor_render`,
+`draft_application_email`, `outreach_message`) spend real API credits. Warn before running them,
+and never run one to "check something works" — use `status`, `score`, `digest`, or the fake
+gateway in `@resume/llm/testing` instead. Every other command is free by construction: no command
+calls a model any more.
 
 `.claude/skills/` holds six skills that do job-search work in-session with no API spend
 (`job-copilot`, `resume-ats`, `resume-facts`, `resume-latex`, `resume-outreach`, `resume-tailor`).
