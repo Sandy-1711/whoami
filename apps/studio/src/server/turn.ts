@@ -19,6 +19,8 @@ const MAX_STEPS = 16;
 export interface TurnRequest {
   message: string;
   threadId: string;
+  /** Aborted when the browser hangs up, so a closed tab stops the run it started. */
+  signal?: AbortSignal;
 }
 
 function turnDeps(studio: Studio, sink: EventSink): AgentDeps {
@@ -38,7 +40,7 @@ function turnDeps(studio: Studio, sink: EventSink): AgentDeps {
 }
 
 export async function runTurn(studio: Studio, request: TurnRequest, sink: EventSink): Promise<void> {
-  const { message, threadId } = request;
+  const { message, threadId, signal } = request;
   const built = buildAgent(turnDeps(studio, sink), {
     memory: studio.memory,
     observability: studio.observability,
@@ -52,6 +54,7 @@ export async function runTurn(studio: Studio, request: TurnRequest, sink: EventS
     const res = await built.agent.stream(message, {
       memory: { thread: threadId, resource: AGENT_RESOURCE_ID },
       maxSteps: MAX_STEPS,
+      abortSignal: signal,
       // Ask Gemini to stream its thought summaries so the reasoning pane fills
       // live. Namespaced under `google`, so other providers ignore it.
       providerOptions: { google: { thinkingConfig: { includeThoughts: true } } },
@@ -102,7 +105,8 @@ export async function runTurn(studio: Studio, request: TurnRequest, sink: EventS
       }
     }
   } catch (err) {
-    sink.send({ type: 'error', message: (err as Error).message });
+    // A cancelled turn is not a failure to report; the browser asked for it.
+    if (!signal?.aborted) sink.send({ type: 'error', message: (err as Error).message });
   }
 
   sink.send({ type: 'done', threadId, usage });

@@ -23,13 +23,17 @@ export function chatRoutes(studio: Studio): Hono {
 
     return streamSSE(c, async (stream) => {
       const sink = sseSink(stream);
-      // A browser that navigates away mid-turn leaves gates parked with nothing
-      // to answer them; refusing is the only safe reading of that silence.
+      // Hanging up is how the browser cancels — the Stop button closes the
+      // stream. So the run has to end with it, not carry on spending credits
+      // into a socket nobody is reading, and the gates parked on that stream
+      // have to settle. Unanswered means refused.
+      const cancel = new AbortController();
       stream.onAbort(() => {
+        cancel.abort();
         studio.confirms.abandon(false);
         studio.asks.abandon(null);
       });
-      await runTurn(studio, { message, threadId }, sink);
+      await runTurn(studio, { message, threadId, signal: cancel.signal }, sink);
     });
   });
 
