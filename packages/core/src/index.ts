@@ -18,6 +18,8 @@ export * from './resume/schema.js';
 export * from './resume/markup.js';
 export * from './resume/render.js';
 export * from './resume/extract.js';
+export * from './resume/edit.js';
+export * from './resume/store.js';
 
 // Tailoring.
 export * from './tailor/core.js';
@@ -38,6 +40,7 @@ export * from './profile/curation.js';
 export * from './profile/digest.js';
 export * from './profile/loaders.js';
 export * from './profile/serialize.js';
+export * from './profile/claims.js';
 
 // GitHub reads (any account) and profile writes (bio, repo descriptions, README).
 export * from './github/read.js';

@@ -20,20 +20,22 @@ const FACTS = {
   projects: [{ name: 'Mastra', bullets: ['16 merged PRs into the agent runtime.'] }],
 };
 
-// Only the two blocks the tailor rewrites; the rest of the preamble is irrelevant
-// to the pipeline and would only make a failure harder to read.
-const RESUME_TEX = `\\documentclass{article}
-\\begin{document}
-\\begin{center}
-    %% >>>TAILOR:subtitle (replaced per JD)
-    {\\large AI Engineer $|$ Agent Infrastructure $|$ Full-Stack Engineer} \\\\ \\vspace{4pt}
-    %% <<<TAILOR:subtitle
-    %% >>>TAILOR:summary (replaced per JD)
-   \\textbf{AI Engineer} building agentic LLM systems.
-    %% <<<TAILOR:summary
-\\end{center}
-\\end{document}
-`;
+const RESUME = {
+  name: 'Sandeep Singh',
+  subtitle: ['AI Engineer', 'Agent Infrastructure', 'Full-Stack Engineer'],
+  contacts: ['[sandy@example.dev](mailto:sandy@example.dev)'],
+  summary: '**AI Engineer** building agentic LLM systems.',
+  experience: [{
+    id: 'aira', org: 'AiRA', role: 'AI Engineer', dates: 'Nov 2025 - March 2026', location: 'Remote',
+    bullets: [{ id: 'aira-1', text: 'Shipped RAG agents on FastAPI.' }],
+  }],
+  projects: [{
+    id: 'mastra', name: 'Mastra', tech: 'TypeScript', dates: '2025',
+    bullets: [{ id: 'mastra-1', text: '16 merged PRs into the agent runtime.' }],
+  }],
+  skills: [{ id: 'ai', label: 'AI', items: ['RAG', 'FastAPI'] }],
+  education: [{ id: 'mmmut', school: 'MMMUT', degree: 'B.Tech', dates: '2022 – 2026', location: 'Gorakhpur' }],
+};
 
 const GITHUB = {
   _comment: 'test fixture',
@@ -59,15 +61,15 @@ const JD = [
 
 const DRAFT = {
   role_title: 'AI Dev Engineer',
-  tailored_summary_text: 'AI Engineer shipping RAG agents on FastAPI, with 16 merged PRs into Mastra.',
-  tailored_subtitle: 'AI Engineer | RAG Systems | TypeScript',
-  bold_terms: ['RAG', '16 merged PRs'],
+  summary: 'AI Engineer shipping **RAG** agents on FastAPI, with **16 merged PRs** into Mastra.',
+  subtitle: ['AI Engineer', 'RAG Systems', 'TypeScript'],
+  bullets: [{ id: 'aira-1', text: 'Shipped **RAG** agents on **FastAPI**, in production.' }],
   rationale: 'Leads with the RAG and FastAPI overlap.',
 };
 
 const TIGHTER = {
   ...DRAFT,
-  tailored_summary_text: 'AI Engineer shipping RAG agents on FastAPI.',
+  summary: 'AI Engineer shipping **RAG** agents on FastAPI.',
   rationale: 'Cut to fit one page.',
 };
 
@@ -83,7 +85,7 @@ async function makeRoot(): Promise<string> {
   await writeFile(join(root, 'profile', 'facts.json'), JSON.stringify(FACTS));
   await writeFile(join(root, 'profile', 'github.json'), JSON.stringify(GITHUB));
   await recordScrape(root, 'github', 'cached-hash');
-  await writeFile(join(root, 'resume.tex'), RESUME_TEX);
+  await writeFile(join(root, 'profile', 'resume.json'), JSON.stringify(RESUME));
   return root;
 }
 
@@ -114,13 +116,15 @@ describe('TailorService.run', () => {
     expect(existsSync(result.paths.pdf)).toBe(true);
     expect(existsSync(result.paths.tex)).toBe(true);
     const report = await readFile(result.paths.report, 'utf8');
-    expect(report).toContain(DRAFT.tailored_summary_text);
+    expect(report).toContain(DRAFT.summary);
     // Named gaps are the point of the report: they are what must not be claimed.
     expect(report).toContain('Kubernetes');
 
-    // The model's copy reached the LaTeX that was compiled, in both anchors.
+    // The model's copy reached the LaTeX that was compiled — summary, subtitle
+    // and the bullet it chose to rewrite.
     expect(latex.compiled[0]).toContain('shipping \\textbf{RAG} agents on FastAPI');
     expect(latex.compiled[0]).toContain('AI Engineer $|$ RAG Systems $|$ TypeScript');
+    expect(latex.compiled[0]).toContain('\\resumeItem{Shipped \\textbf{RAG} agents on \\textbf{FastAPI}, in production.}');
   });
 
   it('grounds the prompt in the JD and the fact base', async () => {
@@ -149,7 +153,7 @@ describe('TailorService.run', () => {
     expect(llm.calls[1]!.prompt).toContain('overflowed to 2 pages');
     expect(result.guardsPass).toBe(true);
     // The report describes what finally rendered, not the draft that overflowed.
-    expect(result.report.summaryText).toBe(TIGHTER.tailored_summary_text);
+    expect(result.report.summary).toBe(TIGHTER.summary);
     expect(latex.compiled).toHaveLength(2);
   });
 
@@ -242,7 +246,7 @@ describe('TailorService.plan and .render as separate calls', () => {
     const { plan, planFile } = await planner.plan({ jd: JD, company: 'Acme AI' }, context(llm));
 
     expect(plan.role).toBe('AI Dev Engineer');
-    expect(plan.summaryText).toBe(DRAFT.tailored_summary_text);
+    expect(plan.edit.summary).toBe(DRAFT.summary);
     expect(existsSync(planFile)).toBe(true);
 
     // A separate service instance, as a second process would be.
@@ -252,7 +256,7 @@ describe('TailorService.plan and .render as separate calls', () => {
 
     expect(result.guardsPass).toBe(true);
     expect(existsSync(result.paths.pdf)).toBe(true);
-    expect(await readFile(result.paths.report, 'utf8')).toContain(DRAFT.tailored_summary_text);
+    expect(await readFile(result.paths.report, 'utf8')).toContain(DRAFT.summary);
     // One model call for the plan; the render needed none because it fit.
     expect(llm.calls.map((c) => c.operation)).toEqual(['tailor']);
   });

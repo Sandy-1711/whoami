@@ -47,16 +47,6 @@ export interface Score {
   total: number;
 }
 
-// ---- tailored content (scripts/lib/tailor/gemini.ts) -----------------------
-
-export interface TailorContent {
-  roleTitle: string;
-  summaryText: string;
-  subtitle: string;
-  boldTerms: string[];
-  rationale: string;
-}
-
 // ---- output naming (scripts/lib/naming.ts) ---------------------------------
 
 export interface OutputPaths {

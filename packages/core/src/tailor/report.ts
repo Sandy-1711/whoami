@@ -2,14 +2,19 @@
 // run's structured result into markdown. The on-screen ATS breakdown (tables,
 // chips, gauges) is the CLI's job — it renders the same TailorReportData however
 // it likes, keeping presentation out of the domain.
+import type { RevertedEdit } from '../resume/edit.js';
 import type { Classification, Score, OutputPaths } from '../types.js';
 
 export interface TailorReportData {
   cls: Classification;
   score: Score;
   role: string;
-  summaryText: string;
+  summary: string;
   subtitle: string;
+  /** Ids of the lines the tailoring rewrote. */
+  edited: string[];
+  /** Lines it tried to rewrite and could not back with the fact base. */
+  reverted: RevertedEdit[];
   rationale: string;
   guards: { pages: number | null; width: string[] };
   paths: OutputPaths;
@@ -19,7 +24,8 @@ export interface TailorReportData {
 }
 
 export function buildReportMarkdown(r: TailorReportData): string {
-  const { cls, score, role, summaryText, subtitle, rationale, guards, paths, provider, model } = r;
+  const { cls, score, role, summary, subtitle, edited, reverted, rationale } = r;
+  const { guards, paths, provider, model } = r;
   return [
     `# Tailored résumé report — ${paths.base}`,
     ``, `- ATS score: **${score.before} → ${score.after}** (target 92+)`,
@@ -29,8 +35,11 @@ export function buildReportMarkdown(r: TailorReportData): string {
     ``, `## Matched (${cls.matched.length})`, cls.matched.join(', ') || '(none)',
     ``, `## Surface — true & relevant (${cls.addable.length})`, cls.addable.join(', ') || '(none)',
     ``, `## Gaps — do not fabricate (${cls.missing.length})`, cls.missing.join(', ') || '(none)',
-    ``, `## Tailored summary`, summaryText,
+    ``, `## Tailored summary`, summary,
     ``, `## Tailored subtitle`, subtitle,
+    ``, `## Rewritten (${edited.length})`, edited.join(', ') || '(none)',
+    ``, `## Reverted — the fact base does not back these (${reverted.length})`,
+    reverted.map((rv) => `- \`${rv.id}\`: ${rv.unbacked.join(', ')}`).join('\n') || '(none)',
     rationale ? `\n## Rationale\n${rationale}` : '',
   ].join('\n') + '\n';
 }
