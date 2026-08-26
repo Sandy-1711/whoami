@@ -6,7 +6,7 @@ description: Check and improve the résumé's ATS keyword coverage against a job
 # Résumé ATS checking & improvement
 
 Scoring is **fully deterministic** — pure keyword matching and arithmetic, no
-LLM, no cost, transparent. (Only the *rewriting* in `pnpm tailor` uses a model.)
+LLM, no cost, transparent. (Only the *rewriting* in `tailor_plan` uses a model.)
 
 ## How scoring works
 - `packages/core/src/tailor/core.ts` extracts JD keywords from a fixed lexicon
@@ -24,8 +24,8 @@ pnpm score -- path/to/jd.txt        # or: pnpm score -- --jd "pasted text…"
 ```
 Prints the before/after score table and the matched/addable/missing chips.
 Instant, no LLM, no PDF. Over MCP the same check is the `score_jd` tool.
-(`pnpm tailor` also prints a score, but runs the full paid LLM pipeline —
-don't use it just to see a number.)
+(`tailor_plan` also reports a score, but spends a model call to get there —
+don't call it just to see a number.)
 
 ## Improving the score (POLICY: you write the text yourself)
 Scoring goes through the tool above; the résumé edits that raise it are TEXT —
