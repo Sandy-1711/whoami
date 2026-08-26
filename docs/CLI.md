@@ -142,7 +142,7 @@ resume score --jd "paste JD text…"
 ```
 
 The same scorer the tailor pipeline uses, unbundled: extracts JD keywords from the
-lexicon, classifies them against `resume.tex` + `profile/facts.json`, and prints the
+lexicon, classifies them against `profile/resume.json` + `profile/facts.json`, and prints the
 before/after ATS score with the matched/addable/missing chips. **No LLM, no PDF, no
 network, no cost** — use it to decide whether a role is worth a full tailor run.
 Same check over MCP: the `score_jd` tool.
@@ -205,9 +205,9 @@ Shows, at a glance ([apps/cli/src/commands/status.ts](../apps/cli/src/commands/s
 resume build
 ```
 
-Thin wrapper over `apps/cli/src/build-pdf.ts`: compiles `resume.tex` →
-`apps/web/assets/resume.pdf`, mirroring what CI does. Needs `latexmk` locally or
-a running Docker daemon.
+Thin wrapper over `apps/cli/src/build-pdf.ts`: renders `profile/resume.json` to
+`resume.tex`, then compiles it to `apps/web/assets/resume.pdf`, mirroring what CI
+does. Needs `latexmk` locally or a running Docker daemon.
 
 ### `check` — run the guards
 
@@ -220,7 +220,7 @@ otherwise it scopes to one:
 
 | Flag | Checks |
 |---|---|
-| `--source` | `resume.tex` structure (required sections, TAILOR anchors) |
+| `--source` | `resume.tex` structure (required sections, balanced macros), and that it is still what `profile/resume.json` renders to |
 | `--pdf` | the built PDF is exactly one page |
 | `--width` | the LaTeX build log for overfull `\hbox` warnings (layout overflow) |
 

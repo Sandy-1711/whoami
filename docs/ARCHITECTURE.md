@@ -74,27 +74,32 @@ triggers a tailor run appears as one trace with nested generations.
 Disabled by default in the absence of `LANGFUSE_ENABLED`. An observability outage must never fail a
 run.
 
-## The résumé [planned — Phase 3]
+## The résumé [built]
 
-`profile/resume.json` is the source of truth. `resume.tex` becomes a build artifact.
+`profile/resume.json` is the source of truth. `resume.tex` is a build artifact — rendered by both
+build paths before they compile, and checked by the source guard for still matching the document.
 
 ```
-profile/resume.json  ── identity, subtitle, summary, experience[], projects[], skills[], education[]
-        │                every entry carries a stable id
+profile/resume.json  ── name, subtitle, contacts, summary, experience[], projects[], skills[], education[]
+        │                every entry and bullet carries a stable id
         │
         ▼  packages/core/src/resume/render.ts
-   preamble partial + generated body  →  resume.tex  →  PDF
+   preamble.ts + generated body  →  resume.tex  →  PDF
 ```
 
-Prose fields use a **restricted markup**: `**bold**` and `[label](url)`, nothing else. The renderer
-escapes with `latexEscape` first, then converts the two markers. The model never writes LaTeX.
+Prose fields use a **restricted markup**: `**bold**`, `[label](url)` and `` `code` ``, nothing else.
+The renderer consumes the markers, escapes everything else, and only then emits LaTeX — so copy that
+arrives with a stray `&`, or with LaTeX in it, prints as text. `extract.ts` reads a rendered résumé
+back into data, which is how the hand-written source migrated and how a `.tex` edit can still get in.
 
-Tailoring produces a `ResumeEdit` addressing bullets by `id`. Every rewritten bullet is checked
-against `factIndex(facts)` before render; unbacked keywords revert the bullet and are reported. That
+Tailoring produces a `ResumeEdit` addressing bullets by `id`. Every rewritten line is checked by
+`unbackedClaims` (`packages/core/src/profile/claims.ts`) against the fact base and the line it
+replaces; anything else it claims is dropped, the original text kept, and the revert reported. That
 is what makes "the model may rewrite everything" safe.
 
-The score is measured after render (`classify` + `scoreResume` over `latexToPlainText` of the
-output), not projected before the model runs.
+The score is measured on the document that rendered, not projected before the model runs. The
+projection is kept beside it and printed when the two differ — that gap says the rewrite left
+something on the table.
 
 ## Grounding [built]
 
@@ -110,9 +115,10 @@ carries scrape freshness and file-drift hashes.
 
 ## Guards [built]
 
-`packages/core/src/check/` — source structure (no compile needed), rendered-PDF structure, and
-width (overfull lines from the LaTeX log). CI runs the source check before compiling and the PDF
-check after. `.githooks/pre-commit` runs the source check when `resume.tex` is staged.
+`packages/core/src/check/` — source (structure, plus `resume.tex` still being what
+`profile/resume.json` renders to; no compile needed), rendered-PDF structure, and width (overfull
+lines from the LaTeX log). CI runs the source check before compiling and the PDF check after.
+`.githooks/pre-commit` runs the source check when either résumé file is staged.
 
 The tailor pipeline runs the page and width guards after every render and re-asks the model for
 tighter copy when they fail.
