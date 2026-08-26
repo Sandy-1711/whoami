@@ -14,7 +14,7 @@ code).
 | --- | --- | --- |
 | 0 | Handoff docs | done |
 | 1 | One LLM path, instrumented | done — one live-trace check outstanding, see below |
-| 2 | Flexible tools, unconfusing MCP | in progress — surface reshaped, see below |
+| 2 | Flexible tools, unconfusing MCP | done |
 | 3 | Résumé as structured data | not started |
 | 4 | Web studio | not started |
 | 5 | Formatter, linter, comment pass | not started |
@@ -217,7 +217,8 @@ rest of this document assumed:
 
 **Verify:** score a JD by path without pasting; restart the MCP server and send a draft from a
 previous session; call `mcp__resume__profile_status` and `mcp__resume__score_jd` from Claude Code
-after the `.mcp.json` switch.
+after the `.mcp.json` switch; `resume send --company X --dry-run` renders a saved draft with no
+model call.
 
 - [x] Input resolver applied everywhere (`jd` / `jdPath` / `jdUrl`)
 - [x] `opt()` rejects a flag-shaped value
@@ -233,27 +234,44 @@ after the `.mcp.json` switch.
 - [x] One-process MCP launch (no `dist` — see above)
 - [x] Confirm gate shows the resolved call (tool, values, body) before it runs
 - [x] Live LinkedIn scrape deprecated
+- [x] CLI cut to the operator surface; `resume send` replaces `resume email`
 
-**Open question — should drafting be a tool at all?** Raised mid-phase and not yet decided. What
-the toolkit uniquely provides is not prose: it is the grounding (fact base + evidence), the
-deterministic JD classification (`missing` is computed, and it is what stops invention), the filing,
-and the recording. The prose is the one part any capable model can do — and in chat the drafting
-model *is* the agent, while over MCP the client's model is usually stronger than the cheap one the
-tool pays for. What a tool does guarantee is that the house rules and the filing happen even for a
-client that ignores instructions.
+**Resolved — the CLI stops running paid pipelines.** Every capability existed twice, a `pnpm`
+command and a tool, and the duplication was never a decision: the CLI came first, the tools
+wrapped it, and the skills were bolted on as the unpaid escape hatch. Whichever copy was edited,
+the other drifted, and the skills spent their word budget telling agents which half to avoid.
+
+`tailor`, `note`, `email` and the `wellfound` alias are gone. What stays is the surface worth
+having without an agent — `build` and `check` (CI and the pre-commit hook run them), the free
+deterministic reads (`score`, `digest`, `status`), `sync`, and the two entry points `chat` and
+`mcp`. Nothing left on the command line calls a model, which makes the cost rule one sentence
+instead of a table.
+
+`resume send` is what replaced `resume email`, and it is the half that was missing rather than a
+thinner version of what was there. Two skills documented "write the draft yourself, then
+`pnpm email --company X` sends it verbatim"; that path did not exist, because the command always
+drafted with a model first. It exists now: read the saved draft, show it, confirm the recipient,
+send. `EmailService.loadFileDraft` was already carrying it for the agent's send tool.
+
+**Deferred to Phase 3 — should drafting be split from the model call?** Not the email draft, which
+is settled and fine: draft, show, gate, send. The open version is narrower and belongs with
+Phase 3's bullet rewriting. What the toolkit uniquely provides is the grounding (fact base +
+evidence), the deterministic classification (`missing` is computed, and it is what stops
+invention), the filing, and the recording — while the prose is the part any capable model can do,
+and over MCP the client's model is usually stronger than the cheap one the tool pays for.
 
 The shape that keeps the guarantee without the second model: `draft_context({ kind, jd?, company? })`
 returning facts, evidence, classification, house-style rules, word budget and the destination path;
 `save_draft({ kind, company, platform?, text })` validating the text against the fact base, writing
 it to the canonical path and recording it. Both free. `outreach_message` survives as the "write it
-for me" fallback rather than the main path. **Decide before Phase 3**, since Phase 3's tailoring
-faces the same question for résumé bullets.
+for me" fallback.
 
-**Open question — CLI equivalents vs MCP.** Every capability currently exists twice: a `pnpm`
-command and an MCP tool, with skills as a third, unpaid path. That split was deliberate — a Claude
-Code session writing the copy costs nothing where the API costs credits — but it works against the
-project's own vision of one agent driving one toolkit, and it is why the skills tell agents *not*
-to call half the tools. Deciding what the CLI is for once MCP exists is deferred, not settled.
+One finding makes this worth doing rather than merely cheaper: **nothing validates generated copy
+against the fact base today, in any path.** `factIndex` in `packages/core/src/tailor/core.ts` is
+called from exactly one place — `classify()`, on JD keywords. `outreach_message` reports `gaps` and
+tells the model the note "claims none of" them, which is an assertion about the prompt, not a check
+on the output. Phase 3 already plans that validator for résumé bullets; building it as `save_draft`
+means outreach gets it too.
 
 ---
 
