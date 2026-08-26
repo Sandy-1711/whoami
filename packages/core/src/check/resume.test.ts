@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
+import { appendFile, mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadResume, writeResumeTex } from '../resume/store.js';
@@ -61,6 +61,17 @@ describe('checkResume', () => {
     expect(r.pdf.problems[0]).toMatch(/not found/i);
     expect(r.width.ran).toBe(true);
     expect(r.width.problems[0]).toMatch(/not found/i);
+  });
+
+  it('reports a resume.tex that is no longer what the document renders', async () => {
+    const stale = await mkdtemp(join(tmpdir(), 'checkresume-stale-'));
+    await writeResume(stale);
+    // Structurally fine, so only the freshness problem can fail it.
+    await appendFile(join(stale, 'resume.tex'), '% edited by hand\n');
+    const r = await checkResume({ root: stale, scope: { source: true } });
+    expect(r.pass).toBe(false);
+    expect(r.source.problems.join(' ')).toMatch(/not what profile\/resume\.json renders to/);
+    await rm(stale, { recursive: true, force: true });
   });
 
   it('reports source problems from a broken résumé', async () => {
