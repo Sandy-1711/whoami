@@ -3,4 +3,12 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-export const repoRoot: string = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const here = dirname(fileURLToPath(import.meta.url));
+
+export const repoRoot: string = join(here, '..', '..', '..');
+
+/**
+ * The PDF build script: renders profile/resume.json, then compiles it the way
+ * CI does. Spawn it with the tsx loader — node cannot execute .ts directly.
+ */
+export const buildPdfScript: string = join(here, 'build-pdf.ts');

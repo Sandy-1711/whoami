@@ -5,4 +5,4 @@
 export { buildCli, type Cli } from './container.js';
 export { renderEngineReason } from './adapters/latex.js';
 export { havePlaywright } from './adapters/playwright.js';
-export { repoRoot } from './paths.js';
+export { repoRoot, buildPdfScript } from './paths.js';
