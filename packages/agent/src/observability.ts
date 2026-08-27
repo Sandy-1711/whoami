@@ -2,6 +2,11 @@
 // level, not the Agent — so this builds the entrypoint that `buildAgent` hands
 // to its Mastra instance. The pipelines are traced separately, by the tracer in
 // @resume/llm; both land in the same Langfuse project.
+//
+// No equivalent of `markTraceRoots` runs here: LangfuseExporter owns its span
+// processor privately and feeds it converted spans directly, so nothing on this
+// path can add an attribute. A chat turn's root span has no parent, which is
+// what Langfuse reads when the marker is absent.
 import { Observability } from '@mastra/observability';
 import { LangfuseExporter } from '@mastra/langfuse';
 import type { AppConfig } from '@resume/core';
