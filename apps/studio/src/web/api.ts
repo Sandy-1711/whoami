@@ -46,6 +46,10 @@ export const getThreads = (): Promise<{ threads: ThreadSummary[] }> => json('/ap
 export const getThread = (id: string): Promise<{ messages: ThreadMessage[] }> =>
   json(`/api/threads/${encodeURIComponent(id)}`);
 
+/** Delete a thread and everything said in it. There is no undo. */
+export const deleteThread = (id: string): Promise<{ deleted: string }> =>
+  json(`/api/threads/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
 export const answerConfirm = (id: string, approved: boolean): Promise<unknown> =>
   json(`/api/confirm/${id}`, asJson('POST', { approved }));
 
