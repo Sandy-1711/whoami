@@ -41,6 +41,12 @@ export interface AgentMemory {
   memory: Memory;
   semanticRecall: boolean;   // whether embeddings-based recall is active
   dbPath: string;
+  /**
+   * The same store, for the Mastra container to reuse. Without it Mastra falls
+   * back to an in-memory store and warns — durable memory on the agent does not
+   * make the container durable.
+   */
+  storage: LibSQLStore;
 }
 
 // Build the memory instance. Always gets storage + working memory + recent
@@ -77,5 +83,5 @@ export function buildMemory(root: string, config: AppConfig): AgentMemory {
     },
   });
 
-  return { memory, semanticRecall: Boolean(embedder), dbPath };
+  return { memory, semanticRecall: Boolean(embedder), dbPath, storage };
 }
