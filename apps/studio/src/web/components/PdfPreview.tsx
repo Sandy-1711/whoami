@@ -1,6 +1,6 @@
-// The rendered document, beside the fields that produced it. Defaults to the
-// canonical PDF; the picker switches to anything under tailored/, which is how
-// a tailoring run is reviewed without leaving the page.
+// The rendered document, and the way in to the fields that produced it. Defaults
+// to the canonical PDF; the picker switches to anything under tailored/, which
+// is how a tailoring run is reviewed without leaving the page.
 //
 // Which file is showing lives in App, because the transcript can change it too:
 // a card under the turn that built something previews it here.
@@ -11,10 +11,20 @@ import { Button, Panel } from './ui';
 
 export const CANONICAL = '';
 
-export function PdfPreview({ version, showing, onShow }: {
+// Closing the editor with an edit still in it is the one state worth naming on
+// the button, since the pane it was typed into is about to be gone from view.
+function editLabel(editing: boolean, dirty: boolean): string {
+  if (editing) return 'close editor';
+  return dirty ? 'edit · unsaved' : 'edit';
+}
+
+export function PdfPreview({ version, showing, onShow, editing, dirty, onEdit }: {
   version: number;
   showing: string;
   onShow: (relPath: string) => void;
+  editing: boolean;
+  dirty: boolean;
+  onEdit: () => void;
 }) {
   const [outputs, setOutputs] = useState<OutputFile[]>([]);
 
@@ -48,6 +58,7 @@ export function PdfPreview({ version, showing, onShow }: {
             ))}
           </select>
           <Button onClick={load}>refresh</Button>
+          <Button onClick={onEdit}>{editLabel(editing, dirty)}</Button>
         </>
       }
       bodyClass="p-1"

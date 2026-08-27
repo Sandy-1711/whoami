@@ -3,6 +3,7 @@
 // watch a turn and the thing it changed at the same time.
 import { useState } from 'react';
 import { useChat } from './useChat';
+import { useResume } from './useResume';
 import { AskModal } from './components/AskModal';
 import { ChatPane } from './components/ChatPane';
 import { ConfirmModal } from './components/ConfirmModal';
@@ -13,11 +14,12 @@ import { ThreadList } from './components/ThreadList';
 
 export function App() {
   const chat = useChat();
-  // Bumped after every build so the preview reloads instead of showing the
-  // document as it was before the compile that was just watched finish. A
-  // finished turn counts too: it may have written a file the picker has not
-  // listed yet.
-  const [built, setBuilt] = useState(0);
+  // The document outlives the pane that edits it: closing the editor with an
+  // edit in it must not be how the edit is lost.
+  const doc = useResume();
+  // Editing the base résumé is the occasional, deliberate act; watching a turn
+  // is the normal one, so the pdf pane has the column until this is asked for.
+  const [editing, setEditing] = useState(false);
   // Which PDF the preview shows. Here rather than in the pane because a card in
   // the transcript sets it as well as the pane's own picker.
   const [showing, setShowing] = useState(CANONICAL);
@@ -46,9 +48,20 @@ export function App() {
           onPreview={setShowing}
         />
 
-        <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-2">
-          <ResumeEditor onBuilt={() => setBuilt((n) => n + 1)} />
-          <PdfPreview version={built + chat.completed} showing={showing} onShow={setShowing} />
+        <div className={`grid min-h-0 min-w-0 gap-2 ${
+          editing ? 'grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' : 'grid-cols-1'
+        }`}>
+          {editing ? <ResumeEditor doc={doc} onClose={() => setEditing(false)} /> : null}
+          {/* A finished turn bumps the version too: it may have written a file
+              the picker has not listed yet. */}
+          <PdfPreview
+            version={doc.built + chat.completed}
+            showing={showing}
+            onShow={setShowing}
+            editing={editing}
+            dirty={doc.dirty}
+            onEdit={() => setEditing(!editing)}
+          />
         </div>
       </main>
 
