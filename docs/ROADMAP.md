@@ -33,12 +33,12 @@ high-priority issues are.
 
 ## Resuming — start here
 
-**Where the code is.** Phases 0–3 are on `main`. Phase 4 is on the **`studio`** branch, open as
-[PR #20](https://github.com/Sandy-1711/whoami/pull/20). Phases are committed as they land, one
-concern per commit.
+**Where the code is.** Phases 0–4 are on `main`, [PR #20](https://github.com/Sandy-1711/whoami/pull/20)
+having merged. `studio` is a stale duplicate of that work — do not branch from it, the same way
+`hardening` is stale after Phase 3. Issues are worked on their own branches off `main`, one concern
+per commit.
 
 ```sh
-git log --oneline main..studio    # Phase 4
 git log --oneline -40             # everything recent
 ```
 
@@ -85,9 +85,9 @@ prose. Work them in priority order.
 
 | Priority | Issue |
 | --- | --- |
-| high | [#8](https://github.com/Sandy-1711/whoami/issues/8) Langfuse traces are unlistable: no span is marked as the trace root — **the diagnosis does not hold; the marker landed, the list was never broken** |
-| high | [#9](https://github.com/Sandy-1711/whoami/issues/9) A built résumé vanishes — no preview, no download after a render |
-| high | [#10](https://github.com/Sandy-1711/whoami/issues/10) Markdown does not render in the studio chat |
+| ~~high~~ | ~~[#8](https://github.com/Sandy-1711/whoami/issues/8) Langfuse traces are unlistable~~ — **the diagnosis does not hold.** The marker landed on the pipelines; the list was never broken. See below and [DECISIONS.md](DECISIONS.md). |
+| ~~high~~ | ~~[#9](https://github.com/Sandy-1711/whoami/issues/9) A built résumé vanishes~~ — a card under the turn that built it: preview, download, measured score, guards. |
+| ~~high~~ | ~~[#10](https://github.com/Sandy-1711/whoami/issues/10) Markdown does not render in the studio chat~~ — parsed in `apps/studio/src/web/markdown.ts`, drawn by `components/Markdown.tsx`. |
 | medium | [#11](https://github.com/Sandy-1711/whoami/issues/11) Reopened threads lose their tool calls and reasoning |
 | medium | [#12](https://github.com/Sandy-1711/whoami/issues/12) Thread titles should name the company or the résumé change |
 | medium | [#13](https://github.com/Sandy-1711/whoami/issues/13) Attach JD should accept pasted text, not only a file |
@@ -555,8 +555,9 @@ Frontend: chat pane with streamed markdown and collapsible reasoning; tool timel
 timing (already computed in `runTurn`); `ConfirmModal` showing the exact action, recipient, and
 attachment; résumé editor beside a PDF preview; status rail; link out to the local Langfuse trace.
 
-**Markdown did not land** — the pane prints raw text, so a structured answer arrives as asterisks
-and hashes. [#10](https://github.com/Sandy-1711/whoami/issues/10).
+**Markdown did not land with the phase** — the pane printed raw text, so a structured answer arrived
+as asterisks and hashes. Closed since, under
+[#10](https://github.com/Sandy-1711/whoami/issues/10).
 
 - [x] Server + SSE stream
 - [x] Confirm channel + modal

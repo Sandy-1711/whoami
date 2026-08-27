@@ -36,12 +36,21 @@ here without being mentioned.
 | --- | --- |
 | threads | past conversations, out of the same libSQL store `resume chat` resumes from |
 | status | `collectStatus` as a rail — keys, toolchain, source freshness, outputs — plus a link to Langfuse |
-| chat | the turn: reasoning, the tool timeline, the answer |
+| chat | the turn: reasoning, the tool timeline, the answer, and whatever it built |
 | résumé | `profile/resume.json` as fields; save re-renders `resume.tex`, build compiles the PDF |
 | pdf | the canonical render, or anything under `tailored/` |
 
 The **tool timeline** is the thing a terminal cannot keep. Each call stays on screen after the turn
 ends, expands to the arguments it ran with, and carries the wall-clock time it took.
+
+The **answer is markdown** — headings, bold, lists, quotes, links, inline code and fenced blocks,
+parsed by `src/web/markdown.ts`. It parses to data rather than to output, which is the half the CLI's
+ANSI styler cannot share. A code block scrolls inside its own pane rather than widening it.
+
+**A file a turn produced appears under it**, as a card with preview, download, the ATS score measured
+on the document that rendered, and whether the guards passed. Preview switches the pdf pane; the
+pane's picker re-lists when a turn ends, so a new output is there without reaching for refresh. Only
+tailored PDFs qualify — `GET /api/outputs/*` serves that directory and nothing else.
 
 A **JD is attached as a file**, not pasted. The upload lands under `.agent/jd/` and the path is what
 reaches the agent, because every JD-taking tool accepts `jdPath`.
