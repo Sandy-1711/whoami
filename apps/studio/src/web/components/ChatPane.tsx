@@ -1,6 +1,6 @@
 // The conversation: what was asked, what the agent did about it, what came back.
 import { useEffect, useRef, useState } from 'react';
-import { uploadJd } from '../api';
+import { pasteJd, uploadJd } from '../api';
 import type { Turn } from '../useChat';
 import { ArtifactCard } from './ArtifactCard';
 import { Markdown } from './Markdown';
@@ -53,6 +53,8 @@ export function ChatPane({ turns, running, onSend, onStop, onNewThread, onPrevie
 }) {
   const [draft, setDraft] = useState('');
   const [attached, setAttached] = useState<string>('');
+  const [pasted, setPasted] = useState<string | null>(null);
+  const [problem, setProblem] = useState('');
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottom.current?.scrollIntoView({ behavior: 'smooth' }); }, [turns]);
@@ -66,10 +68,25 @@ export function ChatPane({ turns, running, onSend, onStop, onNewThread, onPrevie
     setAttached('');
   };
 
+  // Both routes end in the same place: the description on disk, its path on the
+  // next message. Which one it came in by is not something the agent can tell.
+  const store = async (save: () => Promise<{ path: string }>): Promise<boolean> => {
+    setProblem('');
+    try {
+      setAttached((await save()).path);
+      return true;
+    } catch (err) {
+      setProblem((err as Error).message);
+      return false;
+    }
+  };
+
   const attach = async (file: File | undefined): Promise<void> => {
-    if (!file) return;
-    const { path } = await uploadJd(file);
-    setAttached(path);
+    if (file) await store(() => uploadJd(file));
+  };
+
+  const savePasted = async (): Promise<void> => {
+    if (pasted?.trim() && await store(() => pasteJd(pasted))) setPasted(null);
   };
 
   return (
@@ -92,6 +109,23 @@ export function ChatPane({ turns, running, onSend, onStop, onNewThread, onPrevie
         {attached ? (
           <p className="mb-1 truncate text-[11px] text-zinc-500">attached: {attached}</p>
         ) : null}
+        {problem ? <p className="mb-1 text-[11px] text-red-300">{problem}</p> : null}
+        {pasted === null ? null : (
+          <div className="mb-1.5">
+            <textarea
+              value={pasted}
+              onChange={(e) => setPasted(e.target.value)}
+              autoFocus
+              rows={6}
+              placeholder="Paste the job description. It is saved as a file and handed over as a path, so it never enters the conversation."
+              className="w-full resize-none rounded border border-zinc-800 bg-zinc-950 p-2 text-xs text-zinc-300 outline-none focus:border-zinc-600"
+            />
+            <div className="mt-1 flex items-center gap-1.5">
+              <Button tone="go" onClick={() => { void savePasted(); }} disabled={!pasted.trim()}>save as file</Button>
+              <Button onClick={() => setPasted(null)}>cancel</Button>
+            </div>
+          </div>
+        )}
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -112,6 +146,7 @@ export function ChatPane({ turns, running, onSend, onStop, onNewThread, onPrevie
               onChange={(e) => { void attach(e.target.files?.[0]); e.target.value = ''; }}
             />
           </label>
+          <Button onClick={() => setPasted(pasted === null ? '' : null)}>paste JD</Button>
           <div className="flex-1" />
           {running
             ? <Button tone="stop" onClick={onStop}>stop</Button>
