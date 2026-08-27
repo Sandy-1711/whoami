@@ -21,7 +21,7 @@ read the bottom to understand why something is the way it is.
 | 1 | One LLM path, instrumented | done |
 | 2 | Flexible tools, unconfusing MCP | done |
 | 3 | Résumé as structured data | done |
-| 4 | Web studio | done — shipped, then exercised; the three high-priority findings are closed |
+| 4 | Web studio | done — shipped, then exercised; every studio finding is closed |
 | 5 | Formatter, linter, comment pass | not started |
 | 6 | Deferred work | not started |
 
@@ -38,12 +38,13 @@ having merged. `studio` is a stale duplicate of that work — do not branch from
 `hardening` is stale after Phase 3. Issues are worked on their own branches off `main`, one concern
 per commit.
 
-**Unpushed, 2026-08-27:** `fix/high-priority-findings` off `origin/main` carries #8, #9 and #10. It
-has never been pushed and has no PR, so `origin/main` does not have it, and a branch cut from
-`origin/main` today will not contain the markdown renderer or the artifact card.
+**Unpushed, 2026-08-27:** `fix/high-priority-findings` off `origin/main` carries #8–#14 and two
+things nobody filed (deleting a thread, resizable panes). It has never been pushed and has no PR, so
+`origin/main` does not have any of it, and a branch cut from `origin/main` today will not contain
+the markdown renderer, the artifact card, or the studio the rest of this file describes.
 
 ```sh
-git log --oneline origin/main..fix/high-priority-findings   # the three findings
+git log --oneline origin/main..fix/high-priority-findings   # everything below
 git log --oneline -40                                       # everything recent
 ```
 
@@ -84,6 +85,14 @@ nothing and is how anything here should be checked before it is claimed.
   studio: headings, lists, quotes, links and fences draw; a long line scrolls inside its `pre` with
   the page's own scroll width unchanged; previewing a card switches the pdf pane to that file; the
   download link returns 200, `application/pdf`, 116,935 bytes.
+- **The four studio issues, driven in a browser.** Playwright again, against a second instance on
+  `--port 4399` because the one on 4321 was running server code from before the changes — which is
+  the trap below, met in the wild. Reopening the Serval thread rebuilt `score_jd → tailor_plan →
+  tailor_render` with its thinking and its artifact card, every call grey and undated; pasting a JD
+  wrote `.agent/jd/…` and attached the path; `detach` cleared it; the page loaded with no résumé
+  pane, and an edit typed into it survived closing and reopening (`edit · unsaved` on the button);
+  dragging moved the columns `224px → 379px` and the rail rows `220px → 335px`. A thread seeded into
+  libSQL for the purpose armed, deleted, and was gone from the store — no real thread was touched.
 
 ### Not watched working
 
@@ -101,16 +110,28 @@ nothing and is how anything here should be checked before it is claimed.
 ### Closed, on `fix/high-priority-findings`
 
 The first real use of the studio produced twelve findings, filed as issues rather than left in prose.
-The three high-priority ones are done on an unpushed branch. **None of the issues have been closed on
-GitHub, and #8's text is now known to be wrong** — see below.
+Seven are done on an unpushed branch. **None of the issues have been closed on GitHub, and #8's text
+is now known to be wrong** — see below.
 
 | Issue | What landed |
 | --- | --- |
 | [#8](https://github.com/Sandy-1711/whoami/issues/8) Langfuse traces are unlistable | **The diagnosis does not hold.** `markTraceRoots` in `packages/llm/src/tracing.ts` stamps the marker on the pipelines; the chat path cannot carry it and does not need to. The list was never broken. |
 | [#9](https://github.com/Sandy-1711/whoami/issues/9) A built résumé vanishes | `server/artifacts.ts` picks the openable files out of a tool result, `relay.ts` sends them, `components/ArtifactCard.tsx` draws preview, download, the measured ATS score and the guard verdict. The pdf pane's picker re-lists when a turn ends. |
 | [#10](https://github.com/Sandy-1711/whoami/issues/10) Markdown does not render in the studio chat | `web/markdown.ts` parses to data, `components/Markdown.tsx` draws it, in two tones — the answer and the thinking block both render. |
+| [#11](https://github.com/Sandy-1711/whoami/issues/11) Reopened threads lose their tool calls | `server/transcript.ts` reads a stored message back to its text, thinking, calls and cards; the timeline draws a restored call grey with no duration, because the store keeps every part of a turn but its clock. |
+| [#12](https://github.com/Sandy-1711/whoami/issues/12) Thread titles say nothing | `packages/agent/src/titles.ts` names a thread after the company a call resolved, else after the line that opened it. Mastra's `generateTitle` is off — two writers would race over the field on the first turn, which is the turn a company is most likely to be named. `AGENT_TITLE_MODEL` went with it. |
+| [#13](https://github.com/Sandy-1711/whoami/issues/13) Attach JD is a file picker only | The paste box posts to the `text` field `POST /api/files` had all along, so both routes end at a path under `.agent/jd/`. |
+| [#14](https://github.com/Sandy-1711/whoami/issues/14) The résumé editor is open by default | It opens from the pdf pane. `web/useResume.ts` holds the document above the pane, so closing it with an unsaved edit keeps the edit and the button says so. |
 
-Two things came out of building them that were not in any issue:
+Two more came out of using it, neither filed:
+
+- **A thread could not be deleted**, so every abandoned turn stayed in the rail forever.
+  `DELETE /api/threads/:id`, and a `×` that arms before it destroys anything.
+- **The panes could not be resized.** Every gutter is a splitter now
+  (`web/components/Splitter.tsx`); opening the editor widens its whole column rather than halving
+  the pdf pane, which at half width could not fit its own controls.
+
+Two things came out of building the first three that were not in any issue:
 
 - **`server/relay.ts`** — turning agent stream chunks into browser events was buried in `runTurn`,
   reachable only by spending a real turn. That is how the artifact events shipped unexercised while
@@ -124,10 +145,6 @@ Two things came out of building them that were not in any issue:
 
 | Priority | Issue |
 | --- | --- |
-| medium | [#11](https://github.com/Sandy-1711/whoami/issues/11) Reopened threads lose their tool calls and reasoning |
-| medium | [#12](https://github.com/Sandy-1711/whoami/issues/12) Thread titles should name the company or the résumé change |
-| medium | [#13](https://github.com/Sandy-1711/whoami/issues/13) Attach JD should accept pasted text, not only a file |
-| medium | [#14](https://github.com/Sandy-1711/whoami/issues/14) The résumé editor should not be open by default |
 | medium | [#15](https://github.com/Sandy-1711/whoami/issues/15) The tailor generation is an orphan trace |
 | medium | [#16](https://github.com/Sandy-1711/whoami/issues/16) Nothing in the product's own voice should name the model |
 | low | [#17](https://github.com/Sandy-1711/whoami/issues/17) Replace the tailor pipeline with `draft_context` + `save_draft` |
@@ -162,10 +179,10 @@ replays stored text — or mount a component with hand-built props on a throwawa
 
 ### Housekeeping
 
-**Outstanding on GitHub.** `fix/high-priority-findings` is unpushed and has no PR. #8, #9 and #10 are
-still open. #8's body states a root cause that was checked against the running instance and does not
-hold — anyone reading it will chase the wrong thing, so it wants a correcting comment more than it
-wants closing.
+**Outstanding on GitHub.** `fix/high-priority-findings` is unpushed and has no PR. #8 through #14 are
+all still open. #8's body states a root cause that was checked against the running instance and does
+not hold — anyone reading it will chase the wrong thing, so it wants a correcting comment more than
+it wants closing.
 
 `AGENT_BUILDLOG.md` at the repo root is **stale and superseded by this file** — it opens by telling
 a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
@@ -661,8 +678,10 @@ grid item will not shrink below its content without `min-w-0`.
 **Then it was used, and that found ten more.** Two were fixed on the branch — the Mastra container
 had no store and warned on every boot that it was falling back to an in-memory one, and the user's
 own message was styled as highlighted. The rest are issues #8–#19, listed at the top of this file —
-the three high-priority ones closed since, the rest open. None of them says the shape is wrong; they
-say a shipped surface only tells you the truth once somebody uses it.
+#8–#14 closed since, the rest open. None of them says the shape is wrong; they say a shipped surface
+only tells you the truth once somebody uses it. Using it again said the same thing twice more: a
+thread could not be deleted and a pane could not be resized, neither of which anyone noticed until
+the panes had something worth rearranging in them.
 
 One of the twelve turned out not to be a finding at all: #8's empty trace list was a page opened
 against a project with nothing in it yet. That is the same lesson pointing the other way — a surface
