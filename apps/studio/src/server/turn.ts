@@ -8,6 +8,7 @@ import {
   buildAgent, progressPresenter, AGENT_RESOURCE_ID, type AgentDeps,
 } from '@resume/agent';
 import { havePlaywright } from '@resume/cli';
+import { artifactsFrom } from './artifacts.js';
 import { browserAsk, browserConfirm } from './gates.js';
 import type { EventSink } from './sink.js';
 import type { Studio } from './studio.js';
@@ -86,6 +87,11 @@ export async function runTurn(studio: Studio, request: TurnRequest, sink: EventS
             isError: Boolean(chunk.payload.isError),
             ms: began ? Date.now() - began : 0,
           });
+          // The result itself stays on this side — only the files it named cross
+          // the wire, so a large payload never lands in the transcript.
+          for (const artifact of artifactsFrom(chunk.payload.toolName, chunk.payload.result)) {
+            sink.send({ type: 'artifact', id, artifact });
+          }
           break;
         }
         case 'finish': {

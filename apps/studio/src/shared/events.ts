@@ -28,6 +28,22 @@ export interface QuestionView {
 }
 
 /**
+ * A file a tool produced, surfaced in the exchange that produced it.
+ *
+ * `relPath` is relative to `tailored/`, the same spelling {@link OutputFile}
+ * uses and the same one `GET /api/outputs/*` takes — so previewing a card and
+ * picking the file from the preview pane's list are the same value.
+ */
+export interface Artifact {
+  relPath: string;
+  /** Which tool wrote it. */
+  tool: string;
+  /** ATS score before tailoring and as measured on the rendered document. */
+  score?: { before: number; after: number };
+  guardsPass?: boolean;
+}
+
+/**
  * A chunk of one chat turn. Sent as `event: <type>` with the whole object as the
  * SSE data payload. The set mirrors what the chat REPL renders, plus the two
  * events that only exist because there is a browser to answer them.
@@ -38,6 +54,7 @@ export type ChatEvent =
   | { type: 'progress'; line: string }
   | { type: 'tool-call'; id: string; name: string; args: unknown }
   | { type: 'tool-result'; id: string; name: string; isError: boolean; ms: number }
+  | { type: 'artifact'; id: string; artifact: Artifact }
   | { type: 'confirm'; id: string; request: ConfirmView }
   | { type: 'ask'; id: string; questions: QuestionView[] }
   | { type: 'error'; message: string }
