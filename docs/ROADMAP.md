@@ -16,16 +16,17 @@ code).
 | 1 | One LLM path, instrumented | done — one live-trace check outstanding, see below |
 | 2 | Flexible tools, unconfusing MCP | done |
 | 3 | Résumé as structured data | done |
-| 4 | Web studio | not started |
-| 5 | Formatter, linter, comment pass | not started |
+| 4 | Web studio | done |
+| 5 | Formatter, linter, comment pass | next |
 | 6 | Deferred work | not started |
 
 ---
 
 ## Resuming — start here
 
-Everything through Phase 3 is merged into **`main`**, tree clean, `pnpm test` and `pnpm typecheck`
-green. Phases are committed as they land, one concern per commit.
+Everything through Phase 3 is merged into **`main`**. Phase 4 is on the **`studio`** branch, cut
+from `main`; tree clean, `pnpm test` and `pnpm typecheck` green across all six packages. Phases are
+committed as they land, one concern per commit.
 
 ```sh
 git log --oneline -40    # what has landed
@@ -43,6 +44,9 @@ this file predates it:
   prints the resolved values before asking. Nothing is approved by an argument.
 - **The résumé is `profile/resume.json`.** `resume.tex` is rendered from it by both build paths and
   guarded for staleness; nothing hand-edits the LaTeX any more.
+- **Three front ends, one tool set.** `pnpm chat`, `pnpm mcp`, `pnpm studio` — all three call
+  `assembleTools(deps)` and nothing else. `@resume/cli` now has a package entry so the studio
+  derives its adapters from `buildCli()` rather than copying the container.
 
 **Carried forward, still unverified** — none of these blocks Phase 4, but none has been watched
 working either:
@@ -57,6 +61,15 @@ working either:
   offline end-to-end test covers the mechanism; what a real model does with the whole document —
   how much it rewrites, how often a line is reverted, whether it respects the length budgets — has
   not been watched.
+- **No studio chat turn has been run against a real model.** Every other route was exercised
+  against the live server and real repo data, and the page was loaded in a headless browser: it
+  mounts, all four panes render their own data, no console errors, no overflow. But `POST /api/chat`
+  was only checked for the 400 it gives without a message. The turn plumbing — SSE framing, the
+  gates, the timeline, the confirm modal — is covered by unit tests and by the CLI path it was
+  copied from, not by a watched run. That is the obvious first thing to do with the studio, and it
+  costs credits.
+- The résumé editor's **build** button has not been watched compiling. Docker was down throughout
+  Phase 4, so `POST /api/resume/build` has only ever returned the toolchain-unavailable path.
 
 `AGENT_BUILDLOG.md` at the repo root is **stale and superseded by this file** — it opens by telling
 a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
@@ -73,7 +86,7 @@ check that `resume.tex` is what `profile/resume.json` renders to) and the PDF gu
 and Vercel took the deploy. The run missed the PDF cache, as expected: the key is
 `hashFiles('resume.tex')` and that file changed.
 
-**Next: Phase 4**, below.
+**Next: Phase 5**, below.
 
 ---
 
@@ -507,11 +520,41 @@ Frontend: chat pane with streamed markdown and collapsible reasoning; tool timel
 timing (already computed in `runTurn`); `ConfirmModal` showing the exact action, recipient, and
 attachment; résumé editor beside a PDF preview; status rail; link out to the local Langfuse trace.
 
-- [ ] Server + SSE stream
-- [ ] Confirm channel + modal
-- [ ] Chat UI + tool timeline
-- [ ] Résumé editor + PDF preview
-- [ ] Status rail + Langfuse link
+- [x] Server + SSE stream
+- [x] Confirm channel + modal
+- [x] Chat UI + tool timeline
+- [x] Résumé editor + PDF preview
+- [x] Status rail + Langfuse link
+
+**Done.** `pnpm studio` → `127.0.0.1:4321`. Full write-up in [STUDIO.md](STUDIO.md); the calls it
+made are in [DECISIONS.md](DECISIONS.md). Where it went another way, or further:
+
+- **One process, one port, no build step.** The plan implied a Vite dev server beside the Hono one.
+  Vite runs *inside* the server in middleware mode instead, dispatching `/api` to Hono and the rest
+  to Vite's middlewares — the same call Phase 2 made when it dropped the MCP bundle for `tsx`.
+- **Deps are built per turn**, not per server. The presenter and the gates belong to one stream: a
+  confirm modal has to appear in the tab that asked for it. Memory and the tracing pipeline are the
+  studio's, opened once and passed in, which is why `buildObservability` became public alongside
+  `buildMemory`.
+- **`@resume/cli` gained a package entry.** The plan said the server reuses `buildCli()`; it could
+  not, because the package declared a bin and no exports. `apps/cli/src/index.ts` exports the
+  container and the two environment probes, and the Playwright probe that three commands had each
+  copied is now one function.
+- **Closing the stream cancels the turn.** Not in the plan, and the Stop button is a lie without it:
+  the run would keep stepping and keep spending into a socket with nobody reading.
+- **`POST /api/resume/build`** was added beyond the route table. Saving the document re-renders
+  `resume.tex` instantly, but the PDF pane shows a stale render until something compiles, and
+  dropping to a terminal for that defeats the pane.
+- **`POST /api/ask/:id`** was added too — `ask_user` is a gate like `confirm` and had nowhere to be
+  answered. Unanswered *throws* rather than returning blanks, because a blank preference is not a
+  refusal, it is a guess the model would treat as chosen.
+- **The editor edits fields, not JSON**, and PUTs the whole document so `parseResume` on the server
+  stays the only definition of a valid résumé. Ids are shown and not editable.
+
+Two bugs found by actually opening the page rather than curling it, both fixed under their own
+commits: the `/api` prefix test swallowed the SPA's own `/api.ts` — every route looked healthy from
+the shell while the browser got a blank page — and the panes overflowed their grid tracks because a
+grid item will not shrink below its content without `min-w-0`.
 
 ---
 
@@ -519,6 +562,10 @@ attachment; résumé editor beside a PDF preview; status rail; link out to the l
 
 **What:** Prettier + ESLint configured to match the existing style, enforced in CI, and a
 comment pass across all packages.
+
+`apps/studio` is six packages' worth of new code, half of it TSX that no existing config has an
+opinion about — so this phase now has to cover React/JSX rules and a Tailwind class order, not only
+the Node style the other packages share.
 
 **Why:** `lint` is currently just `tsc --noEmit`. Style should be enforced by tooling rather than
 discipline. See [CONVENTIONS.md](CONVENTIONS.md).
