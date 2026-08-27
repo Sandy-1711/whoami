@@ -26,8 +26,8 @@ export function App() {
         </span>
       </header>
 
-      <main className="grid min-h-0 flex-1 grid-cols-[15rem_minmax(0,1.1fr)_minmax(0,1.4fr)] gap-2 p-2">
-        <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1.4fr)] gap-2">
+      <main className="grid min-h-0 flex-1 grid-cols-[14rem_minmax(0,1fr)_minmax(0,1.5fr)] gap-2 p-2">
+        <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_minmax(0,1.4fr)] gap-2">
           <ThreadList current={chat.threadId} onOpen={(id) => { void chat.openThread(id); }} />
           <StatusRail />
         </div>
@@ -40,7 +40,7 @@ export function App() {
           onNewThread={chat.startThread}
         />
 
-        <div className="grid min-h-0 grid-cols-2 gap-2">
+        <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-2">
           <ResumeEditor onBuilt={() => setBuilt((n) => n + 1)} />
           <PdfPreview version={built} />
         </div>

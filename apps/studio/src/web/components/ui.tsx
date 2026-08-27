@@ -8,13 +8,16 @@ export function Panel({ title, actions, children, bodyClass = '' }: {
   children: ReactNode;
   bodyClass?: string;
 }) {
+  // min-w-0 is load-bearing: a grid item defaults to min-width:auto and refuses
+  // to shrink below its content, so without it a wide pane spills over its
+  // neighbours instead of scrolling inside its own track.
   return (
-    <section className="flex min-h-0 flex-col rounded-lg border border-zinc-800 bg-zinc-900/40">
+    <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-800 px-3 py-2">
-        <h2 className="text-xs font-semibold tracking-wide text-zinc-400 uppercase">{title}</h2>
-        {actions ? <div className="flex items-center gap-1.5">{actions}</div> : null}
+        <h2 className="truncate text-xs font-semibold tracking-wide text-zinc-400 uppercase">{title}</h2>
+        {actions ? <div className="flex shrink-0 items-center gap-1.5">{actions}</div> : null}
       </header>
-      <div className={`min-h-0 flex-1 ${bodyClass}`}>{children}</div>
+      <div className={`min-h-0 min-w-0 flex-1 ${bodyClass}`}>{children}</div>
     </section>
   );
 }
@@ -49,7 +52,7 @@ export function Row({ label, children }: { label: string; children: ReactNode })
   return (
     <div className="flex items-baseline justify-between gap-3 py-0.5 text-xs">
       <span className="shrink-0 text-zinc-500">{label}</span>
-      <span className="truncate text-right text-zinc-300">{children}</span>
+      <span className="min-w-0 truncate text-right text-zinc-300">{children}</span>
     </div>
   );
 }
