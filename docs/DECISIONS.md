@@ -134,3 +134,52 @@ Phase 1 does the minimum: stop sending the fact base truncated mid-string. Today
 `JSON.stringify(facts).slice(0, 12000)` against a 15,826-character fact base severs `projects`
 mid-value and drops `headline_metrics` entirely — while the prompts instruct the model to draw
 achievements "ONLY from headline_metrics". That is a correctness bug, not an optimization.
+
+## 2026-08-27 — Vite runs inside the studio server, not beside it
+
+The studio could have been a Vite dev server proxying `/api` to Hono, or a built SPA that Hono
+serves from `dist/`. It is neither: the server creates Vite in **middleware mode** and dispatches
+`/api` to Hono and everything else to Vite's middlewares.
+
+One process, one port, no build step, and HMR — the same call Phase 2 made when it dropped the MCP
+bundle in favour of running the source under `tsx`, and for the same reason: a launch chain in front
+of every session is a cost paid constantly to save a dependency once.
+
+The trade-off accepted: Vite and its plugins are runtime dependencies of the studio. That is honest
+for a tool that binds `127.0.0.1`, cannot deploy, and needs Docker and the filesystem anyway.
+
+## 2026-08-27 — The studio builds its agent per turn
+
+`buildAgent` is called once per turn rather than once per server, reusing the memory store and the
+tracing pipeline that `createStudio` opened.
+
+The presenter and the two gates belong to *one stream*: a confirm modal has to appear in the tab
+that asked for it, and progress lines have to land under the turn that produced them. Binding them
+at server scope would mean a mutable "currently active stream" the gates read — correct only while
+exactly one turn is in flight, and silently wrong the moment a second tab opens.
+
+Rebuilding costs an `Agent` and a `Mastra` object. Memory and observability are passed in because
+each is expensive or duplicative to re-create — one libSQL handle, one exporter, one batch timer.
+That is why `buildObservability` became public: `buildMemory` already was, for exactly this reason.
+
+## 2026-08-27 — Unanswered means refused
+
+The studio's gates can end four ways: answered, timed out, the browser hung up, or the event never
+reached the wire. Only the first is an answer. The other three resolve to refusal.
+
+The alternative — leave it pending — is worse than it sounds. It holds a tool call open indefinitely
+with nothing on screen capable of answering it, and the run keeps whatever it had already paid for.
+A gate that cannot be answered would hang the call, which is the same reasoning that made `runMcp`
+delegate to the client's prompt rather than wire a gate with no terminal behind it.
+
+`ask_user` is the exception that proves the shape: it throws instead of returning, because a blank
+preference is not a refusal — it is a guess the model would treat as chosen.
+
+## 2026-08-27 — The studio edits fields, and PUTs the whole document
+
+The résumé editor could have been a JSON textarea. It edits typed fields over a working copy and
+PUTs the entire document, so `parseResume` on the server stays the only definition of a valid
+résumé and the browser never holds a second one.
+
+Ids are rendered and not editable. An id is what a tailoring edit addresses a bullet by; renaming
+one silently detaches every plan that already referred to it.
