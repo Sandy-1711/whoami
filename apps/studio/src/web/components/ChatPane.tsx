@@ -15,7 +15,7 @@ function Reasoning({ text }: { text: string }) {
       <button type="button" onClick={() => setOpen(!open)} className="text-zinc-500 italic hover:text-zinc-300">
         {open ? '▾' : '▸'} thinking
       </button>
-      {open ? <p className="mt-1 whitespace-pre-wrap text-zinc-500 italic">{text}</p> : null}
+      {open ? <div className="mt-1"><Markdown text={text} tone="reasoning" /></div> : null}
     </div>
   );
 }
