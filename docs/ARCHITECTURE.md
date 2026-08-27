@@ -4,11 +4,11 @@ Sections are tagged **[built]** or **[planned — Phase N]**. A planned section 
 that does not exist on disk yet; check [ROADMAP.md](ROADMAP.md) for its current status before
 trusting it.
 
-## Package graph [built, except apps/studio]
+## Package graph [built]
 
 ```
 apps/cli      ── the `resume` command: interactive menu, direct commands, chat REPL, MCP server
-apps/studio   ── local web studio: Hono server + Vite React SPA   [planned — Phase 4]
+apps/studio   ── local web studio: Hono server + Vite React SPA
 apps/web      ── deployed Vercel functions serving the published PDF     (untouched)
 
 packages/agent ── Mastra agent: tools, memory, instructions, MCP server
@@ -28,12 +28,16 @@ presenter, mailer. Every front end derives its deps from it:
 - **CLI commands** take the `Cli` directly.
 - **Chat** builds an `AgentDeps` from it, adding a terminal confirm gate.
 - **MCP** builds an `AgentDeps` from it, adding a stderr presenter.
-- **Studio** (Phase 4) builds an `AgentDeps` from it, adding an SSE presenter and a
-  confirm gate that round-trips to the browser.
+- **Studio** builds an `AgentDeps` per turn, adding an SSE presenter and gates that round-trip
+  to the browser. Per turn, not per server, because the presenter and the gates belong to one
+  stream — a confirm modal has to appear in the tab that asked for it. Memory and the tracing
+  pipeline are the studio's, built once and passed in, so a rebuild costs an `Agent` object.
+
+`buildCli()` is reachable because `@resume/cli` declares a package entry (`apps/cli/src/index.ts`)
+alongside its bin. That entry is for consumers; `main.ts` imports the container directly.
 
 `assembleTools(deps)` in `packages/agent/src/agent.ts` is the single source of truth for what tools
-exist. Chat and MCP both wire exactly that set, so the front ends cannot drift apart. The studio
-wires the same.
+exist. All three front ends wire exactly that set, so they cannot drift apart.
 
 ## The LLM path [built]
 
@@ -100,6 +104,36 @@ is what makes "the model may rewrite everything" safe.
 The score is measured on the document that rendered, not projected before the model runs. The
 projection is kept beside it and printed when the two differ — that gap says the rewrite left
 something on the table.
+
+## The studio [built]
+
+One process on one port (`127.0.0.1:4321`). `/api` is Hono over the container above; everything
+else is a React SPA served by **Vite in middleware mode**, so there is no build step between
+editing a component and reloading it.
+
+```
+apps/studio/src/
+  server/   Hono routes, the SSE turn, the browser-backed gates    NodeNext
+  web/      the SPA                                                bundler + JSX
+  shared/   the wire format both halves import                     both
+```
+
+The two halves resolve modules differently and spell the same import differently
+(`'../shared/events.js'` on the server, `'../shared/events'` in the SPA). `typecheck` runs both
+tsconfigs.
+
+**Approvals over the wire.** `ConfirmGate` keeps its Phase 2 shape — a `ConfirmRequest` of resolved
+values, not a sentence about them. The request goes out on the turn's SSE stream, the modal renders
+those fields, and the browser's POST settles the promise the tool is awaiting. Every path out of the
+registry resolves, and everything that is not an answer means refused: a timeout, a closed tab, a
+dead stream. `ask_user` is the same mechanism except that going unanswered throws, so the model
+learns nobody answered rather than receiving blanks it would treat as chosen.
+
+Closing the stream is how the browser cancels; the disconnect aborts the run as well as settling
+the parked gates.
+
+This is the only front end where this codebase both shows the gate and takes the answer. Chat
+prompts a terminal; MCP delegates to the client's approval UI.
 
 ## Grounding [built]
 
