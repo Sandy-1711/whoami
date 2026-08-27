@@ -107,7 +107,15 @@ export function ChatPane({ turns, running, onSend, onStop, onNewThread, onPrevie
 
       <div className="shrink-0 border-t border-zinc-800 p-2">
         {attached ? (
-          <p className="mb-1 truncate text-[11px] text-zinc-500">attached: {attached}</p>
+          <div className="mb-1 flex items-baseline gap-2 text-[11px] text-zinc-500">
+            <span className="min-w-0 flex-1 truncate">attached: {attached}</span>
+            {/* Detaching drops it from the next message and leaves the file
+                where it is — a JD saved under .agent/jd/ is still worth having
+                a path to. */}
+            <button type="button" onClick={() => setAttached('')} className="shrink-0 hover:text-zinc-300">
+              detach
+            </button>
+          </div>
         ) : null}
         {problem ? <p className="mb-1 text-[11px] text-red-300">{problem}</p> : null}
         {pasted === null ? null : (
