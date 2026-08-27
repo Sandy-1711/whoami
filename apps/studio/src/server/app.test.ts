@@ -270,7 +270,10 @@ describe('GET /api/threads', () => {
     const res = await createApp(studio).request('/api/threads/t1');
 
     expect((await body<{ messages: unknown[] }>(res)).messages).toEqual([
-      { id: 'm1', role: 'user', text: 'hello', createdAt: new Date(0).toISOString() },
+      {
+        id: 'm1', role: 'user', text: 'hello', reasoning: '', calls: [], artifacts: [],
+        createdAt: new Date(0).toISOString(),
+      },
     ]);
   });
 });

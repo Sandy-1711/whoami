@@ -3,22 +3,12 @@
 // the studio and the other way round.
 import { Hono } from 'hono';
 import { AGENT_RESOURCE_ID } from '@resume/agent';
+import { hasContent, restoreMessage } from '../transcript.js';
 import type { ThreadMessage } from '../../shared/events.js';
 import type { Studio } from '../studio.js';
 
 const THREAD_PAGE = 25;
 const MESSAGE_PAGE = 200;
-
-// A stored message is a list of parts (text, reasoning, tool invocations). The
-// transcript only redraws what was said; the tool timeline is a live-turn view.
-function flatten(parts: unknown): string {
-  if (!Array.isArray(parts)) return '';
-  return parts
-    .filter((p): p is { type: string; text: string } =>
-      Boolean(p) && (p as { type?: string }).type === 'text' && typeof (p as { text?: string }).text === 'string')
-    .map((p) => p.text)
-    .join('');
-}
 
 export function threadRoutes(studio: Studio): Hono {
   const app = new Hono();
@@ -47,14 +37,7 @@ export function threadRoutes(studio: Studio): Hono {
       perPage: MESSAGE_PAGE,
       orderBy: { field: 'createdAt', direction: 'ASC' },
     });
-    const transcript: ThreadMessage[] = messages
-      .map((m) => ({
-        id: m.id,
-        role: m.role,
-        text: flatten(m.content?.parts),
-        createdAt: new Date(m.createdAt).toISOString(),
-      }))
-      .filter((m) => m.text.trim() !== '');
+    const transcript: ThreadMessage[] = messages.map(restoreMessage).filter(hasContent);
     return c.json({ threadId, messages: transcript });
   });
 
