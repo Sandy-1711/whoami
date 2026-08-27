@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { uploadJd } from '../api';
 import type { Turn } from '../useChat';
+import { ArtifactCard } from './ArtifactCard';
 import { Markdown } from './Markdown';
 import { ToolTimeline } from './ToolTimeline';
 import { Button, Panel } from './ui';
@@ -19,13 +20,16 @@ function Reasoning({ text }: { text: string }) {
   );
 }
 
-function Exchange({ turn }: { turn: Turn }) {
+function Exchange({ turn, onPreview }: { turn: Turn; onPreview: (relPath: string) => void }) {
   return (
     <article className="border-b border-zinc-900 px-4 py-3 last:border-0">
       <p className="mb-2 whitespace-pre-wrap text-zinc-400">{turn.question}</p>
       <Reasoning text={turn.reasoning} />
       <ToolTimeline tools={turn.tools} progress={turn.progress} />
       <Markdown text={turn.answer} />
+      {turn.artifacts.map((artifact) => (
+        <ArtifactCard key={artifact.relPath} artifact={artifact} onPreview={onPreview} />
+      ))}
       {turn.running && !turn.answer ? <p className="text-sm text-zinc-600">thinking…</p> : null}
       {turn.error ? (
         <p className="mt-2 rounded border border-red-900/60 bg-red-950/40 p-2 text-xs text-red-300">{turn.error}</p>
@@ -39,12 +43,13 @@ function Exchange({ turn }: { turn: Turn }) {
   );
 }
 
-export function ChatPane({ turns, running, onSend, onStop, onNewThread }: {
+export function ChatPane({ turns, running, onSend, onStop, onNewThread, onPreview }: {
   turns: Turn[];
   running: boolean;
   onSend: (message: string) => void;
   onStop: () => void;
   onNewThread: () => void;
+  onPreview: (relPath: string) => void;
 }) {
   const [draft, setDraft] = useState('');
   const [attached, setAttached] = useState<string>('');
@@ -79,7 +84,7 @@ export function ChatPane({ turns, running, onSend, onStop, onNewThread }: {
             Ask for a fit score, a tailored résumé, a note for a company. Attach a JD and it is handed
             over as a path.
           </p>
-        ) : turns.map((turn) => <Exchange key={turn.id} turn={turn} />)}
+        ) : turns.map((turn) => <Exchange key={turn.id} turn={turn} onPreview={onPreview} />)}
         <div ref={bottom} />
       </div>
 
