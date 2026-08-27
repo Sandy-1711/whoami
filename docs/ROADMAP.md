@@ -21,13 +21,13 @@ read the bottom to understand why something is the way it is.
 | 1 | One LLM path, instrumented | done |
 | 2 | Flexible tools, unconfusing MCP | done |
 | 3 | Résumé as structured data | done |
-| 4 | Web studio | done — shipped, then exercised; the findings are open issues |
+| 4 | Web studio | done — shipped, then exercised; the three high-priority findings are closed |
 | 5 | Formatter, linter, comment pass | not started |
 | 6 | Deferred work | not started |
 
 The phases are the plan. The **[issue tracker](https://github.com/Sandy-1711/whoami/issues)** is now
 where day-to-day work lives — see *Open work* below. Phase 5 is not started and is not next; the
-high-priority issues are.
+open issues are, in priority order.
 
 ---
 
@@ -38,8 +38,13 @@ having merged. `studio` is a stale duplicate of that work — do not branch from
 `hardening` is stale after Phase 3. Issues are worked on their own branches off `main`, one concern
 per commit.
 
+**Unpushed, 2026-08-27:** `fix/high-priority-findings` off `origin/main` carries #8, #9 and #10. It
+has never been pushed and has no PR, so `origin/main` does not have it, and a branch cut from
+`origin/main` today will not contain the markdown renderer or the artifact card.
+
 ```sh
-git log --oneline -40             # everything recent
+git log --oneline origin/main..fix/high-priority-findings   # the three findings
+git log --oneline -40                                       # everything recent
 ```
 
 **What exists now.** Three front ends over one tool set, and a résumé that is data:
@@ -58,8 +63,10 @@ git log --oneline -40             # everything recent
 
 ### Watched working
 
-Everything below has been observed end to end, not merely unit-tested. Dated 2026-08-27, from one
-real studio turn and the Langfuse trace it produced.
+Everything below has been observed end to end, not merely unit-tested. All 2026-08-27: the first
+three from a real studio turn and the Langfuse trace it produced, the rest from driving the running
+instance directly — a span pushed into Langfuse, a browser pointed at the studio — which costs
+nothing and is how anything here should be checked before it is claimed.
 
 - **A full studio turn against a real model.** `score_jd` → `ask_user` → `tailor_plan` →
   `tailor_render` → `updateWorkingMemory`. The ask modal parked the run for 36 seconds waiting on a
@@ -67,8 +74,16 @@ real studio turn and the Langfuse trace it produced.
 - **Document-wide tailoring against a real model** — the first since the Phase 3 rewrite.
   `tailor_render` compiled for 63 seconds and produced a PDF.
 - **Traces arrive in a running Langfuse.** 45 events across 2 traces, with prompts, replies, tokens
-  and cost. This closes the Phase 1 item that had been outstanding since it was written — but see
-  the issues below, because arriving is not the same as being readable.
+  and cost. This closes the Phase 1 item that had been outstanding since it was written.
+- **Traces list.** The Langfuse Traces list shows them. Confirmed by sending a synthetic trace into
+  the running instance and finding it in the list — see [DECISIONS.md](DECISIONS.md), because the
+  issue that said otherwise was wrong.
+- **A root span carries Langfuse's marker.** A real span pushed through `startTracing` into the live
+  instance came back with `is_app_root = true` in ClickHouse, its child untouched. No model call.
+- **Markdown and the artifact card, as rendered pages.** Driven with Playwright against the running
+  studio: headings, lists, quotes, links and fences draw; a long line scrolls inside its `pre` with
+  the page's own scroll width unchanged; previewing a card switches the pdf pane to that file; the
+  download link returns 200, `application/pdf`, 116,935 bytes.
 
 ### Not watched working
 
@@ -77,17 +92,38 @@ real studio turn and the Langfuse trace it produced.
   was never explored; the draft-first rule is what holds under a client set to "always allow".
 - The studio's **build** button. `tailor_render` compiles through a different path, so the toolchain
   is proven but `POST /api/resume/build` specifically is not.
+- **The artifact card in a real turn.** The relay that emits it is covered by tests driven with the
+  chunk shapes `@mastra/core` documents, and the card itself was driven with a hand-built turn — but
+  no paid turn has produced one yet.
+- **The PDF pane rendering a PDF.** The route is proven; headless Chromium has no PDF viewer, so the
+  iframe was blank in every screenshot. Worth one glance with the studio open.
+
+### Closed, on `fix/high-priority-findings`
+
+The first real use of the studio produced twelve findings, filed as issues rather than left in prose.
+The three high-priority ones are done on an unpushed branch. **None of the issues have been closed on
+GitHub, and #8's text is now known to be wrong** — see below.
+
+| Issue | What landed |
+| --- | --- |
+| [#8](https://github.com/Sandy-1711/whoami/issues/8) Langfuse traces are unlistable | **The diagnosis does not hold.** `markTraceRoots` in `packages/llm/src/tracing.ts` stamps the marker on the pipelines; the chat path cannot carry it and does not need to. The list was never broken. |
+| [#9](https://github.com/Sandy-1711/whoami/issues/9) A built résumé vanishes | `server/artifacts.ts` picks the openable files out of a tool result, `relay.ts` sends them, `components/ArtifactCard.tsx` draws preview, download, the measured ATS score and the guard verdict. The pdf pane's picker re-lists when a turn ends. |
+| [#10](https://github.com/Sandy-1711/whoami/issues/10) Markdown does not render in the studio chat | `web/markdown.ts` parses to data, `components/Markdown.tsx` draws it, in two tones — the answer and the thinking block both render. |
+
+Two things came out of building them that were not in any issue:
+
+- **`server/relay.ts`** — turning agent stream chunks into browser events was buried in `runTurn`,
+  reachable only by spending a real turn. That is how the artifact events shipped unexercised while
+  every test around them passed. It is its own module now, driven by hand in `relay.test.ts`, and the
+  field names it reads by key (`payload.result` above all) are pinned there.
+- **An unfiled bug.** `DETAIL.tailor_plan` in `packages/agent/src/recording.ts` reads the score off a
+  `tailored` key, but `tailor_plan` returns `{ current, projected }` — so every activity line it
+  writes reads `score 60→undefined`. One word, no issue yet.
 
 ### Open work
 
-The first real use of the studio produced twelve findings, filed as issues rather than left in
-prose. Work them in priority order.
-
 | Priority | Issue |
 | --- | --- |
-| ~~high~~ | ~~[#8](https://github.com/Sandy-1711/whoami/issues/8) Langfuse traces are unlistable~~ — **the diagnosis does not hold.** The marker landed on the pipelines; the list was never broken. See below and [DECISIONS.md](DECISIONS.md). |
-| ~~high~~ | ~~[#9](https://github.com/Sandy-1711/whoami/issues/9) A built résumé vanishes~~ — a card under the turn that built it: preview, download, measured score, guards. |
-| ~~high~~ | ~~[#10](https://github.com/Sandy-1711/whoami/issues/10) Markdown does not render in the studio chat~~ — parsed in `apps/studio/src/web/markdown.ts`, drawn by `components/Markdown.tsx`. |
 | medium | [#11](https://github.com/Sandy-1711/whoami/issues/11) Reopened threads lose their tool calls and reasoning |
 | medium | [#12](https://github.com/Sandy-1711/whoami/issues/12) Thread titles should name the company or the résumé change |
 | medium | [#13](https://github.com/Sandy-1711/whoami/issues/13) Attach JD should accept pasted text, not only a file |
@@ -100,9 +136,36 @@ prose. Work them in priority order.
 
 **`pnpm test` is currently red** — [#19](https://github.com/Sandy-1711/whoami/issues/19). A `sync`
 grew `profile/github.json` past a hard-coded size budget the test asserts. No code change caused it,
-and any future `sync` can cause it again.
+and any future `sync` can cause it again. It is the only failure; anything else is yours.
+
+### Working on the studio
+
+**Restart the server after changing anything under `src/server/`.** `pnpm studio` runs
+`tsx src/server/main.ts` with no watch, and Vite's middleware mode hot-reloads client modules only.
+So a change to `src/web/` appears in the browser on save while a change to `src/server/` does not
+appear at all — and the failure is silent: the pane simply behaves as though the feature was never
+built. This cost a full misdiagnosis while building #9, where the browser had the new card code and
+the server was still running a relay from two and a half hours earlier that sent no artifact events.
+
+`tsx watch` was considered and rejected: it would restart the server on every save and kill in-flight
+turns, which is worse for a chat server than remembering to restart.
+
+**Watch the UI rather than curling it.** Playwright is already a dependency. Pointing it at the
+running studio and screenshotting a pane is free, and it is what caught the artifact path bug — the
+outputs route lists paths relative to `tailored/` while `tailor_render` returns them relative to the
+repo root, so preview resolved to `/api/outputs/tailored/…` and would have 404'd while download
+worked. Both tests and typecheck were green through that.
+
+For anything that needs an answer on screen without spending credits, reopen a past thread — it
+replays stored text — or mount a component with hand-built props on a throwaway Vite page under
+`src/web/`, and delete it afterwards.
 
 ### Housekeeping
+
+**Outstanding on GitHub.** `fix/high-priority-findings` is unpushed and has no PR. #8, #9 and #10 are
+still open. #8's body states a root cause that was checked against the running instance and does not
+hold — anyone reading it will chase the wrong thing, so it wants a correcting comment more than it
+wants closing.
 
 `AGENT_BUILDLOG.md` at the repo root is **stale and superseded by this file** — it opens by telling
 a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
@@ -597,9 +660,13 @@ grid item will not shrink below its content without `min-w-0`.
 
 **Then it was used, and that found ten more.** Two were fixed on the branch — the Mastra container
 had no store and warned on every boot that it was falling back to an in-memory one, and the user's
-own message was styled as highlighted. The rest are issues #8–#19, listed under *Open work* at the
-top of this file. None of them says the shape is wrong; they say a shipped surface only tells you
-the truth once somebody uses it.
+own message was styled as highlighted. The rest are issues #8–#19, listed at the top of this file —
+the three high-priority ones closed since, the rest open. None of them says the shape is wrong; they
+say a shipped surface only tells you the truth once somebody uses it.
+
+One of the twelve turned out not to be a finding at all: #8's empty trace list was a page opened
+against a project with nothing in it yet. That is the same lesson pointing the other way — a surface
+being used tells you the truth, and a surface being used *once* tells you a story about it.
 
 ---
 
