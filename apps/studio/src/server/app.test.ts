@@ -45,14 +45,16 @@ const roots: string[] = [];
 
 // Everything the routes under test actually reach. The chat turn is not one of
 // them: it needs a model, and the pieces it is made of are covered on their own.
-function testStudio(): { studio: Studio; root: string } {
+function testStudio(): { studio: Studio; root: string; deleted: string[] } {
   const root = mkdtempSync(join(tmpdir(), 'studio-'));
   roots.push(root);
+  const deleted: string[] = [];
   const memory = {
     listThreads: async () => ({ threads: [{ id: 't1', title: 'Acme outreach', updatedAt: new Date(0) }] }),
     recall: async () => ({
       messages: [{ id: 'm1', role: 'user', createdAt: new Date(0), content: { parts: [{ type: 'text', text: 'hello' }] } }],
     }),
+    deleteThread: async (id: string) => { deleted.push(id); },
   };
   const studio: Studio = {
     cli: {
@@ -66,7 +68,7 @@ function testStudio(): { studio: Studio; root: string } {
     confirms: new PendingRequests<boolean>(),
     asks: new PendingRequests<UserAnswer[] | null>(),
   };
-  return { studio, root };
+  return { studio, root, deleted };
 }
 
 // Hono's test client types a response body as unknown; every assertion below
@@ -275,5 +277,22 @@ describe('GET /api/threads', () => {
         createdAt: new Date(0).toISOString(),
       },
     ]);
+  });
+});
+
+describe('DELETE /api/threads/:id', () => {
+  it('deletes the thread it was asked about, and nothing else', async () => {
+    const { studio, deleted } = testStudio();
+    const res = await createApp(studio).request('/api/threads/t1', { method: 'DELETE' });
+
+    expect(res.status).toBe(200);
+    expect(deleted).toEqual(['t1']);
+  });
+
+  it('takes an id the store no longer has without complaining', async () => {
+    const { studio } = testStudio();
+    const res = await createApp(studio).request('/api/threads/gone', { method: 'DELETE' });
+
+    expect(res.status).toBe(200);
   });
 });
