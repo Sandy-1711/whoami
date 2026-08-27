@@ -145,7 +145,7 @@ Two things came out of building the first three that were not in any issue:
 
 | Priority | Issue |
 | --- | --- |
-| medium | [#15](https://github.com/Sandy-1711/whoami/issues/15) The tailor generation is an orphan trace |
+| medium | [#15](https://github.com/Sandy-1711/whoami/issues/15) The tailor generation is an orphan trace — one of four, see *Tracing* below |
 | medium | [#16](https://github.com/Sandy-1711/whoami/issues/16) Nothing in the product's own voice should name the model |
 | low | [#17](https://github.com/Sandy-1711/whoami/issues/17) Replace the tailor pipeline with `draft_context` + `save_draft` |
 | low | [#18](https://github.com/Sandy-1711/whoami/issues/18) ARCHITECTURE.md claims chat and pipeline traces nest |
@@ -154,6 +154,64 @@ Two things came out of building the first three that were not in any issue:
 **`pnpm test` is currently red** — [#19](https://github.com/Sandy-1711/whoami/issues/19). A `sync`
 grew `profile/github.json` past a hard-coded size budget the test asserts. No code change caused it,
 and any future `sync` can cause it again. It is the only failure; anything else is yours.
+
+### Tracing — four things wrong with it, in the order to fix them
+
+Traces arrive and the list works. Reading one is still poor, for four separate reasons, only one of
+which has an issue. Measured against the two real turns of 2026-08-27; **the Langfuse instance has
+since been emptied deliberately, so the figures below are the record rather than something to
+re-derive.** The project, its API key and the `.env` credentials survived that reset.
+
+**1. Tailoring is a different trace from the turn that caused it.** The tailoring call cost $0.0694
+against $0.0235 for the entire chat turn — three times the price of everything else — and it sat
+alone in a one-span trace with no parent. Open the turn and `tailor_plan` shows 72 seconds and
+nothing about what it sent. *Fixes:* you can read the tailoring prompt from the turn, and the turn
+shows what it actually cost. This is [#15](https://github.com/Sandy-1711/whoami/issues/15).
+
+Mastra passes `tracingContext.currentSpan` as the second argument to a tool's `execute`, and its
+`traceId` and `id` are already OTel-shaped — 32 and 16 hex characters. So `tailor_plan` can build an
+OTel parent context from them and run the pipeline call inside it; `@resume/llm`'s span then lands in
+the same trace, under the tool. `markTraceRoots` needs no special case for it: the span has a real
+parent now, so it stops being marked a root on its own.
+
+**2. The tree is mostly plumbing.** Of 44 spans in one turn, 31 were Mastra internals — 17
+`model_chunk`, 7 `model_inference`, 7 `model_step`. The eight that matter (the agent, two
+generations, five tool calls) were buried. *Fixes:* the tool calls are visible without hunting.
+
+Mastra's `excludeSpanTypes` takes the span types to drop. **Exclude `MODEL_CHUNK` and
+`MODEL_INFERENCE`; do not exclude `MODEL_STEP`** — that distinction breaks the tree if it is got
+wrong, because tool spans are parented to `model_step`:
+
+```
+invoke_agent → chat gemini-2.5-flash → model_step → score_jd        (TOOL)
+                                                  → model_inference → model_chunk ×3
+```
+
+Drop `model_step` and every tool call's parent stops existing. The other two have only each other
+below them, so dropping both is safe and takes a turn from 44 spans to about 20 with the structure
+intact.
+
+**3. Every trace has the same name.** Two rows called `Résumé Agent`, two called `tailor`. Nothing
+said which was Serval and which was Katalyst. *Fixes:* the trace list becomes navigable.
+
+Langfuse reads `langfuse.trace.name`, which `@mastra/langfuse` fills from a `traceName` metadata key,
+set per turn through the agent's tracing options. **Decide rather than guess:** the company is not
+known until `score_jd` or `tailor_plan` has run, so at turn start the only honest name is the
+truncated opening message. That is the same problem `nameThread` already solved for threads — whatever
+names the thread should probably name the trace, and this should reuse `packages/agent/src/titles.ts`
+rather than grow a second answer.
+
+**4. Getting from a turn to its trace is manual.** The status rail links to the Langfuse home page,
+not to the trace for the turn on screen. *Fixes:* one click from an exchange to what it did.
+
+Two unknowns to settle first. **Where the trace id comes from:** Mastra's chunk types carry an
+`observability` field that has not been opened yet; if it holds the trace id, `relay.ts` can put it on
+the `done` event. **How to build the URL:** a Langfuse trace URL is
+`/project/<projectId>/traces/<traceId>`, and nothing in `AppConfig` knows the project id — only the
+base URL. Either `LANGFUSE_PROJECT_ID` joins the config, or `GET /api/status` resolves it.
+
+Do 1 and 2 first: both live in `packages/`, so they do not collide with studio work. 4 touches
+`relay.ts`, `events.ts`, `useChat.ts` and `ChatPane.tsx`, so it wants a clear run at `apps/studio`.
 
 ### Working on the studio
 
