@@ -58,6 +58,13 @@ export async function uploadJd(file: File): Promise<{ path: string; chars: numbe
   return json('/api/files', { method: 'POST', body: form });
 }
 
+/** Store pasted text as a JD file, so it reaches the agent the way an upload does. */
+export async function pasteJd(text: string): Promise<{ path: string; chars: number }> {
+  const form = new FormData();
+  form.set('text', text);
+  return json('/api/files', { method: 'POST', body: form });
+}
+
 /**
  * Run one chat turn, calling `onEvent` for each chunk as it arrives.
  *
