@@ -40,8 +40,21 @@ here without being mentioned.
 | résumé | `profile/resume.json` as fields; save re-renders `resume.tex`, build compiles the PDF |
 | pdf | the canonical render, or anything under `tailored/` |
 
+Every gutter is a **splitter**: drag it and the panes either side resize. Sizes last as long as the
+tab does. The **résumé pane is closed** until the pdf pane's `edit` is pressed, because editing the
+base document is the occasional act and watching a turn is the normal one. The working copy lives
+above the pane, so closing it with an unsaved edit keeps the edit — and says so on the button.
+
+A **thread** opens from the rail and is deleted from it. Deleting takes the messages with it and
+cannot be undone, so the `×` arms and the second click is the one that means it.
+
+Threads are **named after the company** a tool resolved — `Serval — résumé`, `Acme — outreach` — and
+otherwise after the line that opened them. No model is asked; see `packages/agent/src/titles.ts`.
+
 The **tool timeline** is the thing a terminal cannot keep. Each call stays on screen after the turn
-ends, expands to the arguments it ran with, and carries the wall-clock time it took.
+ends, expands to the arguments it ran with, and carries the wall-clock time it took. Reopening a
+thread replays it, along with the reasoning and the cards — everything the store kept. It does not
+keep a clock, so a restored call draws grey and shows no duration rather than an invented one.
 
 The **answer is markdown** — headings, bold, lists, quotes, links, inline code and fenced blocks,
 parsed by `src/web/markdown.ts`. It parses to data rather than to output, which is the half the CLI's
@@ -52,8 +65,10 @@ on the document that rendered, and whether the guards passed. Preview switches t
 pane's picker re-lists when a turn ends, so a new output is there without reaching for refresh. Only
 tailored PDFs qualify — `GET /api/outputs/*` serves that directory and nothing else.
 
-A **JD is attached as a file**, not pasted. The upload lands under `.agent/jd/` and the path is what
-reaches the agent, because every JD-taking tool accepts `jdPath`.
+A **JD is attached as a file** — picked, or pasted into a box that saves one. Either way it lands
+under `.agent/jd/` and the path is what reaches the agent, because every JD-taking tool accepts
+`jdPath` and a description inlined into a message burns context and pollutes the thread. `detach`
+takes it off the composer and leaves the file where it is.
 
 ## Approvals
 
@@ -75,11 +90,12 @@ codebase. Chat prompts a terminal; MCP delegates to the client's own approval UI
 | --- | --- |
 | `POST /api/chat` | one turn, as an SSE stream. Closing it cancels the run. |
 | `POST /api/confirm/:id`, `/api/ask/:id` | settle a request the turn is blocked on |
-| `GET /api/threads`, `/api/threads/:id` | past threads and their transcript |
+| `GET /api/threads`, `/api/threads/:id` | past threads and their transcript, calls and reasoning included |
+| `DELETE /api/threads/:id` | remove a thread and its messages |
 | `GET`/`PUT /api/resume` | the document — `parseResume` validates the PUT, `writeResumeTex` follows it |
 | `POST /api/resume/build` | render, compile, run the guards; returns the log either way |
 | `GET /api/resume.pdf`, `/api/outputs`, `/api/outputs/*` | the canonical render and the tailored ones |
-| `POST /api/files` | store a JD, return a path usable as `jdPath` |
+| `POST /api/files` | store a JD — an uploaded `file` or pasted `text` — and return a path usable as `jdPath` |
 | `GET /api/status` | `collectStatus`, plus where Langfuse is |
 
 ## Costs
