@@ -21,7 +21,7 @@ function Reasoning({ text }: { text: string }) {
 function Exchange({ turn }: { turn: Turn }) {
   return (
     <article className="border-b border-zinc-900 px-4 py-3 last:border-0">
-      <p className="mb-2 font-medium whitespace-pre-wrap text-emerald-300">{turn.question}</p>
+      <p className="mb-2 whitespace-pre-wrap text-zinc-400">{turn.question}</p>
       <Reasoning text={turn.reasoning} />
       <ToolTimeline tools={turn.tools} progress={turn.progress} />
       <p className="text-sm whitespace-pre-wrap text-zinc-200">{turn.answer}</p>
