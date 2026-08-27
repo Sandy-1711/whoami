@@ -67,11 +67,24 @@ export interface ThreadSummary {
   updatedAt: string;
 }
 
+/** One call a past turn made, as the store gives it back: no timing, no outcome. */
+export interface StoredCall {
+  id: string;
+  name: string;
+  args: unknown;
+}
+
 /** One stored message, flattened to what the transcript needs to redraw it. */
 export interface ThreadMessage {
   id: string;
   role: string;
   text: string;
+  /** The model's thinking, where the provider streamed any. */
+  reasoning: string;
+  /** The calls this message made, in the order it made them. */
+  calls: StoredCall[];
+  /** The files those calls produced, out of the results the store kept. */
+  artifacts: Artifact[];
   createdAt: string;
 }
 
