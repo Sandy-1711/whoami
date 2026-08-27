@@ -108,6 +108,11 @@ external storage to read on each request.
 │       ├── commands/           # chat · tailor · email · note · sync · status · build · check
 │       ├── adapters/           # http · latex · config (dotenv) · presenter (clack) · mailer (nodemailer/Gmail)
 │       └── build-pdf.ts check-resume.ts ui.ts args.ts paths.ts
+├── apps/studio/                # @resume/studio — local web studio (Hono + Vite React SPA)
+│   └── src/
+│       ├── server/             # /api routes, the SSE turn, the browser confirm gate
+│       ├── web/                # the SPA — chat, tool timeline, résumé editor, PDF preview
+│       └── shared/             # the wire format both halves import
 ├── apps/web/                   # @resume/web — Vercel app (self-contained; deploy root)
 │   ├── api/                    # resume.ts · stats.ts · badge.ts · og.ts
 │   ├── lib/                    # view-counter.ts (ViewCounter port) · redis.ts · …
@@ -280,6 +285,7 @@ that already exists.
 cp .env.example .env             # set GEMINI_API_KEY and/or DEEPSEEK_API_KEY (see the file)
 
 pnpm chat                     # ⭐ conversational agent — every capability as a tool
+pnpm studio                   # the same agent in a browser, beside the résumé — 127.0.0.1:4321
 pnpm mcp                      # serve the tools over MCP (stdio) to Claude Code / Cursor
 pnpm resume                   # interactive menu (clack) — the same commands, guided
 pnpm send -- --company "Northwind AI"   # mail the saved draft verbatim — free, no LLM
@@ -307,6 +313,22 @@ decoupled from the pipeline's `GEMINI_MODEL`/`LLM_PROVIDER`; steer it explicitly
 `AGENT_PROVIDER` / `AGENT_MODEL`. Answers render markdown (headers, bold, code) in the
 terminal; set `RESUME_PLAIN=1` for raw text. See [docs/CLI.md](docs/CLI.md) for the full
 command + slash-command reference.
+
+### Studio — the agent in a browser (`pnpm studio`)
+
+The same agent and the same tools, on a local page at `127.0.0.1:4321`, because a terminal
+is a poor place to review generated copy, approve a send, or see what a turn actually did.
+Threads and status down the left, the conversation in the middle, `profile/resume.json` as
+editable fields beside its rendered PDF on the right — a turn and the thing it changed on
+screen at once.
+
+The **tool timeline** stays put after the turn ends: every call expands to the arguments it
+ran with and carries what it cost in wall-clock time. Approvals arrive as a modal showing
+the resolved call — recipient, subject, the exact bytes going out — and anything that is
+not an answer counts as refused. A JD is attached as a file and handed over as a path.
+
+One process, one port: Hono for `/api`, Vite in middleware mode for the SPA, so there is no
+build step. See [docs/STUDIO.md](docs/STUDIO.md).
 
 ### MCP — serve the tools to Claude Code / Cursor (`pnpm mcp`)
 
