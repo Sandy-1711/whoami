@@ -83,7 +83,15 @@ export function buildAgent(deps: AgentDeps, opts: BuildAgentOptions = {}): Built
   // Registering the agent on a Mastra container is what puts tracing behind it:
   // observability is a container-level concern, and the constructor wires this
   // instance into the agent it was handed.
-  const mastra = new Mastra({ agents: { [AGENT_ID]: agent }, observability });
+  //
+  // The container gets the memory's own store. It keeps its own state — traces,
+  // scores, workflow runs — and without a store of its own it falls back to an
+  // in-memory one that is lost on restart, and says so on every boot.
+  const mastra = new Mastra({
+    agents: { [AGENT_ID]: agent },
+    storage: mem.storage,
+    observability,
+  });
 
   return {
     agent,
