@@ -32,6 +32,7 @@ Reading order for someone new to the repo:
 
 ```
 apps/cli       the `resume` command — menu, operator commands, chat REPL, MCP server
+apps/studio    the local web studio — chat, approvals, the résumé editor (see docs/STUDIO.md)
 apps/web       deployed Vercel functions serving the published PDF (unrelated to the toolkit)
 packages/core  the domain: tailoring, email, outreach, scraping, guards
 packages/agent Mastra agent: tools, memory, instructions, MCP server
@@ -47,6 +48,7 @@ Config flows one way: `apps/cli/src/adapters/config.ts` builds a typed `AppConfi
 pnpm test          # all packages
 pnpm typecheck     # all packages
 pnpm resume        # interactive menu
+pnpm studio        # local web studio at 127.0.0.1:4321 — chat, approvals, résumé editor
 pnpm status        # keys, toolchain, source freshness, outputs — free, no LLM
 pnpm score <jd>    # deterministic JD fit score — free, no LLM
 pnpm digest        # ranked GitHub/LinkedIn evidence — free, no LLM
@@ -58,11 +60,11 @@ Rendering needs Docker running (or a local `latexmk`). `pnpm status` says which.
 
 ## Costs
 
-`pnpm chat` and the agent's drafting tools (`tailor_plan`, `tailor_render`,
-`draft_application_email`, `outreach_message`) spend real API credits. Warn before running them,
-and never run one to "check something works" — use `status`, `score`, `digest`, or the fake
-gateway in `@resume/llm/testing` instead. Every other command is free by construction: no command
-calls a model any more.
+A turn in `pnpm chat` or `pnpm studio`, and the agent's drafting tools (`tailor_plan`,
+`tailor_render`, `draft_application_email`, `outreach_message`), spend real API credits. Warn before
+running them, and never run one to "check something works" — use `status`, `score`, `digest`, or the
+fake gateway in `@resume/llm/testing` instead. Every other command is free by construction: nothing
+on the command line calls a model.
 
 `.claude/skills/` holds six skills that do job-search work in-session with no API spend
 (`job-copilot`, `resume-ats`, `resume-facts`, `resume-latex`, `resume-outreach`, `resume-tailor`).
