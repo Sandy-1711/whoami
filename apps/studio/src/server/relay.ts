@@ -14,8 +14,15 @@ export interface StreamChunk {
   payload: any;
 }
 
+/** Told about each call as it starts, for anything downstream of the browser. */
+export type CallWatcher = (name: string, args: unknown) => void;
+
 /** Relay one agent stream to the browser. Returns the turn's aggregate usage. */
-export async function relay(chunks: AsyncIterable<StreamChunk>, sink: EventSink): Promise<TurnUsage> {
+export async function relay(
+  chunks: AsyncIterable<StreamChunk>,
+  sink: EventSink,
+  onCall: CallWatcher = () => {},
+): Promise<TurnUsage> {
   const usage: TurnUsage = { inputTokens: 0, outputTokens: 0 };
   // tool-call → tool-result elapsed time, keyed by call id (name as fallback).
   const started = new Map<string, number>();
@@ -34,6 +41,7 @@ export async function relay(chunks: AsyncIterable<StreamChunk>, sink: EventSink)
         const id: string = chunk.payload.toolCallId ?? chunk.payload.toolName;
         started.set(id, Date.now());
         sink.send({ type: 'tool-call', id, name: chunk.payload.toolName, args: chunk.payload.args });
+        onCall(chunk.payload.toolName, chunk.payload.args);
         break;
       }
       case 'tool-result': {

@@ -7,6 +7,10 @@ export type { AgentDeps } from './deps.js';
 export { progressPresenter, type ProgressSink } from './presenter.js';
 export { RESUME_AGENT_INSTRUCTIONS } from './instructions.js';
 export { buildMemory, AGENT_RESOURCE_ID, type AgentMemory } from './memory.js';
+export {
+  nameThread, companyTitle, requestTitle,
+  type ThreadStore, type ToolCallRef, type TurnNaming,
+} from './titles.js';
 export { buildObservability } from './observability.js';
 export { buildAgent, assembleTools, type BuiltAgent, type BuildAgentOptions } from './agent.js';
 export { buildMcpServer } from './mcp.js';

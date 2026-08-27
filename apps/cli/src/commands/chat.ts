@@ -11,7 +11,8 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  buildAgent, progressPresenter, formatConfirm, AGENT_RESOURCE_ID, type AgentDeps, type BuiltAgent,
+  buildAgent, nameThread, progressPresenter, formatConfirm, AGENT_RESOURCE_ID,
+  type AgentDeps, type BuiltAgent, type ToolCallRef,
   CHAT_MODELS, chatModelInfo, estimateCost, keyedAgentProviders,
   type AgentProviderId, type ChatModelInfo,
 } from '@resume/agent';
@@ -142,6 +143,8 @@ async function runTurn(built: BuiltAgent, input: string, threadId: string, out: 
   const md = createStreamRenderer((s) => out.text(s));
   // tool-call → tool-result elapsed time, keyed by call id (name as fallback).
   const toolStarts = new Map<string, number>();
+  // What the turn called, which is what the thread ends up named after.
+  const calls: ToolCallRef[] = [];
 
   let thinking = false; // currently rendering a dim reasoning block
   const endThinking = (): void => { if (thinking) { out.line(''); thinking = false; } };
@@ -171,6 +174,7 @@ async function runTurn(built: BuiltAgent, input: string, threadId: string, out: 
           endThinking();
           const key: string = chunk.payload.toolCallId ?? chunk.payload.toolName;
           toolStarts.set(key, Date.now());
+          calls.push({ name: chunk.payload.toolName, args: chunk.payload.args });
           out.line(`  ${pc.cyan('⚙')} ${pc.cyan(chunk.payload.toolName)} ${pc.dim(compactArgs(chunk.payload.args))}`);
           break;
         }
@@ -202,6 +206,8 @@ async function runTurn(built: BuiltAgent, input: string, threadId: string, out: 
   md.flush();
   endThinking();
   out.line('');
+  // After the stream, because that is when the thread is certain to exist.
+  await nameThread(built.memory.memory, threadId, { message: input, calls });
   return usage;
 }
 

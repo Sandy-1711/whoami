@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { AppConfig } from '@resume/core';
-import { resolveAgentModel, resolveAgentEmbedder, resolveTitleModel } from './model.js';
+import { resolveAgentModel, resolveAgentEmbedder } from './model.js';
 
 function config(over: Partial<AppConfig> = {}): AppConfig {
   return {
@@ -15,7 +15,7 @@ function config(over: Partial<AppConfig> = {}): AppConfig {
 
 // Shorthand for a full AgentSettings with overrides.
 function agentSettings(over: Partial<NonNullable<AppConfig['agent']>> = {}): NonNullable<AppConfig['agent']> {
-  return { provider: '', model: '', embeddingModel: '', recall: false, titleModel: '', ...over };
+  return { provider: '', model: '', embeddingModel: '', recall: false, ...over };
 }
 
 describe('chat provider selection', () => {
@@ -49,17 +49,6 @@ describe('chat provider selection', () => {
       agent: agentSettings({ provider: 'deepseek' }),
     });
     expect(resolveAgentModel(c).providerId).toBe('gemini');
-  });
-});
-
-describe('resolveTitleModel', () => {
-  it('is null when nothing has a key', () => {
-    expect(resolveTitleModel(config())).toBeNull();
-  });
-
-  it('builds a model when a key exists', () => {
-    expect(resolveTitleModel(config({ llm: { provider: '', keys: { gemini: 'g' }, models: {} } }))).toBeTruthy();
-    expect(resolveTitleModel(config({ llm: { provider: '', keys: { deepseek: 'd' }, models: {} } }))).toBeTruthy();
   });
 });
 

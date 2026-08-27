@@ -40,7 +40,6 @@ export function loadConfig(): AppConfig {
       model: process.env.AGENT_MODEL || '',
       embeddingModel: process.env.AGENT_EMBEDDING_MODEL || '',
       recall: /^(1|true|yes)$/i.test(process.env.AGENT_RECALL || ''),
-      titleModel: process.env.AGENT_TITLE_MODEL || '',
     },
   };
 }
