@@ -5,7 +5,8 @@
 // tab that asked for it. Memory and tracing are the studio's and are handed in,
 // so rebuilding costs an Agent object and nothing else.
 import {
-  buildAgent, progressPresenter, AGENT_RESOURCE_ID, type AgentDeps,
+  buildAgent, nameThread, progressPresenter, AGENT_RESOURCE_ID,
+  type AgentDeps, type ToolCallRef,
 } from '@resume/agent';
 import { havePlaywright } from '@resume/cli';
 import { browserAsk, browserConfirm } from './gates.js';
@@ -49,6 +50,7 @@ export async function runTurn(studio: Studio, request: TurnRequest, sink: EventS
   });
 
   const usage: TurnUsage = { inputTokens: 0, outputTokens: 0 };
+  const calls: ToolCallRef[] = [];
 
   try {
     const res = await built.agent.stream(message, {
@@ -60,11 +62,19 @@ export async function runTurn(studio: Studio, request: TurnRequest, sink: EventS
       providerOptions: { google: { thinkingConfig: { includeThoughts: true } } },
     });
 
-    Object.assign(usage, await relay(res.fullStream as AsyncIterable<StreamChunk>, sink));
+    Object.assign(usage, await relay(
+      res.fullStream as AsyncIterable<StreamChunk>,
+      sink,
+      (name, args) => calls.push({ name, args }),
+    ));
   } catch (err) {
     // A cancelled turn is not a failure to report; the browser asked for it.
     if (!signal?.aborted) sink.send({ type: 'error', message: (err as Error).message });
   }
+
+  // After the stream, because that is when the thread is certain to exist — a
+  // cancelled turn still names the thread it got as far as starting.
+  await nameThread(studio.memory.memory, threadId, { message, calls });
 
   sink.send({ type: 'done', threadId, usage });
   await sink.drain();

@@ -62,17 +62,3 @@ export function keyedAgentProviders(config: AppConfig): AgentProviderId[] {
 export function resolveAgentEmbedder(config: AppConfig): AgentEmbedder | null {
   return resolveEmbedder(config.llm, config.agent?.embeddingModel || undefined);
 }
-
-/**
- * Thread titles are a one-line job, so they run on the cheapest model available
- * rather than the main chat model. Null when nothing has a key.
- */
-export function resolveTitleModel(config: AppConfig): AgentModel['model'] | null {
-  const provider = keyedProviders(config.llm)[0];
-  if (!provider) return null;
-  return resolveModel(config.llm, {
-    provider,
-    model: config.agent?.titleModel || '',
-    fast: true,
-  }).model;
-}

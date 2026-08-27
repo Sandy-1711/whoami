@@ -43,9 +43,9 @@ calls and progress show as dim lines; `Ctrl+C` cancels the current turn without 
 Memory persists across sessions (libSQL under `.agent/`, gitignored): past threads, a
 working-memory scratchpad (active applications, preferences), and — **opt-in** — semantic
 recall (`AGENT_RECALL=1` + a Gemini key; it embeds every message before the chat model is
-called, so it's off by default to keep turns snappy). Thread titles generate on a cheap
-model (`gemini-2.5-flash-lite`; override with `AGENT_TITLE_MODEL`). By default it resumes
-your most recent thread; `--new` starts fresh.
+called, so it's off by default to keep turns snappy). A thread is titled after the company
+a tool named, or else after the request that opened it — no model, no spend. By default it
+resumes your most recent thread; `--new` starts fresh.
 
 Answers render markdown in the terminal — headers, **bold**, bullets, inline code, fenced
 blocks — and tool calls show a glyph plus elapsed time (`✓ score_jd 0.8s`). Set
@@ -239,7 +239,6 @@ Set these in `.env` at the repo root (copy from [.env.example](../.env.example);
 | `AGENT_MODEL` | no | chat model override; blank → the fast chat default (`gemini-2.5-flash`), **not** the `GEMINI_MODEL` pipeline model |
 | `AGENT_EMBEDDING_MODEL` | no | embedding model for chat semantic recall (default `gemini-embedding-001`); needs a Gemini key |
 | `AGENT_RECALL` | no | `1`/`true` enables chat semantic recall (an embedding round-trip per turn); off by default |
-| `AGENT_TITLE_MODEL` | no | model for thread-title generation; blank → `gemini-2.5-flash-lite` (or `deepseek-chat` on a DeepSeek-only setup) |
 | `RESUME_PLAIN` | no | `1` disables the chat's terminal markdown rendering (raw text) |
 | `GITHUB_TOKEN` | no | raises the GitHub API rate limit for `sync`; public scrape works without it |
 | `SCRAPE_TTL_HOURS` | no | hours before a scraped source is considered stale (default 12) |

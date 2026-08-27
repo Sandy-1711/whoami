@@ -31,8 +31,6 @@ export interface AgentSettings {
   // Semantic recall is opt-in (AGENT_RECALL=1): it adds an embedding round-trip
   // before every turn, so it's off by default to keep chat latency down.
   recall: boolean;
-  // Model for thread-title generation (AGENT_TITLE_MODEL); '' → cheap default.
-  titleModel: string;
 }
 
 export interface AppConfig {

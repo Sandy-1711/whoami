@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import type { AppConfig } from '@resume/core';
-import { resolveAgentEmbedder, resolveTitleModel } from './model.js';
+import { resolveAgentEmbedder } from './model.js';
 
 // Everything memory-related is filed under one user id.
 export const AGENT_RESOURCE_ID = 'sandeep';
@@ -59,7 +59,6 @@ export function buildMemory(root: string, config: AppConfig): AgentMemory {
 
   const storage = new LibSQLStore({ id: 'agent-memory', url });
   const embedder = config.agent?.recall ? resolveAgentEmbedder(config) : null;
-  const titleModel = resolveTitleModel(config);
 
   const memory = new Memory({
     storage,
@@ -72,14 +71,9 @@ export function buildMemory(root: string, config: AppConfig): AgentMemory {
       lastMessages: 20,
       semanticRecall: embedder ? { topK: 4, messageRange: 2, scope: 'resource' } : false,
       workingMemory: { enabled: true, scope: 'resource', template: WORKING_MEMORY_TEMPLATE },
-      // Titles are an extra LLM call — route it to the cheapest fast model
-      // instead of the main chat model (same type bridge as the embedder).
-      generateTitle: titleModel
-        ? {
-            model: titleModel as unknown as string,
-            instructions: 'A concise 3-6 word title for this conversation. No quotes, no punctuation at the end.',
-          }
-        : true,
+      // Titles are derived from the turn rather than summarized by a model —
+      // see titles.ts, which is the only writer of one.
+      generateTitle: false,
     },
   });
 
