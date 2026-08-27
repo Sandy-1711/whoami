@@ -2,7 +2,8 @@
 // Langfuse instance. Everything here is built to disappear: with no provider
 // registered the OTel API hands out non-recording spans, so `generate.ts` calls
 // the same code whether tracing is on or off and pays nothing when it is off.
-import { trace, type Tracer } from '@opentelemetry/api';
+import { isSpanContextValid, trace, type Context, type Tracer } from '@opentelemetry/api';
+import type { Span, SpanProcessor } from '@opentelemetry/sdk-trace-base';
 
 /**
  * Langfuse connection settings. Tracing stays off unless `enabled` is set and
@@ -44,12 +45,42 @@ export const LANGFUSE_ATTR = {
   traceName: 'langfuse.trace.name',
 } as const;
 
+// How a span says "I begin a trace". Langfuse's ingestion reads both: `as_root`
+// promotes a span to a trace root, `is_app_root` is the column its trace list
+// filters on. Nothing in the Langfuse OTel SDK emits either, so without this a
+// root is only ever inferred from having no parent.
+const LANGFUSE_ROOT_ATTR = {
+  asRoot: 'langfuse.internal.as_root',
+  isAppRoot: 'langfuse.internal.is_app_root',
+} as const;
+
 /**
  * The tracer every model call uses. Safe to call before — or without —
  * {@link startTracing}: the OTel API's default provider records nothing.
  */
 export function getTracer(): Tracer {
   return trace.getTracer(TRACER_NAME);
+}
+
+/**
+ * A span processor that marks every parentless span as the root of its trace,
+ * stating what Langfuse would otherwise have to infer.
+ *
+ * The markers are written in `onStart` because a span refuses attribute writes
+ * once it has ended, so waiting for `onEnd` would drop them silently.
+ */
+export function markTraceRoots(): SpanProcessor {
+  return {
+    onStart(span: Span, parentContext: Context): void {
+      const parent = trace.getSpanContext(parentContext);
+      if (parent && isSpanContextValid(parent)) return;
+      span.setAttribute(LANGFUSE_ROOT_ATTR.asRoot, true);
+      span.setAttribute(LANGFUSE_ROOT_ATTR.isAppRoot, true);
+    },
+    onEnd(): void {},
+    async forceFlush(): Promise<void> {},
+    async shutdown(): Promise<void> {},
+  };
 }
 
 async function flush(shutdown: () => Promise<void>): Promise<void> {
@@ -84,6 +115,7 @@ export async function startTracing(config?: TracingConfig): Promise<Tracing | nu
 
     const provider = new BasicTracerProvider({
       spanProcessors: [
+        markTraceRoots(),
         new LangfuseSpanProcessor({
           publicKey: config.publicKey,
           secretKey: config.secretKey,
