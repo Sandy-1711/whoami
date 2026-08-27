@@ -41,5 +41,14 @@ export function threadRoutes(studio: Studio): Hono {
     return c.json({ threadId, messages: transcript });
   });
 
+  // Takes the messages with it and cannot be undone — the browser asks twice
+  // before calling this. Deleting one that is already gone is not an error:
+  // there is nothing left to go wrong about.
+  app.delete('/threads/:id', async (c) => {
+    const threadId = c.req.param('id');
+    await memory.deleteThread(threadId);
+    return c.json({ deleted: threadId });
+  });
+
   return app;
 }

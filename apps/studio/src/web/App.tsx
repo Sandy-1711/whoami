@@ -35,7 +35,12 @@ export function App() {
 
       <main className="grid min-h-0 flex-1 grid-cols-[14rem_minmax(0,1fr)_minmax(0,1.5fr)] gap-2 p-2">
         <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_minmax(0,1.4fr)] gap-2">
-          <ThreadList current={chat.threadId} onOpen={(id) => { void chat.openThread(id); }} />
+          <ThreadList
+            current={chat.threadId}
+            version={chat.completed}
+            onOpen={(id) => { void chat.openThread(id); }}
+            onDeleted={(id) => { if (id === chat.threadId) chat.startThread(); }}
+          />
           <StatusRail />
         </div>
 
