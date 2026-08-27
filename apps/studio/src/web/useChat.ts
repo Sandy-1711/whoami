@@ -5,7 +5,7 @@
 // and progress all accumulate under the message that caused them.
 import { useCallback, useRef, useState } from 'react';
 import { answerAsk, answerConfirm, getThread, streamChat } from './api';
-import type { ChatEvent, ConfirmView, QuestionView, TurnUsage } from '../shared/events';
+import type { Artifact, ChatEvent, ConfirmView, QuestionView, TurnUsage } from '../shared/events';
 
 export interface ToolRun {
   id: string;
@@ -22,6 +22,7 @@ export interface Turn {
   reasoning: string;
   tools: ToolRun[];
   progress: string[];
+  artifacts: Artifact[];
   usage?: TurnUsage;
   error?: string;
   running: boolean;
@@ -45,6 +46,7 @@ export function useChat() {
   const [threadId, setThreadId] = useState(newThreadId);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [running, setRunning] = useState(false);
+  const [completed, setCompleted] = useState(0);
   const [confirm, setConfirm] = useState<ConfirmPrompt | null>(null);
   const [ask, setAsk] = useState<AskPrompt | null>(null);
   const inFlight = useRef<AbortController | null>(null);
@@ -72,6 +74,12 @@ export function useChat() {
           tools: t.tools.map((tool) =>
             tool.id === event.id ? { ...tool, ms: event.ms, isError: event.isError } : tool),
         }));
+      case 'artifact':
+        return patch(id, (t) => (
+          t.artifacts.some((a) => a.relPath === event.artifact.relPath)
+            ? t
+            : { ...t, artifacts: [...t.artifacts, event.artifact] }
+        ));
       case 'confirm':
         return setConfirm({ id: event.id, request: event.request });
       case 'ask':
@@ -89,7 +97,8 @@ export function useChat() {
 
     const id = crypto.randomUUID();
     setTurns((all) => [...all, {
-      id, question: text, answer: '', reasoning: '', tools: [], progress: [], running: true,
+      id, question: text, answer: '', reasoning: '',
+      tools: [], progress: [], artifacts: [], running: true,
     }]);
     setRunning(true);
 
@@ -104,6 +113,10 @@ export function useChat() {
       inFlight.current = null;
       patch(id, (t) => ({ ...t, running: false }));
       setRunning(false);
+      // A finished turn may have written a file. Bumping this is what tells the
+      // preview pane to re-list, so a new output appears in its picker without
+      // anyone reaching for refresh.
+      setCompleted((n) => n + 1);
       // Whatever was waiting on the browser died with the stream.
       setConfirm(null);
       setAsk(null);
@@ -140,7 +153,7 @@ export function useChat() {
       if (message.role === 'user') {
         restored.push({
           id: message.id, question: message.text, answer: '', reasoning: '',
-          tools: [], progress: [], running: false,
+          tools: [], progress: [], artifacts: [], running: false,
         });
       } else if (restored.length) {
         const last = restored[restored.length - 1]!;
@@ -151,7 +164,7 @@ export function useChat() {
   }, []);
 
   return {
-    threadId, turns, running, confirm, ask,
+    threadId, turns, running, completed, confirm, ask,
     send, stop, resolveConfirm, resolveAsk, startThread, openThread,
   };
 }

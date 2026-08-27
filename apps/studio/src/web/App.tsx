@@ -6,7 +6,7 @@ import { useChat } from './useChat';
 import { AskModal } from './components/AskModal';
 import { ChatPane } from './components/ChatPane';
 import { ConfirmModal } from './components/ConfirmModal';
-import { PdfPreview } from './components/PdfPreview';
+import { CANONICAL, PdfPreview } from './components/PdfPreview';
 import { ResumeEditor } from './components/ResumeEditor';
 import { StatusRail } from './components/StatusRail';
 import { ThreadList } from './components/ThreadList';
@@ -14,8 +14,13 @@ import { ThreadList } from './components/ThreadList';
 export function App() {
   const chat = useChat();
   // Bumped after every build so the preview reloads instead of showing the
-  // document as it was before the compile that was just watched finish.
+  // document as it was before the compile that was just watched finish. A
+  // finished turn counts too: it may have written a file the picker has not
+  // listed yet.
   const [built, setBuilt] = useState(0);
+  // Which PDF the preview shows. Here rather than in the pane because a card in
+  // the transcript sets it as well as the pane's own picker.
+  const [showing, setShowing] = useState(CANONICAL);
 
   return (
     <div className="flex h-full flex-col">
@@ -38,11 +43,12 @@ export function App() {
           onSend={(message) => { void chat.send(message); }}
           onStop={chat.stop}
           onNewThread={chat.startThread}
+          onPreview={setShowing}
         />
 
         <div className="grid min-h-0 min-w-0 grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-2">
           <ResumeEditor onBuilt={() => setBuilt((n) => n + 1)} />
-          <PdfPreview version={built} />
+          <PdfPreview version={built + chat.completed} showing={showing} onShow={setShowing} />
         </div>
       </main>
 
