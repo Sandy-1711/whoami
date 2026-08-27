@@ -1,6 +1,6 @@
 {
   "_comment": "Auto-scraped from GitHub. Edit freely — the tailor treats this as an editable source of truth. Re-scrape with `npm run sync`.",
-  "scrapedAt": "2026-08-23T14:17:47.668Z",
+  "scrapedAt": "2026-08-27T07:59:05.334Z",
   "username": "Sandy-1711",
   "profileUrl": "https://github.com/Sandy-1711",
   "totals": {
@@ -14,14 +14,14 @@
       "name": "whoami",
       "description": "",
       "url": "https://github.com/Sandy-1711/whoami",
-      "homepage": "https://iamsandeep.vercel.app/",
+      "homepage": "https://iamsandeep.vercel.app",
       "stars": 1,
       "language": "TypeScript",
       "topics": [],
       "archived": false,
-      "pushedAt": "2026-07-16T12:14:35Z",
+      "pushedAt": "2026-08-27T07:25:54Z",
       "fork": false,
-      "readmeSize": 23624,
+      "readmeSize": 23357,
       "pinned": true
     },
     {
@@ -614,6 +614,34 @@
       "readmeSize": 0
     },
     {
+      "name": "voice-sdk",
+      "description": "Provider-agnostic TypeScript SDK for voice. TTS and STT, batch and realtime, with one set of types.",
+      "url": "https://github.com/Sandy-1711/voice-sdk",
+      "homepage": "https://voice-ai-sdk.vercel.app",
+      "stars": 0,
+      "language": "TypeScript",
+      "topics": [
+        "cartesia",
+        "deepgram",
+        "elevenlabs",
+        "nodejs",
+        "realtime",
+        "sdk",
+        "speech-to-text",
+        "stt",
+        "text-to-speech",
+        "tts",
+        "typescript",
+        "voice",
+        "voice-ai",
+        "websocket"
+      ],
+      "archived": false,
+      "pushedAt": "2026-08-26T14:26:27Z",
+      "fork": false,
+      "readmeSize": 3688
+    },
+    {
       "name": "CalQuity",
       "description": "ParcePilot Assessment",
       "url": "https://github.com/Sandy-1711/CalQuity",
@@ -625,19 +653,6 @@
       "pushedAt": "2026-08-23T14:03:28Z",
       "fork": false,
       "readmeSize": 5677
-    },
-    {
-      "name": "voice-sdk",
-      "description": "",
-      "url": "https://github.com/Sandy-1711/voice-sdk",
-      "homepage": "",
-      "stars": 0,
-      "language": "TypeScript",
-      "topics": [],
-      "archived": false,
-      "pushedAt": "2026-08-21T13:14:06Z",
-      "fork": false,
-      "readmeSize": 4563
     },
     {
       "name": "weather-sdk",
@@ -867,7 +882,7 @@
           "url": "https://github.com/mastra-ai/mastra/pull/19299"
         }
       ],
-      "stars": 27375,
+      "stars": 27509,
       "pinned": true
     },
     {
@@ -884,7 +899,7 @@
           "url": "https://github.com/Floe-Labs/floe-guard/pull/44"
         }
       ],
-      "stars": 516
+      "stars": 434
     },
     {
       "repo": "formbricks/formbricks",
@@ -900,7 +915,7 @@
           "url": "https://github.com/formbricks/formbricks/pull/1467"
         }
       ],
-      "stars": 12805
+      "stars": 12829
     },
     {
       "repo": "calcom/cal.diy",
@@ -928,7 +943,7 @@
           "url": "https://github.com/calcom/cal.diy/pull/29355"
         }
       ],
-      "stars": 47877
+      "stars": 47953
     },
     {
       "repo": "therealanshuman/hwce-sandeep",
@@ -988,7 +1003,7 @@
           "url": "https://github.com/n8n-io/n8n/pull/20329"
         }
       ],
-      "stars": 202069
+      "stars": 202558
     }
   ]
 }
