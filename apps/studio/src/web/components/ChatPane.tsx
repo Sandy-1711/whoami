@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { uploadJd } from '../api';
 import type { Turn } from '../useChat';
+import { Markdown } from './Markdown';
 import { ToolTimeline } from './ToolTimeline';
 import { Button, Panel } from './ui';
 
@@ -24,7 +25,7 @@ function Exchange({ turn }: { turn: Turn }) {
       <p className="mb-2 whitespace-pre-wrap text-zinc-400">{turn.question}</p>
       <Reasoning text={turn.reasoning} />
       <ToolTimeline tools={turn.tools} progress={turn.progress} />
-      <p className="text-sm whitespace-pre-wrap text-zinc-200">{turn.answer}</p>
+      <Markdown text={turn.answer} />
       {turn.running && !turn.answer ? <p className="text-sm text-zinc-600">thinking…</p> : null}
       {turn.error ? (
         <p className="mt-2 rounded border border-red-900/60 bg-red-950/40 p-2 text-xs text-red-300">{turn.error}</p>
