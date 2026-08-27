@@ -13,6 +13,7 @@ import { createServer as createViteServer } from 'vite';
 import { buildCli } from '@resume/cli';
 import { startTracing } from '@resume/llm';
 import { createApp } from './app.js';
+import { isApiRequest } from './dispatch.js';
 import { createStudio } from './studio.js';
 
 const HOST = '127.0.0.1';
@@ -39,7 +40,7 @@ const vite = await createViteServer({
 });
 
 const server = createServer((req, res) => {
-  if (req.url?.startsWith('/api')) api(req, res);
+  if (isApiRequest(req.url)) api(req, res);
   else vite.middlewares(req, res);
 });
 
