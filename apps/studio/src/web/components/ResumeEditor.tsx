@@ -5,9 +5,10 @@
 // résumé is living in the browser. Ids are shown but never editable: an id is
 // what a tailoring edit addresses a bullet by, and renaming one silently
 // detaches every plan that already referred to it.
-import { useEffect, useState } from 'react';
-import type { Resume } from '@resume/core';
-import { buildResume, getResume, putResume, type BuildResponse } from '../api';
+//
+// The document itself is useResume's, one level up — this draws it.
+import type { BuildResponse } from '../api';
+import type { ResumeDoc } from '../useResume';
 import { Button, Panel } from './ui';
 
 const input = 'w-full rounded border border-zinc-800 bg-zinc-950 px-2 py-1 text-sm text-zinc-200 outline-none focus:border-zinc-600';
@@ -96,46 +97,10 @@ function BuildReport({ report }: { report: BuildResponse }) {
   );
 }
 
-export function ResumeEditor({ onBuilt }: { onBuilt: () => void }) {
-  const [resume, setResume] = useState<Resume | null>(null);
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [report, setReport] = useState<BuildResponse | null>(null);
-
-  useEffect(() => {
-    getResume().then((r) => setResume(r.resume)).catch((err: Error) => setNote(err.message));
-  }, []);
-
-  const edit = (change: Partial<Resume>): void => setResume((r) => (r ? { ...r, ...change } : r));
-
-  const save = async (): Promise<void> => {
-    if (!resume) return;
-    setBusy(true);
-    setNote('');
-    try {
-      const saved = await putResume(resume);
-      setResume(saved.resume);
-      setNote('saved · resume.tex re-rendered');
-    } catch (err) {
-      setNote((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const compile = async (): Promise<void> => {
-    setBusy(true);
-    setNote('compiling — this needs Docker or a local latexmk…');
-    try {
-      setReport(await buildResume());
-      setNote('');
-      onBuilt();
-    } catch (err) {
-      setNote((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
+export function ResumeEditor({ doc, onClose }: { doc: ResumeDoc; onClose: () => void }) {
+  const { resume, note, busy, report, edit } = doc;
+  const save = (): void => { void doc.save(); };
+  const compile = (): void => { void doc.compile(); };
 
   return (
     <Panel
@@ -144,6 +109,7 @@ export function ResumeEditor({ onBuilt }: { onBuilt: () => void }) {
         <>
           <Button onClick={save} disabled={busy || !resume}>save</Button>
           <Button tone="go" onClick={compile} disabled={busy}>build pdf</Button>
+          <Button onClick={onClose}>close</Button>
         </>
       }
       bodyClass="flex flex-col"
