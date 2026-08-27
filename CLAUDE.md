@@ -9,12 +9,13 @@ already exists.
 
 ## Active work — read this first
 
-Hardening work is in progress: Phases 0–3 are merged into `main`, Phase 4 is next. Start with
-**[docs/ROADMAP.md](docs/ROADMAP.md)** — it carries current status and per-phase what/why/how.
-Then [docs/DECISIONS.md](docs/DECISIONS.md) for why things are the way they are, and
-[docs/CONVENTIONS.md](docs/CONVENTIONS.md) before writing any code.
+Hardening Phases 0–4 are done and on `main`. Start with **[docs/ROADMAP.md](docs/ROADMAP.md)** — it
+is about what is left, and nothing in it is finished work. [docs/PHASES.md](docs/PHASES.md) is what
+was built and why it went the way it did. Then [docs/DECISIONS.md](docs/DECISIONS.md) for why things
+are the way they are, and [docs/CONVENTIONS.md](docs/CONVENTIONS.md) before writing any code.
 
-The `hardening` branch is a stale duplicate of `main` after a rebase merge — do not branch from it.
+`hardening`, `studio` and `fix/high-priority-findings` are all stale duplicates of `main` after
+rebase merges — do not branch from any of them.
 
 ## Orientation
 

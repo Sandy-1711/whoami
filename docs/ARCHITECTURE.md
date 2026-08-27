@@ -1,8 +1,8 @@
 # Architecture
 
 Sections are tagged **[built]** or **[planned — Phase N]**. A planned section describes a design
-that does not exist on disk yet; check [ROADMAP.md](ROADMAP.md) for its current status before
-trusting it.
+that does not exist on disk yet; check [ROADMAP.md](ROADMAP.md) for what is still outstanding, and
+[PHASES.md](PHASES.md) for what a finished phase actually built, before trusting it.
 
 ## Package graph [built]
 
