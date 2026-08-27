@@ -12,11 +12,19 @@ function args(value: unknown): string {
   }
 }
 
+// Three states, not two: a call read back out of a past thread has long since
+// finished, and drawing it as still running would be a lie about a turn nobody
+// is watching any more.
+function mark(run: ToolRun): { glyph: string; colour: string; note: string } {
+  if (run.restored) return { glyph: '·', colour: 'text-zinc-500', note: '' };
+  if (run.ms === undefined) return { glyph: '·', colour: 'text-cyan-300', note: 'running…' };
+  if (run.isError) return { glyph: '✗', colour: 'text-red-400', note: '' };
+  return { glyph: '✓', colour: 'text-emerald-400', note: '' };
+}
+
 function Call({ run }: { run: ToolRun }) {
   const [open, setOpen] = useState(false);
-  const done = run.ms !== undefined;
-  const glyph = !done ? '·' : run.isError ? '✗' : '✓';
-  const colour = !done ? 'text-cyan-300' : run.isError ? 'text-red-400' : 'text-emerald-400';
+  const { glyph, colour, note } = mark(run);
 
   return (
     <li>
@@ -27,8 +35,8 @@ function Call({ run }: { run: ToolRun }) {
       >
         <span className={colour}>{glyph}</span>
         <span className="font-mono text-cyan-200">{run.name}</span>
-        <span className="flex-1 truncate text-zinc-600">{done ? '' : 'running…'}</span>
-        {done ? <span className="text-zinc-500">{(run.ms! / 1000).toFixed(1)}s</span> : null}
+        <span className="flex-1 truncate text-zinc-600">{note}</span>
+        {run.ms === undefined ? null : <span className="text-zinc-500">{(run.ms / 1000).toFixed(1)}s</span>}
       </button>
       {open ? (
         <pre className="mt-1 mb-1 overflow-x-auto rounded bg-zinc-950/70 p-2 text-[11px] text-zinc-400">
