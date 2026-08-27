@@ -6,94 +6,123 @@ ticked here.
 
 Companion docs: [ARCHITECTURE.md](ARCHITECTURE.md) (target design),
 [DECISIONS.md](DECISIONS.md) (choices and why), [CONVENTIONS.md](CONVENTIONS.md) (how to write the
-code).
+code), [CLI.md](CLI.md) and [STUDIO.md](STUDIO.md) (the two operator surfaces).
+
+**How to read this file.** The first three sections are the live state — where the code is, what has
+been watched working, and what is open. Everything from *Why this work exists* down is the archive:
+the plan as it was written, annotated where the build went another way. Read the top to resume work;
+read the bottom to understand why something is the way it is.
 
 ## Status
 
 | Phase | What | State |
 | --- | --- | --- |
 | 0 | Handoff docs | done |
-| 1 | One LLM path, instrumented | done — one live-trace check outstanding, see below |
+| 1 | One LLM path, instrumented | done |
 | 2 | Flexible tools, unconfusing MCP | done |
 | 3 | Résumé as structured data | done |
-| 4 | Web studio | done |
-| 5 | Formatter, linter, comment pass | next |
+| 4 | Web studio | done — shipped, then exercised; the findings are open issues |
+| 5 | Formatter, linter, comment pass | not started |
 | 6 | Deferred work | not started |
+
+The phases are the plan. The **[issue tracker](https://github.com/Sandy-1711/whoami/issues)** is now
+where day-to-day work lives — see *Open work* below. Phase 5 is not started and is not next; the
+high-priority issues are.
 
 ---
 
 ## Resuming — start here
 
-Everything through Phase 3 is merged into **`main`**. Phase 4 is on the **`studio`** branch, cut
-from `main`; tree clean, `pnpm test` and `pnpm typecheck` green across all six packages. Phases are
-committed as they land, one concern per commit.
+**Where the code is.** Phases 0–3 are on `main`. Phase 4 is on the **`studio`** branch, open as
+[PR #20](https://github.com/Sandy-1711/whoami/pull/20). Phases are committed as they land, one
+concern per commit.
 
 ```sh
-git log --oneline -40    # what has landed
+git log --oneline main..studio    # Phase 4
+git log --oneline -40             # everything recent
 ```
 
-**What the surface looks like now**, since it moved a long way in Phase 2 and the older prose in
-this file predates it:
+**What exists now.** Three front ends over one tool set, and a résumé that is data:
 
-- **18 tools**, assembled in one place — `assembleTools` in `packages/agent/src/agent.ts`. Chat and
-  MCP wire exactly that set. `recordTools` wraps all of them, so every call appends to
-  `.agent/activity.jsonl` and updates the tracker without any tool opting in.
-- **The CLI no longer calls a model.** `chat` and `mcp` reach the agent; `send`, `sync`, `score`,
-  `digest`, `status`, `build`, `check` are the operator surface.
-- **The confirm gate** takes a `ConfirmRequest { tool, action, params, preview }` and the terminal
-  prints the resolved values before asking. Nothing is approved by an argument.
+- **18 tools**, assembled in one place — `assembleTools` in `packages/agent/src/agent.ts`.
+  `pnpm chat`, `pnpm mcp` and `pnpm studio` all wire exactly that set, so they cannot drift apart.
+  `recordTools` wraps every one, so each call appends to `.agent/activity.jsonl` and updates the
+  tracker without any tool opting in.
+- **No command calls a model.** `chat`, `mcp` and `studio` reach the agent; `send`, `sync`, `score`,
+  `digest`, `status`, `build`, `check` are the operator surface and are free by construction.
+- **The confirm gate** takes a `ConfirmRequest { tool, action, params, preview }` — the resolved
+  values, never a sentence about them. The terminal prints them; the studio renders them in a modal.
+  Nothing is approved by an argument.
 - **The résumé is `profile/resume.json`.** `resume.tex` is rendered from it by both build paths and
-  guarded for staleness; nothing hand-edits the LaTeX any more.
-- **Three front ends, one tool set.** `pnpm chat`, `pnpm mcp`, `pnpm studio` — all three call
-  `assembleTools(deps)` and nothing else. `@resume/cli` now has a package entry so the studio
-  derives its adapters from `buildCli()` rather than copying the container.
+  guarded for staleness; nothing hand-edits the LaTeX.
 
-**Carried forward, still unverified** — none of these blocks Phase 4, but none has been watched
-working either:
+### Watched working
 
-- No Langfuse trace has been seen arriving in a running stack (Phase 1). Needs the stack up and one
-  real paid call.
-- `resume send` has only been exercised with `--dry-run`. It has never put a real message through
-  Gmail.
+Everything below has been observed end to end, not merely unit-tested. Dated 2026-08-27, from one
+real studio turn and the Langfuse trace it produced.
+
+- **A full studio turn against a real model.** `score_jd` → `ask_user` → `tailor_plan` →
+  `tailor_render` → `updateWorkingMemory`. The ask modal parked the run for 36 seconds waiting on a
+  human and resumed with the answer, which exercises the browser-backed gate for real.
+- **Document-wide tailoring against a real model** — the first since the Phase 3 rewrite.
+  `tailor_render` compiled for 63 seconds and produced a PDF.
+- **Traces arrive in a running Langfuse.** 45 events across 2 traces, with prompts, replies, tokens
+  and cost. This closes the Phase 1 item that had been outstanding since it was written — but see
+  the issues below, because arriving is not the same as being readable.
+
+### Not watched working
+
+- `resume send` has only ever run with `--dry-run`. It has never put a real message through Gmail.
 - Over MCP the confirm gate auto-approves, because there is no terminal to prompt. MCP elicitation
-  was not explored; the draft-first rule is what holds under a client set to "always allow".
-- No tailoring run has been made against a real model since the rewrite went document-wide. The
-  offline end-to-end test covers the mechanism; what a real model does with the whole document —
-  how much it rewrites, how often a line is reverted, whether it respects the length budgets — has
-  not been watched.
-- **No studio chat turn has been run against a real model.** Every other route was exercised
-  against the live server and real repo data, and the page was loaded in a headless browser: it
-  mounts, all four panes render their own data, no console errors, no overflow. But `POST /api/chat`
-  was only checked for the 400 it gives without a message. The turn plumbing — SSE framing, the
-  gates, the timeline, the confirm modal — is covered by unit tests and by the CLI path it was
-  copied from, not by a watched run. That is the obvious first thing to do with the studio, and it
-  costs credits.
-- The résumé editor's **build** button has not been watched compiling. Docker was down throughout
-  Phase 4, so `POST /api/resume/build` has only ever returned the toolchain-unavailable path.
+  was never explored; the draft-first rule is what holds under a client set to "always allow".
+- The studio's **build** button. `tailor_render` compiles through a different path, so the toolchain
+  is proven but `POST /api/resume/build` specifically is not.
+
+### Open work
+
+The first real use of the studio produced twelve findings, filed as issues rather than left in
+prose. Work them in priority order.
+
+| Priority | Issue |
+| --- | --- |
+| high | [#8](https://github.com/Sandy-1711/whoami/issues/8) Langfuse traces are unlistable: no span is marked as the trace root |
+| high | [#9](https://github.com/Sandy-1711/whoami/issues/9) A built résumé vanishes — no preview, no download after a render |
+| high | [#10](https://github.com/Sandy-1711/whoami/issues/10) Markdown does not render in the studio chat |
+| medium | [#11](https://github.com/Sandy-1711/whoami/issues/11) Reopened threads lose their tool calls and reasoning |
+| medium | [#12](https://github.com/Sandy-1711/whoami/issues/12) Thread titles should name the company or the résumé change |
+| medium | [#13](https://github.com/Sandy-1711/whoami/issues/13) Attach JD should accept pasted text, not only a file |
+| medium | [#14](https://github.com/Sandy-1711/whoami/issues/14) The résumé editor should not be open by default |
+| medium | [#15](https://github.com/Sandy-1711/whoami/issues/15) The tailor generation is an orphan trace |
+| medium | [#16](https://github.com/Sandy-1711/whoami/issues/16) Nothing in the product's own voice should name the model |
+| low | [#17](https://github.com/Sandy-1711/whoami/issues/17) Replace the tailor pipeline with `draft_context` + `save_draft` |
+| low | [#18](https://github.com/Sandy-1711/whoami/issues/18) ARCHITECTURE.md claims chat and pipeline traces nest |
+| low | [#19](https://github.com/Sandy-1711/whoami/issues/19) The evidence-digest test asserts a budget against live scraped data |
+
+**`pnpm test` is currently red** — [#19](https://github.com/Sandy-1711/whoami/issues/19). A `sync`
+grew `profile/github.json` past a hard-coded size budget the test asserts. No code change caused it,
+and any future `sync` can cause it again.
+
+### Housekeeping
 
 `AGENT_BUILDLOG.md` at the repo root is **stale and superseded by this file** — it opens by telling
 a resuming chat to read it first, and describes a CLI flag (`resume tailor --coverage`) that no
 longer exists. It should be deleted.
 
-**Branch state:** Phases 0–3 landed on `main` through
-[PR #7](https://github.com/Sandy-1711/whoami/pull/7), merged 2026-08-26 with a rebase — so `main`
-carries the same work under new SHAs and **`hardening` is a stale duplicate of it**. Start Phase 4
-from `main`.
-
-That merge was the first time CI saw any of this: `build-deploy.yml` triggers on push to `main`, not
-on pull requests. It passed — the migrated résumé compiled, the source guard (including the new
-check that `resume.tex` is what `profile/resume.json` renders to) and the PDF guard both cleared,
-and Vercel took the deploy. The run missed the PDF cache, as expected: the key is
-`hashFiles('resume.tex')` and that file changed.
-
-**Next: Phase 5**, below.
+`hardening` is a stale duplicate of `main`: Phases 0–3 landed through
+[PR #7](https://github.com/Sandy-1711/whoami/pull/7), rebase-merged 2026-08-26, so `main` carries the
+same work under new SHAs. That merge was the first time CI saw any of it, and it passed — the
+migrated résumé compiled, both guards cleared, Vercel took the deploy.
 
 ---
 
 ## Open questions — the owner's call, not the plan's
 
-Raised by an audit at the end of Phase 3. None of them blocks Phase 4; all three are things that
-exist without a reason strong enough to defend themselves.
+Raised by an audit at the end of Phase 3, before there was an issue tracker. Still open, still the
+owner's call: all three are things that exist without a reason strong enough to defend themselves.
+They are questions rather than issues because each needs a decision before it needs work.
+
+Question 2 has since been partly overtaken — the tailor tools it argues about are the subject of
+[#17](https://github.com/Sandy-1711/whoami/issues/17), which proposes replacing them outright.
 
 ### 1. The file-drift half of `profile/sources.lock.json` earns nothing
 
@@ -256,9 +285,14 @@ different routes: `startTracing` in `@resume/llm` covers the plain AI SDK calls,
 Langfuse project. `pnpm langfuse:up` starts the stack — see
 [../infra/langfuse/README.md](../infra/langfuse/README.md).
 
-**Still unverified:** everything above is covered by unit tests and by `pnpm status`, but no
-trace has been watched arriving in a running Langfuse — that needs the stack up and one real
-(paid) model call. Do that before trusting the trace list is empty for the right reason.
+**Verified 2026-08-27.** Traces arrive: one real studio turn produced 45 events across 2 traces in
+a running self-hosted Langfuse, carrying prompts, replies, token counts and cost.
+
+The warning that sentence ended on turned out to be the right one — the trace list *is* empty, and
+for the wrong reason. Langfuse v4 keys its list off `langfuse.internal.as_root`, which
+`@mastra/langfuse` never emits, so nothing is marked as a trace root and only a direct URL reaches a
+trace. Tracked as [#8](https://github.com/Sandy-1711/whoami/issues/8); the split entry points are
+[#15](https://github.com/Sandy-1711/whoami/issues/15).
 
 ---
 
@@ -520,6 +554,9 @@ Frontend: chat pane with streamed markdown and collapsible reasoning; tool timel
 timing (already computed in `runTurn`); `ConfirmModal` showing the exact action, recipient, and
 attachment; résumé editor beside a PDF preview; status rail; link out to the local Langfuse trace.
 
+**Markdown did not land** — the pane prints raw text, so a structured answer arrives as asterisks
+and hashes. [#10](https://github.com/Sandy-1711/whoami/issues/10).
+
 - [x] Server + SSE stream
 - [x] Confirm channel + modal
 - [x] Chat UI + tool timeline
@@ -556,6 +593,12 @@ commits: the `/api` prefix test swallowed the SPA's own `/api.ts` — every rout
 the shell while the browser got a blank page — and the panes overflowed their grid tracks because a
 grid item will not shrink below its content without `min-w-0`.
 
+**Then it was used, and that found ten more.** Two were fixed on the branch — the Mastra container
+had no store and warned on every boot that it was falling back to an in-memory one, and the user's
+own message was styled as highlighted. The rest are issues #8–#19, listed under *Open work* at the
+top of this file. None of them says the shape is wrong; they say a shipped surface only tells you
+the truth once somebody uses it.
+
 ---
 
 ## Phase 5 — Formatter, linter, comment pass
@@ -563,12 +606,13 @@ grid item will not shrink below its content without `min-w-0`.
 **What:** Prettier + ESLint configured to match the existing style, enforced in CI, and a
 comment pass across all packages.
 
-`apps/studio` is six packages' worth of new code, half of it TSX that no existing config has an
-opinion about — so this phase now has to cover React/JSX rules and a Tailwind class order, not only
-the Node style the other packages share.
-
 **Why:** `lint` is currently just `tsc --noEmit`. Style should be enforced by tooling rather than
 discipline. See [CONVENTIONS.md](CONVENTIONS.md).
+
+**Scope grew in Phase 4.** `apps/studio` added a package of TSX that no existing config has an
+opinion about, so this now covers React/JSX rules and Tailwind class order as well as the Node style
+the other packages share. [#16](https://github.com/Sandy-1711/whoami/issues/16) also belongs here in
+spirit — a comment pass is the natural moment to stop code comments naming the model.
 
 **How:** every disabled rule carries a one-line reason. Judge each comment individually — the
 existing headers carry real caveats (the MCP stdout warning in `commands/mcp.ts`, the raw-mode note
