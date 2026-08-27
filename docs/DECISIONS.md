@@ -55,6 +55,31 @@ Both paths are off, and unloaded, unless `LANGFUSE_ENABLED` is set with both key
 The upstream self-host compose file is now Langfuse v4 rather than the v3 assumed above. Same
 Postgres + ClickHouse + Redis + MinIO stack, so nothing about the decision changes.
 
+## 2026-08-27 — A trace root says so, and the empty trace list was not the reason
+
+[#8](https://github.com/Sandy-1711/whoami/issues/8) read the empty Traces list as a missing
+`langfuse.internal.as_root`. Checked against the running instance, that does not hold. Langfuse v4's
+list predicate is `(parent_span_id = '' OR is_app_root = true)`, and both existing traces already
+satisfied the first half — running the UI's own query against the stored data returns both, correctly
+named, with their observation counts. A synthetic unmarked root sent afterwards was listed too.
+
+What the ClickHouse `query_log` shows instead: the "does this project have any data" probe returned
+**zero rows** at 07:57:18, thirty-five seconds before the first span landed. The list was opened
+against an empty project and never queried again — every later view was a trace reached by direct URL
+from the studio's Langfuse link. The list was empty because there was nothing in it yet.
+
+The marker is worth writing anyway, and `markTraceRoots` writes it: `is_app_root` is what the list
+filters on, and today it is false on every span the toolkit has ever sent, so a root is recognised by
+accident of structure rather than by intent. Structure is the weaker of the two — a span that later
+gains a parent stops being a root silently.
+
+It goes on the pipelines only. `@mastra/langfuse`'s exporter constructs its `LangfuseSpanProcessor` in
+a private field and calls `onEnd` on it directly, bypassing any tracer provider, and its span
+converter emits a fixed set of attribute names with no passthrough. There is no seam for a processor,
+an exporter wrapper, or a metadata key. The alternatives were vendoring its 75-line attribute mapping
+or patching a dependency's prototype; neither is worth it for a marker that changes nothing the list
+does today.
+
 ## 2026-08-25 — Résumé becomes structured data
 
 `resume.tex` declares three `TAILOR` anchors and only two are ever written; the `skills` anchor is

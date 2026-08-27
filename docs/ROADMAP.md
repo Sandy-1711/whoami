@@ -85,7 +85,7 @@ prose. Work them in priority order.
 
 | Priority | Issue |
 | --- | --- |
-| high | [#8](https://github.com/Sandy-1711/whoami/issues/8) Langfuse traces are unlistable: no span is marked as the trace root |
+| high | [#8](https://github.com/Sandy-1711/whoami/issues/8) Langfuse traces are unlistable: no span is marked as the trace root — **the diagnosis does not hold; the marker landed, the list was never broken** |
 | high | [#9](https://github.com/Sandy-1711/whoami/issues/9) A built résumé vanishes — no preview, no download after a render |
 | high | [#10](https://github.com/Sandy-1711/whoami/issues/10) Markdown does not render in the studio chat |
 | medium | [#11](https://github.com/Sandy-1711/whoami/issues/11) Reopened threads lose their tool calls and reasoning |
@@ -288,11 +288,12 @@ Langfuse project. `pnpm langfuse:up` starts the stack — see
 **Verified 2026-08-27.** Traces arrive: one real studio turn produced 45 events across 2 traces in
 a running self-hosted Langfuse, carrying prompts, replies, token counts and cost.
 
-The warning that sentence ended on turned out to be the right one — the trace list *is* empty, and
-for the wrong reason. Langfuse v4 keys its list off `langfuse.internal.as_root`, which
-`@mastra/langfuse` never emits, so nothing is marked as a trace root and only a direct URL reaches a
-trace. Tracked as [#8](https://github.com/Sandy-1711/whoami/issues/8); the split entry points are
-[#15](https://github.com/Sandy-1711/whoami/issues/15).
+The trace list looked empty, and [#8](https://github.com/Sandy-1711/whoami/issues/8) read that as a
+missing `langfuse.internal.as_root`. Checked against the running instance, it was not: Langfuse lists
+a parentless span with no marker at all, and does list both of these. The list was opened against a
+project that had no spans in it yet, and every view after that reached a trace by direct URL. The
+marker is written anyway — [DECISIONS.md](DECISIONS.md) has what it buys and why only the pipelines
+carry it. The split entry points are [#15](https://github.com/Sandy-1711/whoami/issues/15).
 
 ---
 
