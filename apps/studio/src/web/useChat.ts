@@ -13,6 +13,8 @@ export interface ToolRun {
   args: unknown;
   ms?: number;
   isError?: boolean;
+  /** Read back from a past thread rather than watched: the store keeps no timing. */
+  restored?: boolean;
 }
 
 export interface Turn {
@@ -142,9 +144,10 @@ export function useChat() {
     setTurns([]);
   }, []);
 
-  // Reopening a past thread redraws what was said. Tool calls are not replayed:
-  // the timeline is a live view of a turn, and the store keeps the outcome, not
-  // the timing.
+  // Reopening a past thread redraws what was said and what was done — the store
+  // keeps every part of a turn but its clock, so a restored call is marked as
+  // such and shows no duration. Progress lines are a live view of a running tool
+  // and are not stored at all.
   const openThread = useCallback(async (id: string) => {
     setThreadId(id);
     const { messages } = await getThread(id);
@@ -155,10 +158,14 @@ export function useChat() {
           id: message.id, question: message.text, answer: '', reasoning: '',
           tools: [], progress: [], artifacts: [], running: false,
         });
-      } else if (restored.length) {
-        const last = restored[restored.length - 1]!;
-        last.answer += message.text;
+        continue;
       }
+      const turn = restored[restored.length - 1];
+      if (!turn) continue;
+      turn.answer += message.text;
+      turn.reasoning += message.reasoning;
+      turn.tools.push(...message.calls.map((call) => ({ ...call, restored: true })));
+      turn.artifacts.push(...message.artifacts);
     }
     setTurns(restored);
   }, []);
